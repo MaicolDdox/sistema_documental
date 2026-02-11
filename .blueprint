@@ -1,0 +1,142 @@
+created:
+    - database/factories/EntityPositionFactory.php
+    - database/factories/EngagementTypeFactory.php
+    - database/factories/TrainingCenterFactory.php
+    - database/factories/PersonFactory.php
+    - database/factories/ResearchGroupFactory.php
+    - database/factories/ResearchGroupMemberFactory.php
+    - database/factories/MincienciasTypologyFactory.php
+    - database/factories/ProductTypeFactory.php
+    - database/factories/ResearchProductFactory.php
+    - database/factories/ResearchProductAuthorFactory.php
+    - database/factories/ResearchProductEvidenceFactory.php
+    - database/factories/ResearchProductDataAuthorizationFactory.php
+    - database/factories/ResearchProductReviewFactory.php
+    - database/factories/ResearchGroupMinuteFactory.php
+    - database/factories/ResearchProductReportFactory.php
+    - database/factories/SeedbedFactory.php
+    - database/factories/MinuteFactory.php
+    - database/factories/FormFactory.php
+    - database/factories/RecordFactory.php
+    - database/factories/EndorsementLetterFactory.php
+    - database/factories/GroupFormatFactory.php
+    - database/factories/SeedbedMemberFactory.php
+    - database/factories/ResearchLineFactory.php
+    - database/factories/TechnologyLineFactory.php
+    - database/factories/ThematicAreaFactory.php
+    - database/factories/ProjectModalityFactory.php
+    - database/factories/ResearchTypeFactory.php
+    - database/factories/SeedbedProjectFactory.php
+    - database/factories/TrainingProgramFactory.php
+    - database/factories/TrainingCohortFactory.php
+    - database/factories/ApprenticeFactory.php
+    - database/factories/SeedbedMemberReportFactory.php
+    - database/factories/SeedbedProgressReportFactory.php
+    - database/factories/ProjectEvidenceFactory.php
+    - database/factories/SeedbedProductFactory.php
+    - database/migrations/2026_02_11_181643_create_entity_positions_table.php
+    - database/migrations/2026_02_11_181644_create_engagement_types_table.php
+    - database/migrations/2026_02_11_181645_create_training_centers_table.php
+    - database/migrations/2026_02_11_181646_create_people_table.php
+    - database/migrations/2026_02_11_181647_create_research_groups_table.php
+    - database/migrations/2026_02_11_181648_create_research_group_members_table.php
+    - database/migrations/2026_02_11_181649_create_minciencias_typologies_table.php
+    - database/migrations/2026_02_11_181650_create_product_types_table.php
+    - database/migrations/2026_02_11_181651_create_research_products_table.php
+    - database/migrations/2026_02_11_181652_create_research_product_authors_table.php
+    - database/migrations/2026_02_11_181653_create_research_product_evidences_table.php
+    - database/migrations/2026_02_11_181654_create_research_product_data_authorizations_table.php
+    - database/migrations/2026_02_11_181655_create_research_product_reviews_table.php
+    - database/migrations/2026_02_11_181656_create_research_group_minutes_table.php
+    - database/migrations/2026_02_11_181657_create_research_product_reports_table.php
+    - database/migrations/2026_02_11_181658_create_seedbeds_table.php
+    - database/migrations/2026_02_11_181659_create_minutes_table.php
+    - database/migrations/2026_02_11_181700_create_forms_table.php
+    - database/migrations/2026_02_11_181701_create_records_table.php
+    - database/migrations/2026_02_11_181702_create_endorsement_letters_table.php
+    - database/migrations/2026_02_11_181703_create_group_formats_table.php
+    - database/migrations/2026_02_11_181704_create_seedbed_members_table.php
+    - database/migrations/2026_02_11_181705_create_research_lines_table.php
+    - database/migrations/2026_02_11_181706_create_technology_lines_table.php
+    - database/migrations/2026_02_11_181707_create_thematic_areas_table.php
+    - database/migrations/2026_02_11_181708_create_project_modalities_table.php
+    - database/migrations/2026_02_11_181709_create_research_types_table.php
+    - database/migrations/2026_02_11_181710_create_seedbed_projects_table.php
+    - database/migrations/2026_02_11_181711_create_training_programs_table.php
+    - database/migrations/2026_02_11_181712_create_training_cohorts_table.php
+    - database/migrations/2026_02_11_181713_create_apprentices_table.php
+    - database/migrations/2026_02_11_181714_create_seedbed_member_reports_table.php
+    - database/migrations/2026_02_11_181715_create_seedbed_progress_reports_table.php
+    - database/migrations/2026_02_11_181716_create_project_evidences_table.php
+    - database/migrations/2026_02_11_181717_create_seedbed_products_table.php
+    - app/Models/EntityPosition.php
+    - app/Models/EngagementType.php
+    - app/Models/TrainingCenter.php
+    - app/Models/Person.php
+    - app/Models/ResearchGroup.php
+    - app/Models/ResearchGroupMember.php
+    - app/Models/MincienciasTypology.php
+    - app/Models/ProductType.php
+    - app/Models/ResearchProduct.php
+    - app/Models/ResearchProductAuthor.php
+    - app/Models/ResearchProductEvidence.php
+    - app/Models/ResearchProductDataAuthorization.php
+    - app/Models/ResearchProductReview.php
+    - app/Models/ResearchGroupMinute.php
+    - app/Models/ResearchProductReport.php
+    - app/Models/Seedbed.php
+    - app/Models/Minute.php
+    - app/Models/Form.php
+    - app/Models/Record.php
+    - app/Models/EndorsementLetter.php
+    - app/Models/GroupFormat.php
+    - app/Models/SeedbedMember.php
+    - app/Models/ResearchLine.php
+    - app/Models/TechnologyLine.php
+    - app/Models/ThematicArea.php
+    - app/Models/ProjectModality.php
+    - app/Models/ResearchType.php
+    - app/Models/SeedbedProject.php
+    - app/Models/TrainingProgram.php
+    - app/Models/TrainingCohort.php
+    - app/Models/Apprentice.php
+    - app/Models/SeedbedMemberReport.php
+    - app/Models/SeedbedProgressReport.php
+    - app/Models/ProjectEvidence.php
+    - app/Models/SeedbedProduct.php
+models:
+    EntityPosition: { name: 'string:100', description: 'text nullable' }
+    EngagementType: { name: 'string:100', description: 'text nullable' }
+    TrainingCenter: { name: 'string:200', code: 'string:50 nullable unique', city: 'string:100 nullable', department: 'string:100 nullable' }
+    Person: { user_id: 'id unique foreign:users onDelete:cascade', document_type: 'enum:cc,ti,passport,foreign_id', document_number: 'string:50 unique', gender: 'enum:male,female,other nullable', phone: 'string:20 nullable', mobile: 'string:20 nullable', entity_position_id: 'id nullable foreign:entity_positions onDelete:null', engagement_type_id: 'id nullable foreign:engagement_types onDelete:null', training_center_id: 'id nullable foreign:training_centers onDelete:null', status: 'enum:active,inactive,suspended default:active', indexes: [{ index: status }] }
+    ResearchGroup: { group_code: 'string:50 unique', name: 'string:200', description: 'text nullable', logo_path: 'string:255 nullable', director_id: 'id foreign:users', training_center_id: 'id nullable foreign:training_centers onDelete:null', status: 'enum:active,inactive,under_review default:active', founded_on: 'date nullable' }
+    ResearchGroupMember: { research_group_id: 'id foreign:research_groups onDelete:cascade', researcher_id: 'id foreign:users', joined_on: date, left_on: 'date nullable', status: 'enum:active,inactive default:active', notes: 'text nullable', indexes: [{ unique: 'research_group_id,researcher_id' }] }
+    MincienciasTypology: { name: 'string:200', description: 'text nullable', code: 'string:50 nullable unique' }
+    ProductType: { name: 'string:200', category: 'string:100 nullable', description: 'text nullable' }
+    ResearchProduct: { investigator_id: 'id foreign:users', research_group_id: 'id foreign:research_groups', project_origin_type: 'enum:sgps,installed_capacity,formative_research,center_initiative,allied_entity_articulation', origin_project_code: 'string:100 nullable', minciencias_typology_id: 'id nullable foreign:minciencias_typologies onDelete:null', product_type_id: 'id nullable foreign:product_types onDelete:null', name: 'string:300', description: 'text nullable', publication_year: 'year nullable', training_program_name: 'string:200 nullable', has_repository: 'boolean default:false', repository_url: 'string:500 nullable', review_status: 'enum:draft,submitted,in_review,approved,rejected default:draft', submitted_at: 'dateTime nullable', reviewed_at: 'dateTime nullable', indexes: [{ index: review_status }, { index: publication_year }] }
+    ResearchProductAuthor: { research_product_id: 'id foreign:research_products onDelete:cascade', name: 'string:200', email: 'string:150 nullable', mobile: 'string:20 nullable', author_order: integer, indexes: [{ unique: 'research_product_id,author_order' }] }
+    ResearchProductEvidence: { meta: { table: research_product_evidences }, research_product_id: 'id foreign:research_products onDelete:cascade', file_path: 'string:500', file_type: 'string:50 nullable', file_size: 'integer nullable' }
+    ResearchProductDataAuthorization: { research_product_id: 'id unique foreign:research_products onDelete:cascade', authorized: boolean, authorized_at: dateTime, notes: 'text nullable' }
+    ResearchProductReview: { research_product_id: 'id foreign:research_products onDelete:cascade', director_id: 'id foreign:users', decision: 'enum:approved,rejected,requires_changes', notes: 'text nullable', reviewed_at: dateTime }
+    ResearchGroupMinute: { research_group_id: 'id foreign:research_groups onDelete:cascade', research_product_id: 'id nullable foreign:research_products onDelete:null', file_path: 'string:500', description: 'text nullable', minute_date: date, minute_type: 'string:100 nullable' }
+    ResearchProductReport: { research_group_id: 'id foreign:research_groups', research_product_id: 'id foreign:research_products', file_path: 'string:500', report_type: 'string:100 nullable', description: 'text nullable', report_date: date }
+    Seedbed: { name: 'string:200', seedbed_code: 'string:50 nullable unique', logo_path: 'string:255 nullable', description: 'text nullable', director_id: 'id nullable foreign:users onDelete:null', training_center_id: 'id nullable foreign:training_centers onDelete:null', status: 'enum:active,inactive,under_review default:active', founded_on: 'date nullable' }
+    Minute: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', document_name: 'string:200 nullable', file_path: 'string:500', description: 'text nullable', document_date: 'date nullable' }
+    Form: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', document_name: 'string:200 nullable', file_path: 'string:500', description: 'text nullable', document_date: 'date nullable' }
+    Record: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', document_name: 'string:200 nullable', file_path: 'string:500', description: 'text nullable', document_date: 'date nullable' }
+    EndorsementLetter: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', document_name: 'string:200 nullable', file_path: 'string:500', description: 'text nullable', document_date: 'date nullable' }
+    GroupFormat: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', document_name: 'string:200 nullable', file_path: 'string:500', description: 'text nullable', document_date: 'date nullable' }
+    SeedbedMember: { seedbed_id: 'id foreign:seedbeds onDelete:cascade', user_id: 'id foreign:users', seedbed_role: 'enum:leader,advisor,collaborator', joined_on: date, left_on: 'date nullable', status: 'enum:active,inactive default:active', indexes: [{ unique: 'seedbed_id,user_id' }] }
+    ResearchLine: { name: 'string:200', description: 'text nullable' }
+    TechnologyLine: { name: 'string:200', description: 'text nullable' }
+    ThematicArea: { name: 'string:100', description: 'text nullable' }
+    ProjectModality: { name: 'string:100', description: 'text nullable' }
+    ResearchType: { name: 'string:100', description: 'text nullable' }
+    SeedbedProject: { name: 'string:300', description: 'text nullable', seedbed_id: 'id foreign:seedbeds', advisor_id: 'id foreign:users', research_line_id: 'id nullable foreign:research_lines onDelete:null', technology_line_id: 'id nullable foreign:technology_lines onDelete:null', thematic_area_id: 'id nullable foreign:thematic_areas onDelete:null', project_modality_id: 'id nullable foreign:project_modalities onDelete:null', research_type_id: 'id nullable foreign:research_types onDelete:null', start_date: 'date nullable', end_date: 'date nullable', status: 'enum:proposal,in_development,finished,on_hold,canceled default:proposal', linked_to_macro_project: 'boolean default:false', macro_project_code: 'string:100 nullable', macro_project_name: 'string:300 nullable' }
+    TrainingProgram: { name: 'string:200', program_code: 'string:50 nullable unique', program_type: 'enum:technologist,technician,complementary,specialization,other', other_program_type: 'string:100 nullable', training_center_id: 'id nullable foreign:training_centers onDelete:null', status: 'enum:active,inactive default:active' }
+    TrainingCohort: { cohort_number: 'string:50 unique', training_program_id: 'id foreign:training_programs', start_date: date, end_date: date, shift: 'string:50 nullable', status: 'enum:active,finished,canceled default:active' }
+    Apprentice: { user_id: 'id nullable foreign:users onDelete:null', full_name: 'string:200', document_type: 'enum:cc,ti,foreign_id', document_number: 'string:50 unique', gender: 'enum:male,female,other nullable', birth_date: 'date nullable', phone: 'string:20 nullable', mobile: 'string:20 nullable', email: 'string:150 nullable', blood_type: 'string:10 nullable', health_provider: 'string:100 nullable', training_cohort_id: 'id foreign:training_cohorts', support_type: 'string:200 nullable', seedbed_id: 'id nullable foreign:seedbeds onDelete:null', seedbed_project_id: 'id nullable foreign:seedbed_projects onDelete:null', project_file_path: 'string:500 nullable', status: 'enum:active,inactive,graduated,withdrawn default:active', admission_date: 'date nullable', withdrawal_date: 'date nullable' }
+    SeedbedMemberReport: { seedbed_id: 'id foreign:seedbeds', apprentice_id: 'id nullable foreign:apprentices onDelete:null', advisor_id: 'id nullable foreign:users onDelete:null', member_type: 'enum:apprentice,advisor,collaborator', period: 'string:50 nullable', notes: 'text nullable', report_date: date }
+    SeedbedProgressReport: { seedbed_id: 'id foreign:seedbeds', leader_id: 'id foreign:users', seedbed_project_id: 'id nullable foreign:seedbed_projects onDelete:null', report_date: date, reported_period: 'string:50 nullable', progress_percentage: 'decimal:5,2 nullable', notes: 'text nullable', recommendations: 'text nullable', status: 'enum:draft,submitted,reviewed,approved default:draft' }
+    ProjectEvidence: { meta: { table: project_evidences }, seedbed_project_id: 'id foreign:seedbed_projects onDelete:cascade', user_id: 'id foreign:users', evidence_name: 'string:200 nullable', file_path: 'string:500', file_type: 'enum:pdf,excel,word,image,video,other', description: 'text nullable' }
+    SeedbedProduct: { seedbed_project_id: 'id foreign:seedbed_projects onDelete:cascade', name: 'string:300', product_type: 'enum:article,presentation,prototype,software,certificate,patent,registration,other', description: 'text nullable', file_path: 'string:500 nullable', obtained_on: 'date nullable', status: 'enum:in_progress,completed,published default:in_progress' }
