@@ -12,8 +12,13 @@
 
         <!-- TailwindCSS for layout, but custom CSS for the design system -->
         <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Alpine.js para interactividad del navbar móvil -->
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         
         <style>
+            /* Alpine.js: hide elements with x-cloak until Alpine initializes */
+            [x-cloak] { display: none !important; }
+
             :root {
                 --emerald-50: #ecfdf5;
                 --emerald-500: #10b981;
@@ -73,6 +78,11 @@
                 opacity: 0.15;
             }
 
+            /* P4 — Hide glow ornaments on mobile to avoid constant repaints */
+            @media (max-width: 767px) {
+                .glow-emerald, .glow-blue { display: none; }
+            }
+
             /* Buttons */
             .btn-primary {
                 background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
@@ -94,20 +104,38 @@
                 border-color: var(--emerald-500);
             }
 
-            /* Animations */
+            /* ─── P3 — Refined Animations ──────────────────────────────────────────── */
             @keyframes fadeInUp {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
+                from { opacity: 0; transform: translateY(12px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+
+            @keyframes softReveal {
+                from { opacity: 0; transform: translateY(8px) scale(0.99); }
+                to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+
+            @keyframes slideInLeft {
+                from { opacity: 0; transform: translateX(-8px); }
+                to   { opacity: 1; transform: translateX(0); }
             }
 
             @keyframes float {
-                0% { transform: translateY(0px); }
-                50% { transform: translateY(-10px); }
+                0%   { transform: translateY(0px); }
+                50%  { transform: translateY(-10px); }
                 100% { transform: translateY(0px); }
             }
 
             .animate-fadeInUp {
-                animation: fadeInUp 0.8s ease-out forwards;
+                animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+
+            .animate-softReveal {
+                animation: softReveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            }
+
+            .animate-slideInLeft {
+                animation: slideInLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             }
 
             .animate-float {
@@ -131,10 +159,10 @@
                 animation: aurora 12s ease infinite;
             }
 
-            /* ─── Roles section: pre-animation state ──────────────────────────────── */
+            /* ─── P3 — Roles section: subtler pre-animation state ─────────────────── */
             .role-card-hidden {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(8px) scale(0.99);
             }
 
             /* ─── Timeline section ────────────────────────────────────────────────── */
@@ -144,13 +172,14 @@
                 transition: height 0.1s linear;
             }
 
+            /* P3 — Timeline: subtler pre-animation */
             .timeline-step-hidden {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateX(-8px);
             }
 
             .timeline-step-visible {
-                animation: fadeInUp 0.6s ease-out forwards;
+                animation: slideInLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             }
 
             .timeline-circle {
@@ -176,6 +205,13 @@
                     linear-gradient(to bottom, rgba(226, 232, 240, 0.25) 1px, transparent 1px);
                 background-size: 40px 40px;
             }
+
+            /* ─── P1 — GPU compositing hints for video ────────────────────────────── */
+            #hero-video {
+                will-change: contents;
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+            }
         </style>
     </head>
     <body class="antialiased selection:bg-emerald-100 relative">
@@ -184,8 +220,8 @@
           - SECCIONES ACTUALES:
             1. Navbar (.glass-nav): Contiene la navegación principal e integración con Livewire/Blade auth. NO MODIFICAR lógicas.
             2. Hero (#hero-section): Sección sticky interactiva y scroll-driven (200vh).
-            3. Roles del sistema: Tarjetas de roles con animación fadeInUp.
-            4. Cómo funciona: Línea de tiempo vertical con pasos.
+            3. Roles del sistema: Tarjetas de roles con animación softReveal.
+            4. Cómo funciona: Línea de tiempo vertical con pasos slideInLeft.
             5. Footer: Información institucional y copyright.
           - CLASES Y ESTILOS: TailwindCSS standard en combinación con colores base:
             · Verde SENA: #39A900
@@ -197,12 +233,13 @@
             · Utilidades que Alpine o Livewire puedan requerir en frontend general.
           ==============================================================
         -->
-        <!-- Glow Ornaments -->
+        <!-- Glow Ornaments (hidden on mobile via CSS media query) -->
         <div class="fixed top-[-10%] left-[-5%] w-[40%] h-[40%] glow-emerald pointer-events-none"></div>
         <div class="fixed bottom-[10%] right-[-5%] w-[40%] h-[40%] glow-blue pointer-events-none"></div>
 
-        <nav class="glass-nav fixed top-0 w-full z-50 py-4">
-            <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <!-- ═══ P2 — Navbar with mobile hamburger (Alpine.js x-data) ═══ -->
+        <nav class="glass-nav fixed top-0 w-full z-50 py-4" x-data="{ open: false }">
+            <div class="max-w-7xl mx-auto px-6 flex items-center justify-between relative">
                 <div class="flex items-center gap-2 text-decoration-none">
                     <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white shadow-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,32 +250,64 @@
                 </div>
                 
                 <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-                    <a href="#" class="hover:text-emerald-600 transition-colors">Convocatorias</a>
-                    <a href="#" class="hover:text-emerald-600 transition-colors">Semilleros</a>
+                    <a href="#roles-section" class="hover:text-emerald-600 transition-colors">Roles</a>
+                    <a href="#workflow-section" class="hover:text-emerald-600 transition-colors">Cómo funciona</a>
                     <a href="#" class="hover:text-emerald-600 transition-colors">Repositorio</a>
                     <a href="#" class="hover:text-emerald-600 transition-colors">Nosotros</a>
                 </div>
 
-                <div class="flex gap-4">
+                <div class="flex items-center gap-3">
                     @if (Route::has('login'))
                         @auth
                             <a href="{{ url('/dashboard') }}" class="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold">Panel de Control</a>
                         @else
-                            <a href="{{ route('login') }}" class="text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-medium transition-colors">Iniciar Sesión</a>
+                            <a href="{{ route('login') }}" class="hidden sm:inline-flex text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-medium transition-colors">Iniciar Sesión</a>
                             @if (Route::has('register'))
                                 <a href="{{ route('register') }}" class="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-sm">Registrarse</a>
                             @endif
                         @endauth
                     @endif
+
+                    <!-- P2 — Hamburger button (mobile only) -->
+                    <button @click="open = !open" class="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" aria-label="Menú">
+                        <svg x-show="!open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg x-show="open" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+            </div>
+
+            <!-- P2 — Mobile dropdown menu -->
+            <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-1"
+                 x-cloak
+                 class="md:hidden absolute top-full left-0 right-0 glass-nav border-t border-slate-200 py-4 px-6 flex flex-col gap-4">
+                <a href="#roles-section" @click="open = false" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Roles del sistema</a>
+                <a href="#workflow-section" @click="open = false" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Cómo funciona</a>
+                <a href="#" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Repositorio</a>
+                <a href="#" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Nosotros</a>
+                @if (Route::has('login'))
+                    @guest
+                        <hr class="border-slate-200">
+                        <a href="{{ route('login') }}" class="text-sm font-semibold text-[#39A900] hover:text-[#2d8500] transition-colors py-1">Iniciar Sesión</a>
+                    @endguest
+                @endif
             </div>
         </nav>
 
-        <section id="hero-section" style="height: 200vh;" class="relative overflow-visible">
+        <!-- ═══ Hero Section ═══ -->
+        <section id="hero-section" style="height: 200vh;" class="relative overflow-visible hidden md:block">
             <!-- Video fijo en background y contenedor pegajoso -->
             <div class="sticky top-0 h-screen overflow-hidden">
                 <!-- Fallback aurora: visible en móvil por defecto, JS lo activa en desktop si video no seekable -->
-                <div id="hero-aurora-fallback" class="block md:hidden absolute inset-0 w-full h-full hero-aurora-bg"></div>
+                <div id="hero-aurora-fallback" class="block md:hidden absolute inset-0 w-full h-full hero-aurora-bg z-[1]"></div>
                 
                 <!-- Video para Desktop/Tablet con object-cover. Controlado sólo por scroll -->
                 <video id="hero-video" class="hidden md:block absolute inset-0 w-full h-full object-cover" 
@@ -247,22 +316,22 @@
                     <source src="{{ asset('images/hero-scrubbing.webm') }}" type="video/webm">
                 </video>
                 
-                <!-- Overlay Gradient Oscuro -->
-                <div class="absolute inset-0 bg-gradient-to-b from-[#0a1628]/80 via-[#0a1628]/60 to-[#0a1628]/40"></div>
+                <!-- P2 — Overlay: lighter on mobile so aurora shows through -->
+                <div class="absolute inset-0 z-[2] bg-gradient-to-b from-[#0a1628]/60 via-[#0a1628]/40 to-[#0a1628]/30 md:from-[#0a1628]/80 md:via-[#0a1628]/60 md:to-[#0a1628]/40"></div>
                 
-                <!-- Contenido -->
-                <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-6">
-                    <h1 class="text-5xl md:text-7xl font-heading font-black leading-tight text-white animate-fadeInUp delay-100 max-w-4xl mx-auto drop-shadow-lg">
+                <!-- P2 — Content: responsive sizing + pt-24 for navbar -->
+                <div class="relative z-10 flex flex-col items-center justify-center h-full text-center px-6 pt-20 md:pt-0">
+                    <h1 class="text-3xl sm:text-5xl md:text-7xl font-heading font-black leading-tight text-white animate-fadeInUp delay-100 max-w-4xl mx-auto drop-shadow-lg">
                         Centraliza la Investigación <span class="text-[#39A900]">SENA</span>
                     </h1>
                     
-                    <p class="text-xl md:text-2xl text-white/70 font-light mt-6 max-w-2xl mx-auto animate-fadeInUp delay-200">
+                    <p class="text-base sm:text-xl md:text-2xl text-white/70 font-light mt-6 max-w-2xl mx-auto animate-fadeInUp delay-200">
                         Gestiona grupos de investigación, semilleros, proyectos y productos académicos desde una sola plataforma institucional.
                     </p>
                     
-                    <div class="flex flex-col sm:flex-row gap-4 mt-10 animate-fadeInUp delay-300">
-                        <!-- CTA Login como se solicitó, conservando route('login') -->
-                        <a href="{{ route('login') }}" class="bg-[#39A900] hover:bg-[#2d8500] text-white px-8 py-4 rounded-full font-bold text-base shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
+                    <div class="flex flex-col sm:flex-row gap-4 mt-10 animate-fadeInUp delay-300 w-full sm:w-auto">
+                        <!-- CTA Login conservando route('login') -->
+                        <a href="{{ route('login') }}" class="w-full sm:w-auto bg-[#39A900] hover:bg-[#2d8500] text-white px-8 py-4 rounded-full font-bold text-base shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
                             Iniciar Sesión
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -272,7 +341,7 @@
                 </div>
 
                 <!-- Indicador de scroll down animado -->
-                <div id="scroll-indicator" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-white/70 animate-bounce transition-opacity duration-300">
+                <div id="scroll-indicator" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 text-white/70 animate-bounce transition-opacity duration-300 z-10">
                     <span class="text-sm font-medium tracking-widest uppercase">Desliza para explorar</span>
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -288,19 +357,19 @@
             <div class="max-w-7xl mx-auto px-6">
 
                 <!-- Encabezado de sección -->
-                <div class="text-center mb-16">
+                <div class="text-center mb-12 md:mb-16">
                     <span class="inline-block text-[#39A900] uppercase tracking-widest text-xs font-semibold mb-3">ROLES DEL SISTEMA</span>
-                    <h2 class="font-heading font-black text-4xl md:text-5xl text-slate-900 mb-4">Un espacio para cada actor</h2>
-                    <p class="text-slate-500 text-lg max-w-2xl mx-auto">
+                    <h2 class="font-heading font-black text-3xl sm:text-4xl md:text-5xl text-slate-900 mb-4">Un espacio para cada actor</h2>
+                    <p class="text-slate-500 text-base md:text-lg max-w-2xl mx-auto">
                         Desde el administrador hasta el asesor, cada rol tiene acceso exacto a lo que necesita.
                     </p>
                 </div>
 
-                <!-- Fila 1: 3 tarjetas -->
+                <!-- P2+P3 — Fila 1: 3 tarjetas, p-6 móvil / p-8 md -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     
                     <!-- TARJETA 1 — Administrador -->
-                    <div class="glass-card rounded-2xl p-8 role-card-hidden transition-transform duration-300 hover:scale-105" data-role-card>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 role-card-hidden transition-transform duration-300 hover:scale-[1.03]" data-role-card>
                         <div class="w-14 h-14 rounded-xl bg-[#39A900]/10 flex items-center justify-center mb-5">
                             <svg class="w-7 h-7 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
@@ -311,7 +380,7 @@
                     </div>
 
                     <!-- TARJETA 2 — Director de Investigación -->
-                    <div class="glass-card rounded-2xl p-8 role-card-hidden transition-transform duration-300 hover:scale-105" data-role-card>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 role-card-hidden transition-transform duration-300 hover:scale-[1.03]" data-role-card>
                         <div class="w-14 h-14 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center mb-5">
                             <svg class="w-7 h-7 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -322,7 +391,7 @@
                     </div>
 
                     <!-- TARJETA 3 — Investigador Asociado -->
-                    <div class="glass-card rounded-2xl p-8 role-card-hidden transition-transform duration-300 hover:scale-105" data-role-card>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 role-card-hidden transition-transform duration-300 hover:scale-[1.03]" data-role-card>
                         <div class="w-14 h-14 rounded-xl bg-[#39A900]/10 flex items-center justify-center mb-5">
                             <svg class="w-7 h-7 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -337,7 +406,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
                     
                     <!-- TARJETA 4 — Director de Semilleros -->
-                    <div class="glass-card rounded-2xl p-8 role-card-hidden transition-transform duration-300 hover:scale-105" data-role-card>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 role-card-hidden transition-transform duration-300 hover:scale-[1.03]" data-role-card>
                         <div class="w-14 h-14 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center mb-5">
                             <svg class="w-7 h-7 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M12 3a8.997 8.997 0 00-7.843 4.582" />
@@ -349,7 +418,7 @@
                     </div>
 
                     <!-- TARJETA 5 — Asesor de Semillero -->
-                    <div class="glass-card rounded-2xl p-8 role-card-hidden transition-transform duration-300 hover:scale-105" data-role-card>
+                    <div class="glass-card rounded-2xl p-6 md:p-8 role-card-hidden transition-transform duration-300 hover:scale-[1.03]" data-role-card>
                         <div class="w-14 h-14 rounded-xl bg-[#39A900]/10 flex items-center justify-center mb-5">
                             <svg class="w-7 h-7 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -373,11 +442,11 @@
             <div class="max-w-7xl mx-auto px-6">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                     
-                    <!-- Columna izquierda — sticky en desktop -->
-                    <div class="lg:sticky lg:top-32 lg:self-start">
+                    <!-- P2 — Columna izquierda: sticky solo en desktop, pb-8 en móvil -->
+                    <div class="pb-8 lg:pb-0 lg:sticky lg:top-32 lg:self-start">
                         <span class="inline-block text-[#39A900] uppercase tracking-widest text-xs font-semibold mb-3">FLUJO DE TRABAJO</span>
-                        <h2 class="font-heading font-black text-4xl text-slate-900 max-w-sm mb-5 leading-tight">Del registro a la validación, todo trazado</h2>
-                        <p class="text-slate-500 text-lg mb-8 max-w-md">
+                        <h2 class="font-heading font-black text-3xl md:text-4xl text-slate-900 max-w-sm mb-5 leading-tight">Del registro a la validación, todo trazado</h2>
+                        <p class="text-slate-500 text-base md:text-lg mb-8 max-w-md">
                             Cada proyecto y producto sigue un camino claro desde su creación hasta su aprobación institucional.
                         </p>
                         <a href="{{ route('login') }}" class="btn-secondary inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-slate-700">
@@ -449,7 +518,7 @@
         </section>
 
         <footer class="py-12 border-t border-slate-200">
-            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                 <div class="flex items-center gap-2">
                     <span class="font-heading font-bold text-sm tracking-tight text-slate-900">RED <span class="text-emerald-600">INVESTIGACIÓN</span></span>
                     <span class="text-slate-400 mx-2">|</span>
@@ -464,12 +533,13 @@
         <script>
         document.addEventListener('DOMContentLoaded', () => {
             // ════════════════════════════════════════════════════════════════════════
-            //  SCROLL-DRIVEN VIDEO — BLOB PRELOAD STRATEGY
-            //  Fetches the entire MP4 into memory so seeking works regardless of
-            //  whether the server supports HTTP Range Requests.
+            //  SCROLL-DRIVEN VIDEO — BLOB PRELOAD + LERP STRATEGY
+            //  P1: Lerp smoothing + adaptive throttle for Brave compatibility
+            //  P4: Skip video setup on mobile to save resources
             //  Cambiar a false en producción para silenciar toda la consola.
             // ════════════════════════════════════════════════════════════════════════
             const DEBUG_MODE = true;
+            const IS_MOBILE  = window.innerWidth < 768;
 
             const log   = (...args) => { if (DEBUG_MODE) console.log(...args); };
             const warn  = (...args) => { if (DEBUG_MODE) console.warn(...args); };
@@ -481,211 +551,254 @@
             const scrollIndicator = document.getElementById('scroll-indicator');
             const auroraFallback  = document.getElementById('hero-aurora-fallback');
 
-            if (!video || !heroSection) {
-                warn('⚠️ Elementos hero-video o hero-section no encontrados. Scrubbing desactivado.');
-                return;
-            }
+            // P4 — On mobile, skip video entirely (aurora handles it via CSS)
+            if (IS_MOBILE || !video || !heroSection) {
+                if (IS_MOBILE) log('📱 Móvil detectado — scrubbing de video desactivado, usando aurora CSS.');
+                else warn('⚠️ Elementos hero-video o hero-section no encontrados.');
 
-            // ─── FALLBACK: mostrar aurora en escritorio y ocultar video ──────────────
-            const activateFallback = () => {
-                warn('🌌 Activando fallback aurora en TODOS los breakpoints.');
-                video.style.display = 'none';
-                if (auroraFallback) {
-                    auroraFallback.classList.remove('md:hidden');
-                    auroraFallback.classList.add('block');
+                // Still handle scroll indicator on mobile
+                if (scrollIndicator && heroSection) {
+                    window.addEventListener('scroll', () => {
+                        const fraction = heroSection.offsetHeight > 0
+                            ? Math.min(window.scrollY / (heroSection.offsetHeight - window.innerHeight), 1)
+                            : 0;
+                        scrollIndicator.style.opacity = fraction > 0.05 ? '0' : '1';
+                        scrollIndicator.style.pointerEvents = fraction > 0.05 ? 'none' : 'auto';
+                    }, { passive: true });
                 }
-            };
+            } else {
+                // ═══ DESKTOP VIDEO SCRUBBING ═══
 
-            // ─── THROTTLE CON rAF ───────────────────────────────────────────────────
-            let ticking     = false;
-            let seekChecks  = 0;
-            let seekFailed  = false;
-            let scrollLogs  = 0;
-
-            // ─── ACTUALIZAR VIDEO SEGÚN POSICIÓN DE SCROLL ──────────────────────────
-            const updateVideoTime = () => {
-                if (video.readyState < 1 || seekFailed) return;
-
-                const scrollTop      = window.scrollY;
-                const heroOffsetTop  = heroSection.offsetTop;
-                const relativeScroll = Math.max(0, scrollTop - heroOffsetTop);
-                const maxScroll      = heroSection.offsetHeight - window.innerHeight;
-                const scrollFraction = maxScroll > 0
-                    ? Math.min(relativeScroll / maxScroll, 1)
-                    : 0;
-
-                const targetTime = video.duration * scrollFraction;
-                video.currentTime = targetTime;
-
-                // ─── DETECCIÓN AUTOMÁTICA DE VIDEO NO-SEEKABLE ──────────────────────
-                if (scrollFraction > 0.05 && seekChecks < 3) {
-                    seekChecks++;
-                    setTimeout(() => {
-                        const diff = Math.abs(video.currentTime - targetTime);
-                        if (diff > 0.5) {
-                            warn(`⚠️ Seek check ${seekChecks}/3: target=${targetTime.toFixed(2)}, actual=${video.currentTime.toFixed(2)}, diff=${diff.toFixed(2)}`);
-                        }
-                        if (seekChecks >= 3 && Math.abs(video.currentTime) < 0.01 && targetTime > 0.1) {
-                            error('❌ Video no-seekable detectado tras 3 intentos. currentTime no cambió.');
-                            seekFailed = true;
-                            activateFallback();
-                        }
-                    }, 300);
-                }
-
-                if (scrollLogs < 5) {
-                    log(`🎞 Scroll: fraction=${scrollFraction.toFixed(3)}, target=${targetTime.toFixed(3)}, actual=${video.currentTime.toFixed(3)}, readyState=${video.readyState}`);
-                    scrollLogs++;
-                    if (scrollLogs === 5) log('(logs de scroll pausados para no saturar la consola)');
-                }
-
-                if (scrollIndicator) {
-                    scrollIndicator.style.opacity       = scrollFraction > 0.05 ? '0' : '1';
-                    scrollIndicator.style.pointerEvents = scrollFraction > 0.05 ? 'none' : 'auto';
-                }
-            };
-
-            // ─── HANDLER DE SCROLL CON rAF-THROTTLE ─────────────────────────────────
-            const onScroll = () => {
-                if (!ticking) {
-                    requestAnimationFrame(() => {
-                        updateVideoTime();
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            };
-
-            // ─── SETUP: registrar scroll SOLO cuando metadata disponible ────────────
-            const setupScrollVideo = () => {
-                video.pause();
-
-                log('✅ Metadata cargada');
-                log('⏱ Duración total:', video.duration, 'segundos');
-                log('📐 Dimensiones:', video.videoWidth, 'x', video.videoHeight);
-                log('🎞 readyState:', video.readyState);
-
-                // ─── Verificar seekable ranges ──────────────────────────────────────
-                if (video.seekable.length === 0) {
-                    warn('⚠️ Seekable range vacío al cargar metadata. Esperando más datos...');
-                    // Dar una segunda oportunidad: esperar a que haya datos suficientes
-                    video.addEventListener('progress', function onProgress() {
-                        if (video.seekable.length > 0) {
-                            video.removeEventListener('progress', onProgress);
-                            log('📍 Seekable range (tras progress):', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
-                            finishSetup();
-                        }
-                    });
-                    // Timeout: si después de 3s sigue sin seekable, fallback
-                    setTimeout(() => {
-                        if (video.seekable.length === 0 && !seekFailed) {
-                            error('❌ Video sigue sin seekable ranges tras esperar datos adicionales.');
-                            seekFailed = true;
-                            activateFallback();
-                        }
-                    }, 3000);
-                    return;
-                }
-
-                log('📍 Seekable range:', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
-                finishSetup();
-            };
-
-            const finishSetup = () => {
-                // Precarga: forzar decodificación del primer frame
-                video.currentTime = 0.001;
-
-                // Test de seek automático al 50%
-                setTimeout(() => {
-                    const testTarget = video.duration * 0.5;
-                    video.currentTime = testTarget;
-                    log('🧪 Test seek al 50%: target =', testTarget.toFixed(2));
-                    setTimeout(() => {
-                        log('🖼 currentTime real tras seek:', video.currentTime.toFixed(2));
-                        log('⚡ seekable:', video.seekable.length > 0
-                            ? `${video.seekable.start(0).toFixed(2)} → ${video.seekable.end(0).toFixed(2)}`
-                            : 'NO SEEKABLE ❌');
-                        video.currentTime = 0;
-                    }, 500);
-                }, 200);
-
-                // Registrar scroll listener
-                window.addEventListener('scroll', onScroll, { passive: true });
-                updateVideoTime();
-            };
-
-            // ════════════════════════════════════════════════════════════════════════
-            //  BLOB PRELOAD — descargar el MP4 completo y asignar como blob URL.
-            //  Esto garantiza seekability completa sin depender de Range Requests
-            //  del servidor (Laragon/Apache puede no servirlos correctamente).
-            // ════════════════════════════════════════════════════════════════════════
-            const MP4_URL = '{{ asset("images/hero-v2.mp4") }}';
-            const WEBM_URL = '{{ asset("images/hero-scrubbing.webm") }}';
-
-            log('🔄 Iniciando descarga blob del video:', MP4_URL);
-
-            fetch(MP4_URL)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.blob();
-                })
-                .then(blob => {
-                    log('✅ Blob descargado:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
-                    const blobUrl = URL.createObjectURL(blob);
-                    
-                    // Limpiar <source> tags existentes y asignar blob directamente
-                    while (video.firstChild) video.removeChild(video.firstChild);
-                    video.src = blobUrl;
-                    video.load();
-
-                    // Esperar metadata del blob
-                    const onMeta = () => {
-                        log('✅ Blob video metadata lista');
-                        setupScrollVideo();
-                    };
-                    if (video.readyState >= 1) {
-                        onMeta();
-                    } else {
-                        video.addEventListener('loadedmetadata', onMeta, { once: true });
+                // ─── FALLBACK: mostrar aurora en escritorio y ocultar video ─────────
+                const activateFallback = () => {
+                    warn('🌌 Activando fallback aurora en TODOS los breakpoints.');
+                    video.style.display = 'none';
+                    if (auroraFallback) {
+                        auroraFallback.classList.remove('md:hidden');
+                        auroraFallback.classList.add('block');
                     }
-                })
-                .catch(err => {
-                    error('❌ Fetch blob falló:', err.message, '— intentando carga directa con <source>');
-                    // Fallback: cargar con los <source> tags originales (puede funcionar
-                    // si el servidor está sirviendo Range headers correctamente)
-                    video.load();
-                    if (video.readyState >= 1) {
-                        setupScrollVideo();
-                    } else {
-                        video.addEventListener('loadedmetadata', setupScrollVideo, { once: true });
+                };
+
+                // ─── P1 — ADAPTIVE THROTTLE + LERP STATE ────────────────────────────
+                let seekFailed    = false;
+                let seekChecks    = 0;
+                let scrollLogs    = 0;
+                let currentTarget = 0;       // Lerp: smoothed target time
+                let lerpAnimId    = null;     // rAF id for lerp loop
+                let lastSeekTime  = 0;        // performance.now() of last seek
+                let seekDurations = [];       // Track seek performance
+                let minInterval   = 32;       // P1: start at ~30fps, may auto-downgrade
+
+                // ─── P1 — LERP ANIMATION LOOP ───────────────────────────────────────
+                // Instead of seeking directly on every scroll, maintain a smooth
+                // interpolation loop that gradually approaches the target time.
+                let rawTarget = 0;
+
+                const lerpLoop = () => {
+                    if (seekFailed || video.readyState < 1) {
+                        lerpAnimId = requestAnimationFrame(lerpLoop);
+                        return;
+                    }
+
+                    // Lerp: ease towards rawTarget
+                    const diff = rawTarget - currentTarget;
+                    if (Math.abs(diff) > 0.001) {
+                        currentTarget += diff * 0.15;
+
+                        // Throttle actual seeks by minInterval
+                        const now = performance.now();
+                        if (now - lastSeekTime >= minInterval) {
+                            const seekStart = now;
+                            video.currentTime = currentTarget;
+                            lastSeekTime = now;
+
+                            // P1: Track seek performance for adaptive throttle
+                            if (seekDurations.length < 20) {
+                                requestAnimationFrame(() => {
+                                    const seekEnd = performance.now();
+                                    seekDurations.push(seekEnd - seekStart);
+                                    if (seekDurations.length === 10) {
+                                        const avg = seekDurations.reduce((a, b) => a + b, 0) / seekDurations.length;
+                                        if (avg > 50) {
+                                            minInterval = 64;
+                                            warn(`⚡ Seek avg ${avg.toFixed(1)}ms > 50ms — reduciendo a ~15fps para performance`);
+                                        } else {
+                                            log(`⚡ Seek avg ${avg.toFixed(1)}ms — manteniendo ~30fps`);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    lerpAnimId = requestAnimationFrame(lerpLoop);
+                };
+
+                // ─── ACTUALIZAR TARGET SEGÚN POSICIÓN DE SCROLL ─────────────────────
+                const updateVideoTime = () => {
+                    if (video.readyState < 1 || seekFailed) return;
+
+                    const scrollTop      = window.scrollY;
+                    const heroOffsetTop  = heroSection.offsetTop;
+                    const relativeScroll = Math.max(0, scrollTop - heroOffsetTop);
+                    const maxScroll      = heroSection.offsetHeight - window.innerHeight;
+                    const scrollFraction = maxScroll > 0
+                        ? Math.min(relativeScroll / maxScroll, 1)
+                        : 0;
+
+                    rawTarget = video.duration * scrollFraction;
+
+                    // ─── DETECCIÓN AUTOMÁTICA DE VIDEO NO-SEEKABLE ──────────────────
+                    if (scrollFraction > 0.05 && seekChecks < 3) {
+                        seekChecks++;
+                        setTimeout(() => {
+                            if (seekChecks >= 3 && Math.abs(video.currentTime) < 0.01 && rawTarget > 0.1) {
+                                error('❌ Video no-seekable detectado tras 3 intentos. currentTime no cambió.');
+                                seekFailed = true;
+                                if (lerpAnimId) cancelAnimationFrame(lerpAnimId);
+                                activateFallback();
+                            }
+                        }, 300);
+                    }
+
+                    if (scrollLogs < 5) {
+                        log(`🎞 Scroll: fraction=${scrollFraction.toFixed(3)}, target=${rawTarget.toFixed(3)}, actual=${video.currentTime.toFixed(3)}, readyState=${video.readyState}`);
+                        scrollLogs++;
+                        if (scrollLogs === 5) log('(logs de scroll pausados para no saturar la consola)');
+                    }
+
+                    if (scrollIndicator) {
+                        scrollIndicator.style.opacity       = scrollFraction > 0.05 ? '0' : '1';
+                        scrollIndicator.style.pointerEvents = scrollFraction > 0.05 ? 'none' : 'auto';
+                    }
+                };
+
+                // ─── HANDLER DE SCROLL ───────────────────────────────────────────────
+                // P1: Use passive scroll listener, the lerp loop handles the actual
+                // video.currentTime updates at a controlled rate.
+                const onScroll = () => {
+                    updateVideoTime();
+                };
+
+                // ─── SETUP: registrar scroll SOLO cuando metadata disponible ────────
+                const setupScrollVideo = () => {
+                    video.pause();
+
+                    log('✅ Metadata cargada');
+                    log('⏱ Duración total:', video.duration, 'segundos');
+                    log('📐 Dimensiones:', video.videoWidth, 'x', video.videoHeight);
+                    log('🎞 readyState:', video.readyState);
+
+                    // Verificar seekable ranges
+                    if (video.seekable.length === 0) {
+                        warn('⚠️ Seekable range vacío al cargar metadata. Esperando más datos...');
+                        video.addEventListener('progress', function onProgress() {
+                            if (video.seekable.length > 0) {
+                                video.removeEventListener('progress', onProgress);
+                                log('📍 Seekable range (tras progress):', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
+                                finishSetup();
+                            }
+                        });
+                        setTimeout(() => {
+                            if (video.seekable.length === 0 && !seekFailed) {
+                                error('❌ Video sigue sin seekable ranges tras esperar datos adicionales.');
+                                seekFailed = true;
+                                activateFallback();
+                            }
+                        }, 3000);
+                        return;
+                    }
+
+                    log('📍 Seekable range:', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
+                    finishSetup();
+                };
+
+                const finishSetup = () => {
+                    video.currentTime = 0.001;
+
+                    // Test de seek al 50%
+                    setTimeout(() => {
+                        const testTarget = video.duration * 0.5;
+                        video.currentTime = testTarget;
+                        log('🧪 Test seek al 50%: target =', testTarget.toFixed(2));
+                        setTimeout(() => {
+                            log('🖼 currentTime real tras seek:', video.currentTime.toFixed(2));
+                            log('⚡ seekable:', video.seekable.length > 0
+                                ? `${video.seekable.start(0).toFixed(2)} → ${video.seekable.end(0).toFixed(2)}`
+                                : 'NO SEEKABLE ❌');
+                            video.currentTime = 0;
+                            currentTarget = 0;
+                        }, 500);
+                    }, 200);
+
+                    // Registrar scroll listener + start lerp loop
+                    window.addEventListener('scroll', onScroll, { passive: true });
+                    lerpAnimId = requestAnimationFrame(lerpLoop);
+                    updateVideoTime();
+                };
+
+                // ═══ BLOB PRELOAD ═══
+                const MP4_URL  = '{{ asset("images/hero-v2.mp4") }}';
+                const WEBM_URL = '{{ asset("images/hero-scrubbing.webm") }}';
+
+                log('🔄 Iniciando descarga blob del video:', MP4_URL);
+
+                fetch(MP4_URL)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        log('✅ Blob descargado:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
+                        const blobUrl = URL.createObjectURL(blob);
+                        while (video.firstChild) video.removeChild(video.firstChild);
+                        video.src = blobUrl;
+                        video.load();
+
+                        const onMeta = () => {
+                            log('✅ Blob video metadata lista');
+                            setupScrollVideo();
+                        };
+                        if (video.readyState >= 1) {
+                            onMeta();
+                        } else {
+                            video.addEventListener('loadedmetadata', onMeta, { once: true });
+                        }
+                    })
+                    .catch(err => {
+                        error('❌ Fetch blob falló:', err.message, '— intentando carga directa con <source>');
+                        video.load();
+                        if (video.readyState >= 1) {
+                            setupScrollVideo();
+                        } else {
+                            video.addEventListener('loadedmetadata', setupScrollVideo, { once: true });
+                        }
+                    });
+
+                // Timeout global
+                setTimeout(() => {
+                    if (video.readyState < 1 && !seekFailed) {
+                        error('❌ Video no cargó metadata en 10 segundos. Activando fallback.');
+                        seekFailed = true;
+                        activateFallback();
+                    }
+                }, 10000);
+
+                // Fix Safari / WebKit
+                document.addEventListener('touchstart', () => { video.load(); }, { once: true });
+
+                // Cleanup
+                window.addEventListener('beforeunload', () => {
+                    window.removeEventListener('scroll', onScroll);
+                    if (lerpAnimId) cancelAnimationFrame(lerpAnimId);
+                    if (video.src && video.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(video.src);
                     }
                 });
-
-            // ─── TIMEOUT GLOBAL: si nada funciona en 10s → fallback aurora ──────────
-            setTimeout(() => {
-                if (video.readyState < 1 && !seekFailed) {
-                    error('❌ Video no cargó metadata en 10 segundos. Activando fallback.');
-                    seekFailed = true;
-                    activateFallback();
-                }
-            }, 10000);
-
-            // ─── FIX SAFARI / WEBKIT ────────────────────────────────────────────────
-            document.addEventListener('touchstart', () => {
-                video.load();
-            }, { once: true });
-
-            // ─── CLEANUP al salir de la página ──────────────────────────────────────
-            window.addEventListener('beforeunload', () => {
-                window.removeEventListener('scroll', onScroll);
-                // Liberar blob URL si existe
-                if (video.src && video.src.startsWith('blob:')) {
-                    URL.revokeObjectURL(video.src);
-                }
-            });
+            }
 
             // ════════════════════════════════════════════════════════════════════════
-            //  INTERSECTION OBSERVER — ROLES CARDS FADE-IN
+            //  P3 — INTERSECTION OBSERVER — ROLES CARDS (softReveal)
             // ════════════════════════════════════════════════════════════════════════
             const roleCards = document.querySelectorAll('[data-role-card]');
             if (roleCards.length) {
@@ -693,21 +806,20 @@
                     entries.forEach((entry) => {
                         if (entry.isIntersecting) {
                             entry.target.classList.remove('role-card-hidden');
-                            entry.target.classList.add('animate-fadeInUp');
+                            entry.target.classList.add('animate-softReveal');
                             roleObserver.unobserve(entry.target);
                         }
                     });
-                }, { threshold: 0.15 });
+                }, { threshold: 0.05 });
 
                 roleCards.forEach((card, index) => {
-                    // Escalonar delays: 100ms, 200ms, 300ms...
-                    card.style.animationDelay = `${(index + 1) * 100}ms`;
+                    card.style.animationDelay = `${(index + 1) * 60}ms`;
                     roleObserver.observe(card);
                 });
             }
 
             // ════════════════════════════════════════════════════════════════════════
-            //  INTERSECTION OBSERVER — TIMELINE STEPS FADE-IN
+            //  P3 — INTERSECTION OBSERVER — TIMELINE STEPS (slideInLeft)
             // ════════════════════════════════════════════════════════════════════════
             const timelineSteps = document.querySelectorAll('[data-timeline-step]');
             if (timelineSteps.length) {
@@ -719,37 +831,38 @@
                             stepObserver.unobserve(entry.target);
                         }
                     });
-                }, { threshold: 0.2 });
+                }, { threshold: 0.08 });
 
                 timelineSteps.forEach((step, index) => {
-                    step.style.animationDelay = `${(index + 1) * 100}ms`;
+                    step.style.animationDelay = `${(index + 1) * 60}ms`;
                     stepObserver.observe(step);
                 });
             }
 
             // ════════════════════════════════════════════════════════════════════════
-            //  TIMELINE LINE FILL — Progressive draw on scroll
+            //  TIMELINE LINE FILL — Progressive draw on scroll (with rAF)
             // ════════════════════════════════════════════════════════════════════════
             const timelineFill = document.getElementById('timeline-fill');
             const timelineContainer = document.getElementById('timeline-container');
             if (timelineFill && timelineContainer) {
+                let tlTicking = false;
                 const updateTimelineFill = () => {
                     const rect = timelineContainer.getBoundingClientRect();
-                    const containerTop = rect.top;
-                    const containerHeight = rect.height;
-                    const viewportHeight = window.innerHeight;
-
-                    // Calcular cuánto del contenedor ya pasó por el viewport
-                    const scrolledPast = viewportHeight - containerTop;
-                    const fraction = Math.max(0, Math.min(scrolledPast / containerHeight, 1));
-                    timelineFill.style.height = (fraction * containerHeight) + 'px';
+                    const scrolledPast = window.innerHeight - rect.top;
+                    const fraction = Math.max(0, Math.min(scrolledPast / rect.height, 1));
+                    timelineFill.style.height = (fraction * rect.height) + 'px';
                 };
 
                 window.addEventListener('scroll', () => {
-                    requestAnimationFrame(updateTimelineFill);
+                    if (!tlTicking) {
+                        requestAnimationFrame(() => {
+                            updateTimelineFill();
+                            tlTicking = false;
+                        });
+                        tlTicking = true;
+                    }
                 }, { passive: true });
 
-                // Ejecutar una vez al cargar
                 updateTimelineFill();
             }
         });
