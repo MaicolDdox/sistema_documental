@@ -1,52 +1,63 @@
-<x-layouts::auth>
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Reset password')" :description="__('Please enter your new password below')" />
-
-        <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
-
-        <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-6">
-            @csrf
-            <!-- Token -->
-            <input type="hidden" name="token" value="{{ request()->route('token') }}">
-
-            <!-- Email Address -->
-            <flux:input
-                name="email"
-                value="{{ request('email') }}"
-                :label="__('Email')"
-                type="email"
-                required
-                autocomplete="email"
-            />
-
-            <!-- Password -->
-            <flux:input
-                name="password"
-                :label="__('Password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Password')"
-                viewable
-            />
-
-            <!-- Confirm Password -->
-            <flux:input
-                name="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                :placeholder="__('Confirm password')"
-                viewable
-            />
-
-            <div class="flex items-center justify-end">
-                <flux:button type="submit" variant="primary" class="w-full" data-test="reset-password-button">
-                    {{ __('Reset password') }}
-                </flux:button>
-            </div>
-        </form>
+<div class="w-full">
+    <!-- Encabezado -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-900 mb-1">Restablecer contraseña</h1>
+        <p class="text-slate-500 text-sm">Ingresa tu nueva contraseña a continuación</p>
     </div>
-</x-layouts::auth>
+
+    <!-- Session Status -->
+    @if (session('status'))
+        <div class="mb-4 text-sm text-green-600 text-center">{{ session('status') }}</div>
+    @endif
+
+    <form method="POST" action="{{ route('password.update') }}">
+        @csrf
+        <input type="hidden" name="token" value="{{ request()->route('token') }}">
+
+        <!-- Email -->
+        <div class="mb-4">
+            <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Email
+            </label>
+            <input type="email" name="email" id="email"
+                   value="{{ request('email') }}"
+                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5
+                          text-sm text-slate-800 bg-slate-50 transition-all" required readonly>
+            @error('email')
+                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Nueva contraseña -->
+        <div class="mb-4">
+            <label for="password" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Nueva contraseña
+            </label>
+            <input type="password" name="password" id="password"
+                   placeholder="••••••••"
+                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5
+                          text-sm text-slate-800 transition-all" required autofocus>
+            @error('password')
+                <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Confirmar contraseña -->
+        <div class="mb-6">
+            <label for="password_confirmation" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Confirmar contraseña
+            </label>
+            <input type="password" name="password_confirmation" id="password_confirmation"
+                   placeholder="••••••••"
+                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5
+                          text-sm text-slate-800 transition-all" required>
+        </div>
+
+        <!-- Botón submit -->
+        <button type="submit"
+                class="btn-sgd w-full text-white font-semibold py-2.5 px-4
+                       rounded-lg text-sm cursor-pointer">
+            Restablecer contraseña
+        </button>
+    </form>
+</div>
