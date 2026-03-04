@@ -1,6 +1,6 @@
 <x-layouts::auth>
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Iniciar sesión')" :description="__('Ingresa tu email o email institucional y contraseña')" />
+        <x-auth-header :title="__('Iniciar sesión')" :description="__('Ingresa tu tipo y número de documento con tu contraseña')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -8,16 +8,28 @@
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
             @csrf
 
-            <!-- Email / Email institucional -->
+            <!-- Tipo de documento -->
+            <div>
+                <flux:select name="tipo_documento" :label="__('Tipo de documento')" required autofocus>
+                    <option value="">Selecciona un tipo...</option>
+                    <option value="cedula ciudadana" {{ old('tipo_documento') === 'cedula ciudadana' ? 'selected' : '' }}>Cédula de Ciudadanía</option>
+                    <option value="documento identidad" {{ old('tipo_documento') === 'documento identidad' ? 'selected' : '' }}>Documento de Identidad</option>
+                    <option value="pasaporte" {{ old('tipo_documento') === 'pasaporte' ? 'selected' : '' }}>Pasaporte</option>
+                    <option value="cedula extrangera" {{ old('tipo_documento') === 'cedula extrangera' ? 'selected' : '' }}>Cédula Extranjera</option>
+                </flux:select>
+                @error('tipo_documento')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Número de documento -->
             <flux:input
-                name="email"
-                :label="__('Email / Email institucional')"
-                :value="old('email')"
-                type="text"
+                name="numero_documento"
+                :label="__('Número de documento')"
+                :value="old('numero_documento')"
+                type="number"
                 required
-                autofocus
-                autocomplete="username"
-                placeholder="correo@ejemplo.com"
+                placeholder="Ej: 34327134"
             />
 
             <!-- Password -->

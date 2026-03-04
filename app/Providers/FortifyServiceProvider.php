@@ -6,14 +6,12 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\EstadoEnum;
 use App\Http\Responses\LoginResponse;
-use App\Models\Person;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Fortify;
@@ -63,37 +61,33 @@ class FortifyServiceProvider extends ServiceProvider
 
     /**
      * Configure custom authentication logic:
-     * - Login with users.email OR people.email_institucional
+     * - Login with tipo_documento + numero_documento
      * - Block inactive users BEFORE checking password
      */
     private function configureAuthentication(): void
     {
         Fortify::authenticateUsing(function (Request $request) {
-            $loginField = $request->input('email');
+            $tipoDoc   = $request->input('tipo_documento');
+            $numDoc    = $request->input('numero_documento');
 
-            // 1. Buscar primero por users.email
-            $user = User::where('email', $loginField)->first();
+            // 1. Buscar usuario por tipo_documento + numero_documento
+            $user = User::where('tipo_documento', $tipoDoc)
+                        ->where('numero_documento', $numDoc)
+                        ->first();
 
-            // 2. Si no se encuentra, buscar por people.email_institucional
-            if (! $user) {
-                $person = Person::where('email_institucional', $loginField)->first();
-                $user = $person?->user;
-            }
-
-            // 3. Si no existe el usuario, retornar null (Fortify muestra error genérico)
+            // 2. Si no existe el usuario, retornar null
             if (! $user) {
                 return null;
             }
 
-            // 4. Verificar estado ANTES de la contraseña
-            //    Si inactivo, lanzar error SIN revelar si la contraseña es correcta
+            // 3. Verificar estado ANTES de la contraseña
             if ($user->estado !== EstadoEnum::Activo) {
                 throw ValidationException::withMessages([
-                    'email' => [__('Tu cuenta no está activa. Contacta al administrador.')],
+                    'numero_documento' => [__('Tu cuenta no está activa. Contacta al administrador.')],
                 ]);
             }
 
-            // 5. Verificar contraseña
+            // 4. Verificar contraseña
             if (Hash::check($request->input('password'), $user->password)) {
                 return $user;
             }
@@ -112,7 +106,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = $request->input('numero_documento') . '|' . $request->ip();
 
             return Limit::perMinute(5)->by($throttleKey);
         });
