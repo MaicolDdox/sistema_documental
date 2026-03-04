@@ -214,7 +214,7 @@
             }
         </style>
     </head>
-    <body class="antialiased selection:bg-emerald-100 relative">
+    <body class="antialiased selection:bg-emerald-100 relative" x-data="{ showLogin: {{ $errors->any() ? 'true' : 'false' }} }" @keydown.escape.window="showLogin = false">
         <!-- 
           ========== DOCUMENTACIÓN DEL DISEÑO Y RESTRICCIONES ==========
           - SECCIONES ACTUALES:
@@ -257,16 +257,11 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    @if (Route::has('login'))
-                        @auth
-                            <a href="{{ url('/dashboard') }}" class="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold">Panel de Control</a>
-                        @else
-                            <a href="{{ route('login') }}" class="hidden sm:inline-flex text-slate-600 hover:text-slate-900 px-4 py-2 text-sm font-medium transition-colors">Iniciar Sesión</a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-sm">Registrarse</a>
-                            @endif
-                        @endauth
-                    @endif
+                    @auth
+                        <a href="{{ url('/dashboard') }}" class="btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold">Panel de Control</a>
+                    @else
+                        <button @click="showLogin = true" class="hidden sm:inline-flex btn-primary text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-sm cursor-pointer">Ingresar al Sistema</button>
+                    @endauth
 
                     <!-- P2 — Hamburger button (mobile only) -->
                     <button @click="open = !open" class="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors" aria-label="Menú">
@@ -293,12 +288,10 @@
                 <a href="#workflow-section" @click="open = false" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Cómo funciona</a>
                 <a href="#" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Repositorio</a>
                 <a href="#" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors py-1">Nosotros</a>
-                @if (Route::has('login'))
-                    @guest
-                        <hr class="border-slate-200">
-                        <a href="{{ route('login') }}" class="text-sm font-semibold text-[#39A900] hover:text-[#2d8500] transition-colors py-1">Iniciar Sesión</a>
-                    @endguest
-                @endif
+                @guest
+                    <hr class="border-slate-200">
+                    <button @click="showLogin = true; open = false" class="text-left text-sm font-semibold text-[#39A900] hover:text-[#2d8500] transition-colors py-1 cursor-pointer">Ingresar al Sistema</button>
+                @endguest
             </div>
         </nav>
 
@@ -330,13 +323,22 @@
                     </p>
                     
                     <div class="flex flex-col sm:flex-row gap-4 mt-10 animate-fadeInUp delay-300 w-full sm:w-auto">
-                        <!-- CTA Login conservando route('login') -->
-                        <a href="{{ route('login') }}" class="w-full sm:w-auto bg-[#39A900] hover:bg-[#2d8500] text-white px-8 py-4 rounded-full font-bold text-base shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
-                            Iniciar Sesión
+                        <!-- CTA Login: abre modal -->
+                        @guest
+                        <button @click="showLogin = true" class="w-full sm:w-auto bg-[#39A900] hover:bg-[#2d8500] text-white px-8 py-4 rounded-full font-bold text-base shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2 cursor-pointer">
+                            Ingresar al Sistema
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
+                        </button>
+                        @else
+                        <a href="{{ url('/dashboard') }}" class="w-full sm:w-auto bg-[#39A900] hover:bg-[#2d8500] text-white px-8 py-4 rounded-full font-bold text-base shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
+                            Panel de Control
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
                         </a>
+                        @endguest
                     </div>
                 </div>
 
@@ -449,12 +451,21 @@
                         <p class="text-slate-500 text-base md:text-lg mb-8 max-w-md">
                             Cada proyecto y producto sigue un camino claro desde su creación hasta su aprobación institucional.
                         </p>
-                        <a href="{{ route('login') }}" class="btn-secondary inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-slate-700">
-                            Iniciar sesión
+                        @guest
+                        <button @click="showLogin = true" class="btn-secondary inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-slate-700 cursor-pointer">
+                            Ingresar al Sistema
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                        @else
+                        <a href="{{ url('/dashboard') }}" class="btn-secondary inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-slate-700">
+                            Panel de Control
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </a>
+                        @endguest
                     </div>
 
                     <!-- Columna derecha — Línea de tiempo -->
@@ -867,5 +878,100 @@
             }
         });
         </script>
+
+        <!-- ═══ MODAL DE LOGIN (Alpine.js + Fortify POST) ═══ -->
+        <div x-show="showLogin" x-cloak
+             class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showLogin = false"></div>
+
+            <!-- Modal Card -->
+            <div class="relative w-full max-w-md glass-card rounded-2xl p-8 shadow-2xl"
+                 x-show="showLogin"
+                 x-transition:enter="transition ease-out duration-300 delay-100"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 @click.stop>
+
+                <!-- Close button -->
+                <button @click="showLogin = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- Header -->
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white shadow-lg mx-auto mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h2 class="font-heading font-bold text-2xl text-slate-900">Ingresar al Sistema</h2>
+                    <p class="text-slate-500 text-sm mt-1">Ingresa tu email o email institucional</p>
+                </div>
+
+                <!-- Error messages -->
+                @if ($errors->any())
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        @foreach ($errors->all() as $error)
+                            <p class="text-red-600 text-sm">{{ $error }}</p>
+                        @endforeach
+                    </div>
+                @endif
+
+                @if (session('status'))
+                    <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p class="text-green-600 text-sm font-medium">{{ session('status') }}</p>
+                    </div>
+                @endif
+
+                <!-- Login form POST to Fortify -->
+                <form method="POST" action="{{ route('login.store') }}" class="space-y-5">
+                    @csrf
+                    <input type="hidden" name="_from" value="welcome">
+
+                    <!-- Email / Email institucional -->
+                    <div>
+                        <label for="modal-email" class="block text-sm font-medium text-slate-700 mb-1.5">Email / Email institucional</label>
+                        <input id="modal-email" name="email" type="text" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="correo@ejemplo.com"
+                               class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors">
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="modal-password" class="block text-sm font-medium text-slate-700">Contraseña</label>
+                            @if (Route::has('password.request'))
+                                <a href="{{ route('password.request') }}" class="text-xs text-emerald-600 hover:text-emerald-700 font-medium">¿Olvidaste tu contraseña?</a>
+                            @endif
+                        </div>
+                        <input id="modal-password" name="password" type="password" required autocomplete="current-password" placeholder="••••••••"
+                               class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors">
+                    </div>
+
+                    <!-- Remember me -->
+                    <div class="flex items-center gap-2">
+                        <input id="modal-remember" name="remember" type="checkbox" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <label for="modal-remember" class="text-sm text-slate-600">Recordarme</label>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="w-full bg-[#39A900] hover:bg-[#2d8500] text-white py-3 rounded-lg font-bold text-sm shadow-lg transition-all hover:shadow-xl cursor-pointer">
+                        Ingresar
+                    </button>
+                </form>
+            </div>
+        </div>
     </body>
 </html>
