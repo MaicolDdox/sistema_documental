@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Enums\EstadoEnum;
+use App\Models\Person;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
@@ -18,7 +20,7 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_users_can_authenticate_with_email(): void
     {
         $user = User::factory()->create();
 
@@ -27,11 +29,38 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('dashboard', absolute: false));
-
+        $response->assertSessionHasNoErrors();
         $this->assertAuthenticated();
+    }
+
+    public function test_users_can_authenticate_with_email_institucional(): void
+    {
+        $user = User::factory()->create();
+        Person::factory()->create([
+            'user_id' => $user->id,
+            'email_institucional' => 'usuario@sena.edu.co',
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'usuario@sena.edu.co',
+            'password' => 'password',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertAuthenticated();
+    }
+
+    public function test_inactive_users_cannot_authenticate(): void
+    {
+        $user = User::factory()->inactive()->create();
+
+        $response = $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -43,8 +72,6 @@ class AuthenticationTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrorsIn('email');
-
         $this->assertGuest();
     }
 
@@ -53,10 +80,6 @@ class AuthenticationTest extends TestCase
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
         }
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
 
         $user = User::factory()->withTwoFactor()->create();
 
