@@ -14,6 +14,7 @@ class SeedlingFile extends Model
 
     protected $fillable = [
         'seedling_id',
+        'user_id',
         'archivo',
         'url_archivo',
     ];
@@ -25,5 +26,10 @@ class SeedlingFile extends Model
     public function seedling(): BelongsTo
     {
         return $this->belongsTo(Seedling::class, 'seedling_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
