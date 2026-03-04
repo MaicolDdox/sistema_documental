@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Actions\Fortify\SendPasswordResetLink;
 
 // ─── Imports ─────────────────────────────────────────────────────────────────
 use App\Http\Controllers\Web\DepartmentController;
@@ -26,54 +27,74 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// ─── Forgot Password custom (búsqueda dual email) ───────────────────────────
+// Debe definirse ANTES de las rutas de Fortify para tomar precedencia
+Route::post('/forgot-password', SendPasswordResetLink::class)
+    ->middleware(['guest', 'throttle:6,1'])
+    ->name('password.email');
+
+// ─── Dashboard fallback (usuarios sin rol específico) ────────────────────────
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'ensure.active'])
     ->name('dashboard');
 
-// ─── Módulo: Configuración General (Admin) ───────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+// ═══════════════════════════════════════════════════════════════════════════════
+// RUTAS PROTEGIDAS — requieren auth + estado activo
+// ═══════════════════════════════════════════════════════════════════════════════
+Route::middleware(['auth', 'ensure.active'])->group(function () {
 
-    Route::resource('departments', DepartmentController::class)->names('departments');
-    Route::resource('cities', CityController::class)->names('cities');
-    Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
-    Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
-    Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
-    Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
-    Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
-    Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
-    Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');
+    // ─── Módulo: Admin ───────────────────────────────────────────────────────
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-});
+        // Dashboard del admin
+        Route::view('dashboard', 'admin.dashboard')->name('dashboard');
 
-// ─── Módulo: Gestión de Usuarios ─────────────────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+        // Configuración general
+        Route::resource('departments', DepartmentController::class)->names('departments');
+        Route::resource('cities', CityController::class)->names('cities');
+        Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
+        Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
+        Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
+        Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
+        Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
+        Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
+        Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');
 
-    Route::resource('users', UserController::class)->names('users');
-    Route::resource('people', PersonController::class)->names('people');
-    Route::resource('external-advisors', ExternalAdvisorController::class)->names('external-advisors');
+        // Gestión de usuarios (controllers clásicos + Livewire CRUD)
+        Route::resource('users', UserController::class)->names('users');
+        Route::resource('people', PersonController::class)->names('people');
+        Route::resource('external-advisors', ExternalAdvisorController::class)->names('external-advisors');
 
-});
+        // Livewire admin user management
+        Route::livewire('users-manage', \App\Livewire\Admin\Users\UserIndex::class)->name('users.manage');
+        Route::livewire('users-manage/create', \App\Livewire\Admin\Users\UserCreate::class)->name('users.manage.create');
+        Route::livewire('users-manage/{user}/edit', \App\Livewire\Admin\Users\UserEdit::class)->name('users.manage.edit');
+    });
 
-// ─── Módulo: Investigación ───────────────────────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('research')->name('research.')->group(function () {
+    // ─── Módulo: Investigación ───────────────────────────────────────────────
+    Route::middleware(['role:director_investigacion|investigador_asociado|admin'])
+        ->prefix('research')->name('research.')->group(function () {
 
-    Route::resource('groups', ResearchGroupController::class)->names('groups');
-    Route::resource('projects', ProjectController::class)->names('projects');
+        Route::view('dashboard', 'research.dashboard')->name('dashboard');
+        Route::resource('groups', ResearchGroupController::class)->names('groups');
+        Route::resource('projects', ProjectController::class)->names('projects');
+    });
 
-});
+    // ─── Módulo: Semilleros ──────────────────────────────────────────────────
+    Route::middleware(['role:director_semilleros|lider_semillero|asesor|admin'])
+        ->prefix('seedlings')->name('seedlings.')->group(function () {
 
-// ─── Módulo: Semilleros ──────────────────────────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('seedlings')->name('seedlings.')->group(function () {
+        Route::view('dashboard', 'seedlings.dashboard')->name('dashboard');
+        Route::resource('/', SeedlingController::class)->names('index')->parameters(['' => 'seedling']);
+    });
 
-    Route::resource('/', SeedlingController::class)->names('index')->parameters(['' => 'seedling']);
+    // ─── Módulo: Productos ───────────────────────────────────────────────────
+    Route::middleware(['role:admin|director_investigacion|investigador_asociado'])
+        ->prefix('products')->name('products.')->group(function () {
 
-});
-
-// ─── Módulo: Productos ───────────────────────────────────────────────────────
-Route::middleware(['auth', 'verified'])->prefix('products')->name('products.')->group(function () {
-
-    Route::resource('/', ProductController::class)->names('index')->parameters(['' => 'product']);
-    Route::resource('group-products', GroupProductController::class)->names('group-products');
+        Route::resource('/', ProductController::class)->names('index')->parameters(['' => 'product']);
+        Route::resource('group-products', GroupProductController::class)->names('group-products');
+    });
 
 });
 
