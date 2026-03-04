@@ -139,6 +139,19 @@ class User extends Authenticatable
     // ─────────────────────────────────────────────
 
     /**
+     * Dirección de email para notificaciones (reset password, etc.)
+     * Prioriza email_institucional si existe, con fallback a users.email.
+     */
+    public function routeNotificationForMail($notification = null): string|array
+    {
+        if ($this->person && $this->person->email_institucional) {
+            return $this->person->email_institucional;
+        }
+
+        return $this->email;
+    }
+
+    /**
      * Get the user's initials from the person profile.
      */
     public function initials(): string
