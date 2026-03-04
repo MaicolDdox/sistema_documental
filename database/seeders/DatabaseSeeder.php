@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CitySeeder::class,
             TrainingCenterSeeder::class,
             UserSeeder::class,
+            RolesAndPermissionsSeeder::class,
         ]);
     }
 }
