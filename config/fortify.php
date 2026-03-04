@@ -144,9 +144,9 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration(),        // Deshabilitado — registro solo vía admin
         Features::resetPasswords(),
-        Features::emailVerification(),
+        // Features::emailVerification(),   // Deshabilitado — admin activa cuentas manualmente
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
