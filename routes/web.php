@@ -49,7 +49,7 @@ Route::get('/dashboard', function () {
 Route::middleware(['auth', 'ensure.active'])->group(function () {
 
     // ─── Módulo: Admin ───────────────────────────────────────────────────────
-    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::middleware(['role:administrador_sistema|admin'])->prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard del admin (vista pendiente de creación)
         // Route::view('dashboard', 'admin.dashboard')->name('dashboard');
@@ -60,10 +60,17 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
         Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
         Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
+        Route::resource('training-records', \App\Http\Controllers\Web\TrainingRecordController::class)->names('training-records');
+        Route::resource('training-program-types', \App\Http\Controllers\Web\TrainingProgramTypeController::class)->names('training-program-types');
         Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
         Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
         Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
         Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');
+        Route::resource('project-modalities', \App\Http\Controllers\Web\ProjectModalityController::class)->names('project-modalities');
+        Route::resource('investigation-types', \App\Http\Controllers\Web\InvestigationTypeController::class)->names('investigation-types');
+        Route::resource('minciencias-typologies', \App\Http\Controllers\Web\MincienciasTypologyController::class)->names('minciencias-typologies');
+        Route::resource('knowledge-grand-areas', \App\Http\Controllers\Web\KnowledgeGrandAreaController::class)->names('knowledge-grand-areas');
+        Route::resource('knowledge-areas', \App\Http\Controllers\Web\KnowledgeAreaController::class)->names('knowledge-areas');
 
         // Gestión de usuarios (controllers clásicos + Livewire CRUD)
         Route::resource('users', UserController::class)->names('users');
