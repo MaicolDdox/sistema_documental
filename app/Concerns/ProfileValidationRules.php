@@ -4,7 +4,9 @@ namespace App\Concerns;
 
 use App\Models\Person;
 use App\Models\User;
+use App\Enums\GeneroEnum;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 trait ProfileValidationRules
 {
@@ -23,6 +25,12 @@ trait ProfileValidationRules
             'email' => $this->emailRules($userId),
             'telefono' => ['nullable', 'string', 'max:20'],
             'celular' => ['nullable', 'string', 'max:20'],
+            'genero' => ['nullable', new Enum(GeneroEnum::class)],
+            'eps' => ['nullable', 'string', 'max:100'],
+            'email_institucional' => ['nullable', 'email', 'max:255'],
+            'entity_position_id' => ['nullable', 'exists:entity_positions,id'],
+            'linkage_type_id' => ['nullable', 'exists:linkage_types,id'],
+            'training_program_id' => ['nullable', 'exists:training_programs,id'],
         ];
     }
 
