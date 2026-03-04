@@ -2,36 +2,32 @@
 
 namespace App\Concerns;
 
+use App\Models\Person;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
 {
     /**
-     * Get the validation rules used to validate user profiles.
+     * Reglas de validación para el perfil de usuario (users + people).
      *
      * @return array<string, array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>>
      */
     protected function profileRules(?int $userId = null): array
     {
         return [
-            'name' => $this->nameRules(),
+            'primer_nombre' => ['required', 'string', 'max:100'],
+            'segundo_nombre' => ['nullable', 'string', 'max:100'],
+            'primer_apellido' => ['required', 'string', 'max:100'],
+            'segundo_apellido' => ['nullable', 'string', 'max:100'],
             'email' => $this->emailRules($userId),
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'celular' => ['nullable', 'string', 'max:20'],
         ];
     }
 
     /**
-     * Get the validation rules used to validate user names.
-     *
-     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
-     */
-    protected function nameRules(): array
-    {
-        return ['required', 'string', 'max:255'];
-    }
-
-    /**
-     * Get the validation rules used to validate user emails.
+     * Reglas de validación para emails de usuario.
      *
      * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
      */

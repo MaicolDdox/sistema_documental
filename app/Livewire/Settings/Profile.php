@@ -3,27 +3,39 @@
 namespace App\Livewire\Settings;
 
 use App\Concerns\ProfileValidationRules;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class Profile extends Component
 {
     use ProfileValidationRules;
 
-    public string $name = '';
-
+    public string $primer_nombre = '';
+    public string $segundo_nombre = '';
+    public string $primer_apellido = '';
+    public string $segundo_apellido = '';
     public string $email = '';
+    public string $telefono = '';
+    public string $celular = '';
 
     /**
      * Mount the component.
      */
     public function mount(): void
     {
-        $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $user = Auth::user();
+        $person = $user->person;
+
+        $this->email = $user->email ?? '';
+
+        if ($person) {
+            $this->primer_nombre = $person->primer_nombre ?? '';
+            $this->segundo_nombre = $person->segundo_nombre ?? '';
+            $this->primer_apellido = $person->primer_apellido ?? '';
+            $this->segundo_apellido = $person->segundo_apellido ?? '';
+            $this->telefono = $person->telefono ?? '';
+            $this->celular = $person->celular ?? '';
+        }
     }
 
     /**
@@ -35,45 +47,23 @@ class Profile extends Component
 
         $validated = $this->validate($this->profileRules($user->id));
 
-        $user->fill($validated);
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
+        // Actualizar email en users
+        $user->email = $validated['email'];
         $user->save();
 
-        $this->dispatch('profile-updated', name: $user->name);
-    }
-
-    /**
-     * Send an email verification notification to the current user.
-     */
-    public function resendVerificationNotification(): void
-    {
-        $user = Auth::user();
-
-        if ($user->hasVerifiedEmail()) {
-            $this->redirectIntended(default: route('dashboard', absolute: false));
-
-            return;
+        // Actualizar datos personales en people
+        if ($user->person) {
+            $user->person->update([
+                'primer_nombre' => $validated['primer_nombre'],
+                'segundo_nombre' => $validated['segundo_nombre'] ?? '',
+                'primer_apellido' => $validated['primer_apellido'],
+                'segundo_apellido' => $validated['segundo_apellido'] ?? '',
+                'telefono' => $validated['telefono'] ?? '',
+                'celular' => $validated['celular'] ?? '',
+            ]);
         }
 
-        $user->sendEmailVerificationNotification();
-
-        Session::flash('status', 'verification-link-sent');
-    }
-
-    #[Computed]
-    public function hasUnverifiedEmail(): bool
-    {
-        return Auth::user() instanceof MustVerifyEmail && ! Auth::user()->hasVerifiedEmail();
-    }
-
-    #[Computed]
-    public function showDeleteUser(): bool
-    {
-        return ! Auth::user() instanceof MustVerifyEmail
-            || (Auth::user() instanceof MustVerifyEmail && Auth::user()->hasVerifiedEmail());
+        $fullName = trim("{$validated['primer_nombre']} {$validated['primer_apellido']}");
+        $this->dispatch('profile-updated', name: $fullName);
     }
 }
