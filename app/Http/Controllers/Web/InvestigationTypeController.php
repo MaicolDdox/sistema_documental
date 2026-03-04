@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\LinkageType;
+use App\Models\InvestigationType;
 use Illuminate\Http\Request;
-use App\Http\Requests\StoreLinkageTypeRequest;
-use App\Http\Requests\UpdateLinkageTypeRequest;
+
+
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
-class LinkageTypeController extends Controller
+class InvestigationTypeController extends Controller
 {
     private function getFields() {
         return [
@@ -22,11 +22,11 @@ class LinkageTypeController extends Controller
 
     public function index(): View
     {
-        $items = LinkageType::paginate(10);
+        $items = InvestigationType::paginate(10);
         return view('admin.parametric.index', [
             'items' => $items,
-            'title' => 'Tipos de Vinculación',
-            'routePrefix' => 'admin.linkage-types',
+            'title' => 'Tipos de Investigadores',
+            'routePrefix' => 'admin.investigation-types',
             'fields' => $this->getFields()
         ]);
     }
@@ -34,57 +34,57 @@ class LinkageTypeController extends Controller
     public function create(): View
     {
         return view('admin.parametric.create', [
-            'title' => 'Crear Tipos de Vinculación',
-            'routePrefix' => 'admin.linkage-types',
+            'title' => 'Crear Tipos de Investigadores',
+            'routePrefix' => 'admin.investigation-types',
             'fields' => $this->getFields()
         ]);
     }
 
-    public function store(StoreLinkageTypeRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate($this->getValidationRules());
         // Custom request logic applies if $request is not just a base Request.
-        if (method_exists($request, 'validated') && 'StoreLinkageTypeRequest' !== 'Request') {
+        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
              $validated = $request->validated();
         }
         
-        LinkageType::create($validated);
+        InvestigationType::create($validated);
         
-        return redirect()->route('admin.linkage-types.index')
+        return redirect()->route('admin.investigation-types.index')
             ->with('success', 'Registro creado exitosamente.');
     }
 
-    public function edit(LinkageType $linkagetype): View
+    public function edit(InvestigationType $investigationtype): View
     {
         return view('admin.parametric.edit', [
-            'item' => $linkagetype,
-            'title' => 'Editar Tipos de Vinculación',
-            'routePrefix' => 'admin.linkage-types',
+            'item' => $investigationtype,
+            'title' => 'Editar Tipos de Investigadores',
+            'routePrefix' => 'admin.investigation-types',
             'fields' => $this->getFields()
         ]);
     }
 
-    public function update(UpdateLinkageTypeRequest $request, LinkageType $linkagetype): RedirectResponse
+    public function update(Request $request, InvestigationType $investigationtype): RedirectResponse
     {
         $validated = $request->validate($this->getValidationRules());
-        if (method_exists($request, 'validated') && 'UpdateLinkageTypeRequest' !== 'Request') {
+        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
              $validated = $request->validated();
         }
         
-        $linkagetype->update($validated);
+        $investigationtype->update($validated);
         
-        return redirect()->route('admin.linkage-types.index')
+        return redirect()->route('admin.investigation-types.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }
 
-    public function destroy(LinkageType $linkagetype): RedirectResponse
+    public function destroy(InvestigationType $investigationtype): RedirectResponse
     {
         try {
-            $linkagetype->delete();
-            return redirect()->route('admin.linkage-types.index')
+            $investigationtype->delete();
+            return redirect()->route('admin.investigation-types.index')
                 ->with('success', 'Registro eliminado exitosamente.');
         } catch (\Illuminate\Database\QueryException $e) {
-            return redirect()->route('admin.linkage-types.index')
+            return redirect()->route('admin.investigation-types.index')
                 ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
@@ -99,5 +99,5 @@ class LinkageTypeController extends Controller
     }
     
     // Note: Laravel resolves model bindings. 
-    // Ensure the parameter name $linkagetype matches route.
+    // Ensure the parameter name $investigationtype matches route.
 }
