@@ -83,10 +83,74 @@
                 Dashboard
             </a>
 
+            @can('semilleros.listar')
+            <!-- Sección Director Semilleros -->
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión Semilleros</p>
+            
+            <a href="{{ route('dir-sem.dashboard') }}"
+               class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                </svg>
+                Director Semilleros
+            </a>
+            @endcan
+
             {{-- ZONA DE EXPANSIÓN FUTURA: agregar módulos aquí --}}
+            @can('usuarios.listar')
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
+                Administración
+            </p>
+            <a href="{{ route('admin.usuarios.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.usuarios.*') ? 'nav-item-active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+                Usuarios
+            </a>
+            @endcan
 
-        </nav>
+            @can('catalogos.leer')
+            <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                Catálogos
+            </a>
+            @endcan
 
+            @hasrole('administrador_sistema|admin')
+            <div x-data="{ paramOpen: request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') }" class="mt-2">
+                <button @click="paramOpen = !paramOpen" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                        </svg>
+                        Datos Paramétricos
+                    </div>
+                    <svg class="w-4 h-4 text-slate-400 transition-transform" :class="paramOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="paramOpen" x-collapse class="pl-11 pr-3 py-2 space-y-1">
+                    <a href="{{ route('admin.departments.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.departments.*') ? 'bg-slate-50 text-slate-900' : '' }}">Departamentos</a>
+                    <a href="{{ route('admin.cities.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.cities.*') ? 'bg-slate-50 text-slate-900' : '' }}">Municipios</a>
+                    <a href="{{ route('admin.training-centers.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">Centros de Form.</a>
+                    <a href="{{ route('admin.entity-positions.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.entity-positions.*') ? 'bg-slate-50 text-slate-900' : '' }}">Cargos Entidades</a>
+                    <a href="{{ route('admin.linkage-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.linkage-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos de Vinculación</a>
+                    <a href="{{ route('admin.training-records.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-records.*') ? 'bg-slate-50 text-slate-900' : '' }}">Fichas de Form.</a>
+                    <a href="{{ route('admin.training-program-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-program-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos Programas</a>
+                    <a href="{{ route('admin.training-programs.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-programs.*') ? 'bg-slate-50 text-slate-900' : '' }}">Programas Form.</a>
+                    <a href="{{ route('admin.research-lines.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-lines.*') ? 'bg-slate-50 text-slate-900' : '' }}">Líneas de Invest.</a>
+                    <a href="{{ route('admin.technological-lines.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.technological-lines.*') ? 'bg-slate-50 text-slate-900' : '' }}">Líneas Tecnológicas</a>
+                    <a href="{{ route('admin.thematic-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.thematic-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">Áreas Temáticas</a>
+                    <a href="{{ route('admin.project-modalities.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.project-modalities.*') ? 'bg-slate-50 text-slate-900' : '' }}">Modalidades Proy.</a>
+                    <a href="{{ route('admin.investigation-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.investigation-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos Invest.</a>
+                    <a href="{{ route('admin.minciencias-typologies.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.minciencias-typologies.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipologías Mincien.</a>
+                    <a href="{{ route('admin.knowledge-grand-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-grand-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">G. Áreas Conoc.</a>
+                    <a href="{{ route('admin.knowledge-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">Áreas Conoc.</a>
+                </div>
+            </div>
+            @endhasrole
         <!-- Footer del sidebar: usuario -->
         <div class="border-t border-slate-100 p-3" x-data="{ open: false }">
             <button @click="open = !open"
@@ -186,6 +250,46 @@
 
         <!-- Área de contenido -->
         <main class="flex-1 p-6">
+            <!-- Flash Messages -->
+            @if(session('success'))
+            <div x-data="{ show: true }" x-show="show" class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+                </div>
+                <button @click="show = false" class="text-green-500 hover:text-green-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            @endif
+
+            @if(session('error'))
+            <div x-data="{ show: true }" x-show="show" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                </div>
+                <button @click="show = false" class="text-red-500 hover:text-red-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            @endif
+
+            @if(session('warning'))
+            <div x-data="{ show: true }" x-show="show" class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-amber-800">{{ session('warning') }}</p>
+                </div>
+                <button @click="show = false" class="text-amber-500 hover:text-amber-700">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            @endif
+
             {{ $slot }}
         </main>
     </div>
