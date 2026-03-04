@@ -27,6 +27,11 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// ─── Rutas de Autenticación Custom ──────────────────────────────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('/login', \App\Livewire\Auth\Login::class)->name('login');
+});
+
 // ─── Forgot Password custom (búsqueda dual email) ───────────────────────────
 // Debe definirse ANTES de las rutas de Fortify para tomar precedencia
 Route::post('/forgot-password', SendPasswordResetLink::class)
@@ -34,9 +39,9 @@ Route::post('/forgot-password', SendPasswordResetLink::class)
     ->name('password.email');
 
 // ─── Dashboard fallback (usuarios sin rol específico) ────────────────────────
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'ensure.active'])
-    ->name('dashboard');
+Route::get('/dashboard', function () {
+    return view('dashboard.home');
+})->middleware(['auth', 'ensure.active'])->name('dashboard');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RUTAS PROTEGIDAS — requieren auth + estado activo
@@ -46,8 +51,8 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
     // ─── Módulo: Admin ───────────────────────────────────────────────────────
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
 
-        // Dashboard del admin
-        Route::view('dashboard', 'admin.dashboard')->name('dashboard');
+        // Dashboard del admin (vista pendiente de creación)
+        // Route::view('dashboard', 'admin.dashboard')->name('dashboard');
 
         // Configuración general
         Route::resource('departments', DepartmentController::class)->names('departments');
@@ -75,7 +80,7 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
     Route::middleware(['role:director_investigacion|investigador_asociado|admin'])
         ->prefix('research')->name('research.')->group(function () {
 
-        Route::view('dashboard', 'research.dashboard')->name('dashboard');
+        // Route::view('dashboard', 'research.dashboard')->name('dashboard');
         Route::resource('groups', ResearchGroupController::class)->names('groups');
         Route::resource('projects', ProjectController::class)->names('projects');
     });
@@ -84,7 +89,7 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
     Route::middleware(['role:director_semilleros|lider_semillero|asesor|admin'])
         ->prefix('seedlings')->name('seedlings.')->group(function () {
 
-        Route::view('dashboard', 'seedlings.dashboard')->name('dashboard');
+        // Route::view('dashboard', 'seedlings.dashboard')->name('dashboard');
         Route::resource('/', SeedlingController::class)->names('index')->parameters(['' => 'seedling']);
     });
 
