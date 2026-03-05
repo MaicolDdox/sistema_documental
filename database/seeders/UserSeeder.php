@@ -31,6 +31,22 @@ class UserSeeder extends Seeder
                 'password'           => Hash::make('Password123!'),
                 'estado'             => 'activo',
             ],
+            [
+                'training_center_id' => $centroAgroindustrial->id,
+                'email'              => 'directorsem@sena.edu.co',
+                'tipo_documento'     => 'cedula ciudadana',
+                'numero_documento'   => 1076504087,
+                'password'           => Hash::make('Password123!'),
+                'estado'             => 'activo',
+            ],
+            [
+                'training_center_id' => $centroIndustria->id,
+                'email'              => 'dirsemillero@sena.edu.co',
+                'tipo_documento'     => 'cedula ciudadana',
+                'numero_documento'   => 52345678,
+                'password'           => Hash::make('Password123!'),
+                'estado'             => 'activo',
+            ],
         ];
 
         foreach ($users as $userData) {
@@ -41,7 +57,9 @@ class UserSeeder extends Seeder
         }
 
         $this->command->info('✅ Usuarios creados:');
-        $this->command->info('   ydmoreno@sena.edu.co → Password123!');
-        $this->command->info('   jovalenciap@sena.edu.co → Password123!');
+        $this->command->info('   ydmoreno@sena.edu.co → Password123! (administrador)');
+        $this->command->info('   jovalenciap@sena.edu.co → Password123! (administrador)');
+        $this->command->info('   directorsem@sena.edu.co → Password123! (director semilleros)');
+        $this->command->info('   dirsemillero@sena.edu.co → Password123! (director semilleros)');
     }
 }

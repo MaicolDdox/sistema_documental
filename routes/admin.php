@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\CatalogoController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::middleware(['auth', 'role:administrador_sistema'])
     ->prefix('admin')
@@ -10,21 +11,17 @@ Route::middleware(['auth', 'role:administrador_sistema'])
     ->group(function () {
         
         // Dashboard Admin
-        Route::get('/dashboard', function () {
-            // Contadores para el dashboard
-            $totalUsuarios = App\Models\User::where('training_center_id', auth()->user()->training_center_id)->count();
-            $totalRoles = Spatie\Permission\Models\Role::count();
-            $totalCatalogos = App\Models\Catalogo::count();
-            
-            return view('admin.dashboard', compact('totalUsuarios', 'totalRoles', 'totalCatalogos'));
-        })->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Usuarios
+        Route::get('usuarios/asignar-roles', [UsuarioController::class, 'asignarRoles'])->name('usuarios.asignar_roles');
+        Route::post('usuarios/asignar-rol-store', [UsuarioController::class, 'storeAsignarRol'])->name('usuarios.asignar_rol_store');
         Route::resource('usuarios', UsuarioController::class)->except(['show']);
         Route::post('usuarios/{id}/toggle-estado', [UsuarioController::class, 'toggleEstado'])->name('usuarios.toggle_estado');
         Route::post('usuarios/{id}/asignar-rol', [UsuarioController::class, 'asignarRol'])->name('usuarios.asignar_rol');
         Route::post('usuarios/{id}/revocar-rol', [UsuarioController::class, 'revocarRol'])->name('usuarios.revocar_rol');
 
         // Catálogos
+        Route::get('catalogos/simples', [CatalogoController::class, 'simples'])->name('catalogos.simples');
         Route::resource('catalogos', CatalogoController::class)->except(['show']);
     });

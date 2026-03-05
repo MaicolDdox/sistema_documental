@@ -255,6 +255,17 @@ class RolesAndPermissionsSeeder extends Seeder
             );
         }
 
+        // Usuarios con rol director_semilleros
+        foreach (['directorsem@sena.edu.co', 'dirsemillero@sena.edu.co'] as $email) {
+            $userDirSem = \App\Models\User::where('email', $email)->first();
+            if ($userDirSem && !$userDirSem->hasRole('director_semilleros')) {
+                $userDirSem->assignRole('director_semilleros');
+                $this->command->info(
+                    "👤 Rol director_semilleros asignado a: {$userDirSem->email}"
+                );
+            }
+        }
+
         // ─── Totales globales ───────────────────────────────────────
         $totalPermisos = \Spatie\Permission\Models\Permission::count();
         $totalRoles    = \Spatie\Permission\Models\Role::count();
