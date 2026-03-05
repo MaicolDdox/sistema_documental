@@ -49,7 +49,7 @@
     
     <div class="bg-white rounded-xl border border-slate-200 p-4 flex flex-col justify-center">
         <p class="text-xs text-slate-500 uppercase font-semibold tracking-wider">Proyectos Vinculados</p>
-        <p class="text-3xl font-bold text-blue-600 mt-1">{{ $semillero->proyectos_count }}</p>
+        <p class="text-3xl font-bold text-[#39A900] mt-1">{{ $semillero->proyectos_count }}</p>
     </div>
     
     <div class="bg-white rounded-xl border border-slate-200 p-4 flex flex-col justify-center">

@@ -40,8 +40,8 @@
 
     @can('reportes.aprendices_por_semillero')
     <!-- Tarjeta Reporte 2 -->
-    <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col hover:border-blue-400 hover:shadow-md transition-all group">
-        <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+    <div class="bg-white rounded-xl border border-slate-200 p-5 flex flex-col hover:border-[#39A900]/50 hover:shadow-md transition-all group">
+        <div class="w-12 h-12 rounded-full bg-green-50 text-[#39A900] flex items-center justify-center mb-4 group-hover:bg-[#39A900] group-hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>
         </div>
         <h3 class="text-base font-semibold text-slate-900 mb-2">Aprendices por Semillero</h3>

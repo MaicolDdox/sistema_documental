@@ -11,7 +11,7 @@ class UpdateTrainingCenterRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,13 @@ class UpdateTrainingCenterRequest extends FormRequest
      */
     public function rules(): array
     {
+        $param = $this->route('training_center') ?? $this->route('trainingcenter');
+        $id = is_object($param) ? $param->id : $param;
         return [
-            //
+            'nombre' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('training_centers', 'nombre')->ignore($id)],
+            'codigo' => ['required', 'integer', 'min:0'],
+            'department_id' => ['required', 'exists:departments,id'],
+            'city_id' => ['required', 'exists:cities,id'],
         ];
     }
 }

@@ -4,105 +4,73 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\TrainingProgram;
-use Illuminate\Http\Request;
+use App\Models\TrainingProgramType;
+use App\Models\TrainingRecord;
 use App\Http\Requests\StoreTrainingProgramRequest;
 use App\Http\Requests\UpdateTrainingProgramRequest;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class TrainingProgramController extends Controller
 {
-    private function getFields() {
-        return [
-            'training_record_id' => ['type' => 'relation', 'options' => \App\Models\TrainingRecord::all()],
-            'training_program_type_id' => ['type' => 'relation', 'options' => \App\Models\TrainingProgramType::all()],
-            'nombre' => ['type' => 'text', 'options' => []],
-            'descripccion' => ['type' => 'text', 'options' => []],
-            'jornada' => ['type' => 'enum', 'options' => ['DIURNA','NOCTURNA','MIXTA','VIRTUAL']],
-            'modalidad' => ['type' => 'enum', 'options' => ['PRESENCIAL','VIRTUAL','A DISTANCIA']],
-            'estado' => ['type' => 'enum', 'options' => ['activo','inactivo']],
-
-        ];
-    }
-
-    public function index(): View
+    public function index(Request $request): View
     {
-        $items = TrainingProgram::paginate(10);
-        return view('admin.parametric.index', [
-            'items' => $items,
-            'title' => 'Programas de Formación',
-            'routePrefix' => 'admin.training-programs',
-            'fields' => $this->getFields()
-        ]);
+        $query = TrainingProgram::with(['trainingRecord', 'trainingProgramType'])->orderBy('nombre');
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('nombre', 'like', "%{$term}%")
+                  ->orWhereHas('trainingProgramType', fn($q) => $q->where('nombre', 'like', "%{$term}%"));
+                if (is_numeric($term)) {
+                    $q->orWhereHas('trainingRecord', fn($q) => $q->where('codigo', (int) $term));
+                }
+            });
+        }
+
+        $programs = $query->paginate(15)->withQueryString();
+
+        return view('admin.training_programs.index', compact('programs'));
     }
 
     public function create(): View
     {
-        return view('admin.parametric.create', [
-            'title' => 'Crear Programas de Formación',
-            'routePrefix' => 'admin.training-programs',
-            'fields' => $this->getFields()
-        ]);
+        $records = TrainingRecord::orderBy('codigo')->get();
+        $types = TrainingProgramType::orderBy('nombre')->get();
+        return view('admin.training_programs.create', compact('records', 'types'));
     }
 
     public function store(StoreTrainingProgramRequest $request): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        // Custom request logic applies if $request is not just a base Request.
-        if (method_exists($request, 'validated') && 'StoreTrainingProgramRequest' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        TrainingProgram::create($validated);
-        
+        TrainingProgram::create($request->validated());
         return redirect()->route('admin.training-programs.index')
-            ->with('success', 'Registro creado exitosamente.');
+            ->with('success', 'Programa de formación creado correctamente.');
     }
 
-    public function edit(TrainingProgram $trainingprogram): View
+    public function edit(TrainingProgram $training_program): View
     {
-        return view('admin.parametric.edit', [
-            'item' => $trainingprogram,
-            'title' => 'Editar Programas de Formación',
-            'routePrefix' => 'admin.training-programs',
-            'fields' => $this->getFields()
-        ]);
+        $records = TrainingRecord::orderBy('codigo')->get();
+        $types = TrainingProgramType::orderBy('nombre')->get();
+        return view('admin.training_programs.edit', compact('training_program', 'records', 'types'));
     }
 
-    public function update(UpdateTrainingProgramRequest $request, TrainingProgram $trainingprogram): RedirectResponse
+    public function update(UpdateTrainingProgramRequest $request, TrainingProgram $training_program): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        if (method_exists($request, 'validated') && 'UpdateTrainingProgramRequest' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        $trainingprogram->update($validated);
-        
+        $training_program->update($request->validated());
         return redirect()->route('admin.training-programs.index')
-            ->with('success', 'Registro actualizado exitosamente.');
+            ->with('success', 'Programa de formación actualizado correctamente.');
     }
 
-    public function destroy(TrainingProgram $trainingprogram): RedirectResponse
+    public function destroy(TrainingProgram $training_program): RedirectResponse
     {
         try {
-            $trainingprogram->delete();
+            $training_program->delete();
             return redirect()->route('admin.training-programs.index')
-                ->with('success', 'Registro eliminado exitosamente.');
+                ->with('success', 'Programa de formación eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.training-programs.index')
                 ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
-    
-    protected function getValidationRules(): array
-    {
-        $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
-        }
-        return $rules;
-    }
-    
-    // Note: Laravel resolves model bindings. 
-    // Ensure the parameter name $trainingprogram matches route.
 }

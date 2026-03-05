@@ -53,7 +53,7 @@
                         </td>
                         <td class="px-4 py-3">
                             @foreach($user->roles as $role)
-                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-50 text-[#39A900]">
                                     {{ ucfirst(str_replace('_', ' ', $role->name)) }}
                                 </span>
                             @endforeach
@@ -67,7 +67,7 @@
                             </button>
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <a href="{{ route('admin.users.edit', $user) }}" class="text-blue-600 hover:text-blue-800 text-xs font-medium">Editar</a>
+                            <a href="{{ route('admin.users.edit', $user) }}" class="text-[#39A900] hover:text-[#2d8500] text-xs font-medium">Editar</a>
                         </td>
                     </tr>
                 @empty
