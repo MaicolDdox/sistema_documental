@@ -38,10 +38,18 @@ Route::post('/forgot-password', SendPasswordResetLink::class)
     ->middleware(['guest', 'throttle:6,1'])
     ->name('password.email');
 
-// ─── Dashboard fallback (usuarios sin rol específico) ────────────────────────
-Route::get('/dashboard', function () {
+// ─── Dashboard: por rol se muestra panel correspondiente o se redirige ─────
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $user = auth()->user();
+    if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+        return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
+    }
+    // Director de semilleros siempre va a su módulo (layout con PRINCIPAL, GESTIÓN SEMILLEROS, USUARIOS)
+    if ($user->hasRole('director_semilleros')) {
+        return redirect()->to('/director-semilleros', 302);
+    }
     return view('dashboard.home');
-})->middleware(['auth', 'ensure.active'])->name('dashboard');
+})->middleware(['auth', 'ensure.active', 'redirect.director'])->name('dashboard');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RUTAS PROTEGIDAS — requieren auth + estado activo
@@ -69,6 +77,7 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         Route::resource('project-modalities', \App\Http\Controllers\Web\ProjectModalityController::class)->names('project-modalities');
         Route::resource('investigation-types', \App\Http\Controllers\Web\InvestigationTypeController::class)->names('investigation-types');
         Route::resource('minciencias-typologies', \App\Http\Controllers\Web\MincienciasTypologyController::class)->names('minciencias-typologies');
+        Route::resource('minciencias-subcategories', \App\Http\Controllers\Web\MincienciasSubcategoryController::class)->names('minciencias-subcategories');
         Route::resource('knowledge-grand-areas', \App\Http\Controllers\Web\KnowledgeGrandAreaController::class)->names('knowledge-grand-areas');
         Route::resource('knowledge-areas', \App\Http\Controllers\Web\KnowledgeAreaController::class)->names('knowledge-areas');
 

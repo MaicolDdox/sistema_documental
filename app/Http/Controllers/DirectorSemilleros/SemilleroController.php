@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\DirectorSemilleros;
 
 use App\Http\Controllers\Controller;
+use App\Models\ResearchGroup;
 use App\Models\Seedling;
 use App\Models\User;
 use App\Enums\EstadoEnum;
@@ -23,18 +24,12 @@ class SemilleroController extends Controller
 
         $user = Auth::user();
 
-        $query = Seedling::with(['leader', 'members', 'projects', 'researchGroup'])
-->whereHas('leader', function($q) use ($user) {
-    if ($user->training_center_id) {
-        $q->where('training_center_id', $user->training_center_id);
-    }
-});
-// En el modelo actual, Seedling no tiene training_center_id directamente.
-// Pero la regla es: Solo gestiona semilleros del mismo centro_formacion_id del usuario autenticado.
-// Asumimos que podemos filtrar verificando el training_center_id del $seedling->creator o leader, 
-// o si el researchGroup al que pertenece tiene centro. Vamos a filtrar por el centro del líder para aproximarnos
-// O bien usamos crossJoin o scope. Lo más seguro es que Seedling debería tener el centro_formacion_id.
-// Por ahora filtramos via el líder si está asociado al mismo centro.
+        $query = Seedling::with(['leader.person', 'members', 'researchGroup'])
+            ->whereHas('leader', function ($q) use ($user) {
+                if ($user->training_center_id) {
+                    $q->where('training_center_id', $user->training_center_id);
+                }
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -44,13 +39,16 @@ class SemilleroController extends Controller
             });
         }
 
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+        $tab = $request->get('tab', 'todos');
+        if ($tab === 'activos') {
+            $query->where('estado', EstadoEnum::Activo);
+        } elseif ($tab === 'inactivos') {
+            $query->where('estado', EstadoEnum::Inactivo);
         }
 
-        $semilleros = $query->paginate(10);
+        $semilleros = $query->orderBy('nombre')->paginate(10)->withQueryString();
 
-        return view('director_semilleros.semilleros.index', compact('semilleros'));
+        return view('director_semilleros.semilleros.index', compact('semilleros', 'tab'));
     }
 
     /**
@@ -61,14 +59,23 @@ class SemilleroController extends Controller
         $this->authorize('semilleros.crear');
 
         $user = Auth::user();
-        
-        // lider_id (select de usuarios con rol lider_semillero del mismo centro)
+
         $lideres = User::role('lider_semillero')
+            ->with('person')
             ->where('training_center_id', $user->training_center_id)
             ->active()
+            ->orderBy('email')
             ->get();
 
-        return view('director_semilleros.semilleros.create', compact('lideres'));
+        $gruposInvestigacion = ResearchGroup::query()
+            ->when($user->training_center_id, fn ($q) => $q->where('training_center_id', $user->training_center_id))
+            ->active()
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'codigo']);
+
+        $siguienteCodigo = (int) Seedling::max('codigo') + 1;
+
+        return view('director_semilleros.semilleros.create', compact('lideres', 'gruposInvestigacion', 'siguienteCodigo'));
     }
 
     /**
@@ -78,18 +85,30 @@ class SemilleroController extends Controller
     {
         $this->authorize('semilleros.crear');
 
-        $validated = $request->validate([
-            'nombre'      => 'required|string|max:150',
-            'descripcion' => 'nullable|string',
-            'lider_id'    => 'required|exists:users,id',
+        $request->merge([
+            'codigo'            => $request->input('codigo') ?: null,
+            'research_group_id' => $request->input('research_group_id') ?: null,
         ]);
 
-        $seedling = Seedling::create([
-            'creator_id'   => Auth::id(),
-            'leader_id'    => $validated['lider_id'],
-            'nombre'       => $validated['nombre'],
-            'descripccion' => $validated['descripcion'] ?? null,
-            'estado'       => EstadoEnum::Activo,
+        $validated = $request->validate([
+            'nombre'               => 'required|string|max:150',
+            'codigo'               => 'nullable|integer|min:1',
+            'descripcion'          => 'nullable|string',
+            'lider_id'             => 'required|exists:users,id',
+            'research_group_id'    => 'nullable|exists:research_groups,id',
+        ]);
+
+        $codigo = !empty($validated['codigo']) ? (int) $validated['codigo'] : (int) Seedling::max('codigo') + 1;
+
+        Seedling::create([
+            'creator_id'         => Auth::id(),
+            'leader_id'          => $validated['lider_id'],
+            'research_group_id'  => $validated['research_group_id'] ?? null,
+            'nombre'             => $validated['nombre'],
+            'codigo'             => $codigo,
+            'logo'               => '',
+            'descripccion'       => $validated['descripcion'] ?? null,
+            'estado'             => EstadoEnum::Activo,
         ]);
 
         return redirect()->route('dir-sem.semilleros.index')
@@ -204,6 +223,20 @@ class SemilleroController extends Controller
         }
 
         return redirect()->back()->with('success', $mensaje);
+    }
+
+    /**
+     * Eliminar semillero
+     */
+    public function destroy(Seedling $semillero)
+    {
+        $this->authorize('semilleros.editar');
+        $this->checkCentroFormacion($semillero);
+
+        $semillero->delete();
+
+        return redirect()->route('dir-sem.semilleros.index')
+            ->with('success', 'Semillero eliminado correctamente.');
     }
 
     /**
