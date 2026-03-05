@@ -39,14 +39,27 @@ Route::post('/forgot-password', SendPasswordResetLink::class)
     ->name('password.email');
 
 // ─── Dashboard: por rol se muestra panel correspondiente o se redirige ─────
+// Líder y director de semilleros siempre a su módulo (layout y dashboard propios)
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = auth()->user();
+
+    // Evitar caché desactualizada de roles (Spatie)
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    if ($user->hasRole('lider_semillero')) {
+        return redirect()->to('/lider-semillero', 302);
+    }
+    if ($user->hasRole('director_semilleros')) {
+        return redirect()->to('/director-semilleros', 302);
+    }
     if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
         return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
     }
-    // Director de semilleros siempre va a su módulo (layout con PRINCIPAL, GESTIÓN SEMILLEROS, USUARIOS)
-    if ($user->hasRole('director_semilleros')) {
-        return redirect()->to('/director-semilleros', 302);
+    if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
+        return redirect()->to('/research/dashboard', 302);
+    }
+    if ($user->hasRole('asesor')) {
+        return redirect()->to('/seedlings', 302);
     }
     return view('dashboard.home');
 })->middleware(['auth', 'ensure.active', 'redirect.director'])->name('dashboard');

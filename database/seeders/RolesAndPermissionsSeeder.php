@@ -266,6 +266,15 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
+        // Usuario con rol lider_semillero
+        $userLider = \App\Models\User::where('email', 'lidersem@sena.edu.co')->first();
+        if ($userLider && !$userLider->hasRole('lider_semillero')) {
+            $userLider->assignRole('lider_semillero');
+            $this->command->info(
+                "👤 Rol lider_semillero asignado a: {$userLider->email}"
+            );
+        }
+
         // ─── Totales globales ───────────────────────────────────────
         $totalPermisos = \Spatie\Permission\Models\Permission::count();
         $totalRoles    = \Spatie\Permission\Models\Role::count();

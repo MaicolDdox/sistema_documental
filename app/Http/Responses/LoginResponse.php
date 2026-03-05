@@ -21,14 +21,17 @@ class LoginResponse implements LoginResponseContract
             $user->hasRole('director_investigacion'),
             $user->hasRole('investigador_asociado') => '/research/dashboard',
             $user->hasRole('director_semilleros') => '/director-semilleros',
-            $user->hasRole('lider_semillero'),
+            $user->hasRole('lider_semillero') => '/lider-semillero',
             $user->hasRole('asesor') => '/seedlings',
             default => '/dashboard',
         };
 
-        // Director de semilleros siempre al módulo propio (no a /dashboard)
         if ($user->hasRole('director_semilleros')) {
             return redirect()->to('/director-semilleros');
+        }
+
+        if ($user->hasRole('lider_semillero')) {
+            return redirect()->to('/lider-semillero');
         }
 
         return redirect()->intended($home);
