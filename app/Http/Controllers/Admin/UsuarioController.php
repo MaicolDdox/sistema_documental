@@ -23,7 +23,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.listar');
 
-        $query = User::with(['person', 'roles'])
+        $query = User::with(['person.entityPosition', 'roles'])
             ->where('training_center_id', auth()->user()->training_center_id);
 
         if ($request->filled('search')) {
@@ -53,6 +53,42 @@ class UsuarioController extends Controller
         $estados = EstadoEnum::cases();
 
         return view('admin.usuarios.index', compact('usuarios', 'roles', 'estados'));
+    }
+
+    /**
+     * Vista: Asignación de roles (formulario usuario + rol).
+     * Permission: usuarios.asignar_rol
+     */
+    public function asignarRoles()
+    {
+        $this->authorize('usuarios.asignar_rol');
+
+        $usuarios = User::with('person')
+            ->where('training_center_id', auth()->user()->training_center_id)
+            ->orderBy('email')
+            ->get();
+        $roles = Role::with('permissions')->orderBy('name')->get();
+
+        return view('admin.usuarios.asignar_roles', compact('usuarios', 'roles'));
+    }
+
+    /**
+     * Guardar asignación de rol desde el formulario de la página Asignar Roles.
+     * Permission: usuarios.asignar_rol
+     */
+    public function storeAsignarRol(Request $request)
+    {
+        $this->authorize('usuarios.asignar_rol');
+
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'rol'     => ['required', 'string', 'exists:roles,name'],
+        ]);
+
+        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($validated['user_id']);
+        $usuario->assignRole($validated['rol']);
+
+        return redirect()->route('admin.usuarios.asignar_roles')->with('success', 'Rol asignado correctamente.');
     }
 
     /**
@@ -234,5 +270,26 @@ class UsuarioController extends Controller
         $usuario->removeRole($request->rol);
 
         return redirect()->back()->with('success', 'Rol revocado correctamente.');
+    }
+
+    /**
+     * Remove the specified user.
+     * Permission: usuarios.editar (quien puede editar puede eliminar)
+     */
+    public function destroy($id)
+    {
+        $this->authorize('usuarios.editar');
+
+        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+
+        if ($usuario->id === auth()->id()) {
+            return redirect()->back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        $usuario->syncRoles([]);
+        $usuario->person?->delete();
+        $usuario->delete();
+
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado correctamente.');
     }
 }

@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'ensure.active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'redirect.director' => \App\Http\Middleware\RedirectDirectorToModule::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

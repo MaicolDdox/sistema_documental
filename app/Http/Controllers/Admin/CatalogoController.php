@@ -4,12 +4,44 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Catalogo;
+use App\Models\EntityPosition;
+use App\Models\LinkageType;
+use App\Models\ProjectModality;
+use App\Models\InvestigationType;
+use App\Models\TechnologicalLine;
+use App\Models\ThematicArea;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
 
 class CatalogoController extends Controller
 {
+    /**
+     * Dashboard de catálogos simples (tablas de soporte).
+     * Permission: catalogos.leer
+     */
+    public function simples(): View
+    {
+        $this->authorize('catalogos.leer');
+
+        $entityPositions = EntityPosition::orderBy('nombre')->get();
+        $linkageTypes = LinkageType::orderBy('nombre')->get();
+        $projectModalities = ProjectModality::orderBy('nombre')->get();
+        $investigationTypes = InvestigationType::orderBy('nombre')->get();
+        $technologicalLines = TechnologicalLine::orderBy('nombre')->get();
+        $thematicAreas = ThematicArea::orderBy('nombre')->get();
+
+        return view('admin.catalogos.simples', compact(
+            'entityPositions',
+            'linkageTypes',
+            'projectModalities',
+            'investigationTypes',
+            'technologicalLines',
+            'thematicAreas'
+        ));
+    }
+
     /**
      * Display a listing of the catalogs.
      * Permission: catalogos.leer

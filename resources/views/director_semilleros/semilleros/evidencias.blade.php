@@ -4,7 +4,7 @@
         <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0
             @if(Str::endsWith($archivo->url_archivo, '.pdf')) bg-red-50 text-red-500
             @elseif(Str::endsWith($archivo->url_archivo, ['.xls', '.xlsx'])) bg-green-50 text-green-600
-            @elseif(Str::endsWith($archivo->url_archivo, ['.doc', '.docx'])) bg-blue-50 text-blue-600
+            @elseif(Str::endsWith($archivo->url_archivo, ['.doc', '.docx'])) bg-green-50 text-[#39A900]
             @else bg-slate-100 text-slate-500 @endif
         ">
             @if(Str::endsWith($archivo->url_archivo, '.pdf'))

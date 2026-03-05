@@ -13,16 +13,29 @@ use Illuminate\Support\Str;
 
 class LiderSemilleroController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('usuarios.listar');
 
         $user = Auth::user();
 
-        // lista de usuarios con rol lider_semillero del centro
-        $lideres = User::role('lider_semillero')
-            ->where('training_center_id', $user->training_center_id)
-            ->paginate(10);
+        $query = User::role('lider_semillero')
+            ->with(['person', 'ledSeedlings' => fn ($q) => $q->select('id', 'nombre', 'leader_id')])
+            ->where('training_center_id', $user->training_center_id);
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('email', 'like', "%{$term}%")
+                    ->orWhere('numero_documento', 'like', "%{$term}%")
+                    ->orWhereHas('person', function ($p) use ($term) {
+                        $p->where('primer_nombre', 'like', "%{$term}%")
+                            ->orWhere('primer_apellido', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        $lideres = $query->orderBy('email')->paginate(10)->withQueryString();
 
         return view('director_semilleros.lideres.index', compact('lideres'));
     }
@@ -101,5 +114,73 @@ class LiderSemilleroController extends Controller
 
         return redirect()->route('dir-sem.lideres.index')
             ->with('success', 'Líder de semillero creado exitosamente.');
+    }
+
+    public function show(User $lider)
+    {
+        $this->authorize('usuarios.listar');
+        $this->ensureLeaderOfCenter($lider);
+
+        $lider->load(['person', 'ledSeedlings']);
+
+        return view('director_semilleros.lideres.show', compact('lider'));
+    }
+
+    public function edit(User $lider)
+    {
+        $this->authorize('usuarios.editar');
+        $this->ensureLeaderOfCenter($lider);
+
+        $semilleros = \App\Models\Seedling::whereHas('leader', fn ($q) => $q->where('training_center_id', Auth::user()->training_center_id))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        return view('director_semilleros.lideres.edit', compact('lider', 'semilleros'));
+    }
+
+    public function update(Request $request, User $lider)
+    {
+        $this->authorize('usuarios.editar');
+        $this->ensureLeaderOfCenter($lider);
+
+        $validated = $request->validate([
+            'primer_nombre'     => 'required|string|max:100',
+            'primer_apellido'   => 'required|string|max:100',
+            'email'             => 'required|email|unique:users,email,' . $lider->id,
+            'numero_documento'  => 'required|unique:users,numero_documento,' . $lider->id,
+            'estado'            => 'required|in:activo,inactivo',
+        ]);
+
+        $lider->update([
+            'email'           => $validated['email'],
+            'numero_documento' => $validated['numero_documento'],
+            'estado'           => EstadoEnum::from($validated['estado']),
+        ]);
+
+        if ($lider->person) {
+            $lider->person->update([
+                'primer_nombre'   => $validated['primer_nombre'],
+                'primer_apellido' => $validated['primer_apellido'],
+            ]);
+        }
+
+        return redirect()->route('dir-sem.lideres.index')->with('success', 'Líder actualizado correctamente.');
+    }
+
+    public function destroy(User $lider)
+    {
+        $this->authorize('usuarios.editar');
+        $this->ensureLeaderOfCenter($lider);
+
+        $lider->delete();
+
+        return redirect()->route('dir-sem.lideres.index')->with('success', 'Líder eliminado correctamente.');
+    }
+
+    private function ensureLeaderOfCenter(User $lider): void
+    {
+        if (!$lider->hasRole('lider_semillero') || $lider->training_center_id !== Auth::user()->training_center_id) {
+            abort(403, 'No tienes permiso para gestionar este usuario.');
+        }
     }
 }

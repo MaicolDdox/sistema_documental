@@ -14,10 +14,10 @@
     <!-- Tarjetas de estadísticas (placeholders) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         @foreach([
-            ['label' => 'Grupos de Investigación', 'value' => '—', 'color' => 'text-blue-600'],
-            ['label' => 'Semilleros Activos',      'value' => '—', 'color' => 'text-emerald-600'],
-            ['label' => 'Proyectos',                'value' => '—', 'color' => 'text-purple-600'],
-            ['label' => 'Productos Registrados',    'value' => '—', 'color' => 'text-amber-600'],
+            ['label' => 'Grupos de Investigación', 'value' => '—', 'color' => 'text-[#39A900]'],
+            ['label' => 'Semilleros Activos',      'value' => '—', 'color' => 'text-[#39A900]'],
+            ['label' => 'Proyectos',                'value' => '—', 'color' => 'text-slate-700'],
+            ['label' => 'Productos Registrados',    'value' => '—', 'color' => 'text-slate-700'],
         ] as $stat)
         <div class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition-shadow">
             <p class="text-xs font-medium text-slate-500 mb-3">

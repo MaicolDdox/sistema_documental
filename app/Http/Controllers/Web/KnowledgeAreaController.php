@@ -4,101 +4,65 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\KnowledgeArea;
+use App\Models\KnowledgeGrandArea;
 use Illuminate\Http\Request;
-
-
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class KnowledgeAreaController extends Controller
 {
-    private function getFields() {
-        return [
-            'knowledge_grand_area_id' => ['type' => 'relation', 'options' => \App\Models\KnowledgeGrandArea::all()],
-            'nombre' => ['type' => 'text', 'options' => []],
-            'descripccion' => ['type' => 'text', 'options' => []],
-
-        ];
-    }
-
     public function index(): View
     {
-        $items = KnowledgeArea::paginate(10);
-        return view('admin.parametric.index', [
-            'items' => $items,
-            'title' => 'Áreas de Conocimiento',
-            'routePrefix' => 'admin.knowledge-areas',
-            'fields' => $this->getFields()
-        ]);
+        $areas = KnowledgeArea::with('knowledgeGrandArea')->orderBy('nombre')->get();
+        $grandAreas = KnowledgeGrandArea::withCount('knowledgeAreas')->orderBy('nombre')->get();
+        return view('admin.knowledge_areas.index', compact('areas', 'grandAreas'));
     }
 
     public function create(): View
     {
-        return view('admin.parametric.create', [
-            'title' => 'Crear Áreas de Conocimiento',
-            'routePrefix' => 'admin.knowledge-areas',
-            'fields' => $this->getFields()
-        ]);
+        $grandAreas = KnowledgeGrandArea::orderBy('nombre')->get();
+        return view('admin.knowledge_areas.create', compact('grandAreas'));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        // Custom request logic applies if $request is not just a base Request.
-        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        KnowledgeArea::create($validated);
-        
-        return redirect()->route('admin.knowledge-areas.index')
-            ->with('success', 'Registro creado exitosamente.');
-    }
-
-    public function edit(KnowledgeArea $knowledgearea): View
-    {
-        return view('admin.parametric.edit', [
-            'item' => $knowledgearea,
-            'title' => 'Editar Áreas de Conocimiento',
-            'routePrefix' => 'admin.knowledge-areas',
-            'fields' => $this->getFields()
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'knowledge_grand_area_id' => ['required', 'exists:knowledge_grand_areas,id'],
+            'descripccion' => ['nullable', 'string', 'max:500'],
         ]);
-    }
-
-    public function update(Request $request, KnowledgeArea $knowledgearea): RedirectResponse
-    {
-        $validated = $request->validate($this->getValidationRules());
-        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        $knowledgearea->update($validated);
-        
+        KnowledgeArea::create($validated);
         return redirect()->route('admin.knowledge-areas.index')
-            ->with('success', 'Registro actualizado exitosamente.');
+            ->with('success', 'Área de conocimiento creada correctamente.');
     }
 
-    public function destroy(KnowledgeArea $knowledgearea): RedirectResponse
+    public function edit(KnowledgeArea $knowledge_area): View
+    {
+        $grandAreas = KnowledgeGrandArea::orderBy('nombre')->get();
+        return view('admin.knowledge_areas.edit', compact('knowledge_area', 'grandAreas'));
+    }
+
+    public function update(Request $request, KnowledgeArea $knowledge_area): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'knowledge_grand_area_id' => ['required', 'exists:knowledge_grand_areas,id'],
+            'descripccion' => ['nullable', 'string', 'max:500'],
+        ]);
+        $knowledge_area->update($validated);
+        return redirect()->route('admin.knowledge-areas.index')
+            ->with('success', 'Área de conocimiento actualizada correctamente.');
+    }
+
+    public function destroy(KnowledgeArea $knowledge_area): RedirectResponse
     {
         try {
-            $knowledgearea->delete();
+            $knowledge_area->delete();
             return redirect()->route('admin.knowledge-areas.index')
-                ->with('success', 'Registro eliminado exitosamente.');
+                ->with('success', 'Área de conocimiento eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.knowledge-areas.index')
-                ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
+                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
-    
-    protected function getValidationRules(): array
-    {
-        $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
-        }
-        return $rules;
-    }
-    
-    // Note: Laravel resolves model bindings. 
-    // Ensure the parameter name $knowledgearea matches route.
 }

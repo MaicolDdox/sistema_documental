@@ -11,7 +11,7 @@ class StoreTrainingCenterRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,10 @@ class StoreTrainingCenterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nombre' => ['required', 'string', 'max:255', 'unique:training_centers,nombre'],
+            'codigo' => ['required', 'integer', 'min:0'],
+            'department_id' => ['required', 'exists:departments,id'],
+            'city_id' => ['required', 'exists:cities,id'],
         ];
     }
 }

@@ -3,103 +3,75 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\City;
+use App\Models\Department;
 use App\Models\TrainingCenter;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreTrainingCenterRequest;
 use App\Http\Requests\UpdateTrainingCenterRequest;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class TrainingCenterController extends Controller
 {
-    private function getFields() {
-        return [
-            'nombre' => ['type' => 'text', 'options' => []],
-            'codigo' => ['type' => 'text', 'options' => []],
-            'department_id' => ['type' => 'relation', 'options' => \App\Models\Department::all()],
-            'city_id' => ['type' => 'relation', 'options' => \App\Models\City::all()],
-
-        ];
-    }
-
-    public function index(): View
+    public function index(Request $request): View
     {
-        $items = TrainingCenter::paginate(10);
-        return view('admin.parametric.index', [
-            'items' => $items,
-            'title' => 'Centros de Formación',
-            'routePrefix' => 'admin.training-centers',
-            'fields' => $this->getFields()
-        ]);
+        $query = TrainingCenter::with(['department', 'city'])->orderBy('nombre');
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('nombre', 'like', "%{$term}%")
+                  ->orWhereHas('department', fn($q) => $q->where('nombre', 'like', "%{$term}%"))
+                  ->orWhereHas('city', fn($q) => $q->where('nombre', 'like', "%{$term}%"));
+                if (is_numeric($term)) {
+                    $q->orWhere('codigo', (int) $term);
+                }
+            });
+        }
+
+        $centers = $query->paginate(15)->withQueryString();
+
+        return view('admin.training_centers.index', compact('centers'));
     }
 
     public function create(): View
     {
-        return view('admin.parametric.create', [
-            'title' => 'Crear Centros de Formación',
-            'routePrefix' => 'admin.training-centers',
-            'fields' => $this->getFields()
-        ]);
+        $departments = Department::orderBy('nombre')->get();
+        $cities = City::with('department')->orderBy('nombre')->get();
+        return view('admin.training_centers.create', compact('departments', 'cities'));
     }
 
     public function store(StoreTrainingCenterRequest $request): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        // Custom request logic applies if $request is not just a base Request.
-        if (method_exists($request, 'validated') && 'StoreTrainingCenterRequest' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        TrainingCenter::create($validated);
-        
+        TrainingCenter::create($request->validated());
         return redirect()->route('admin.training-centers.index')
-            ->with('success', 'Registro creado exitosamente.');
+            ->with('success', 'Centro de formación creado correctamente.');
     }
 
-    public function edit(TrainingCenter $trainingcenter): View
+    public function edit(TrainingCenter $training_center): View
     {
-        return view('admin.parametric.edit', [
-            'item' => $trainingcenter,
-            'title' => 'Editar Centros de Formación',
-            'routePrefix' => 'admin.training-centers',
-            'fields' => $this->getFields()
-        ]);
+        $departments = Department::orderBy('nombre')->get();
+        $cities = City::with('department')->orderBy('nombre')->get();
+        return view('admin.training_centers.edit', compact('training_center', 'departments', 'cities'));
     }
 
-    public function update(UpdateTrainingCenterRequest $request, TrainingCenter $trainingcenter): RedirectResponse
+    public function update(UpdateTrainingCenterRequest $request, TrainingCenter $training_center): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        if (method_exists($request, 'validated') && 'UpdateTrainingCenterRequest' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        $trainingcenter->update($validated);
-        
+        $training_center->update($request->validated());
         return redirect()->route('admin.training-centers.index')
-            ->with('success', 'Registro actualizado exitosamente.');
+            ->with('success', 'Centro de formación actualizado correctamente.');
     }
 
-    public function destroy(TrainingCenter $trainingcenter): RedirectResponse
+    public function destroy(TrainingCenter $training_center): RedirectResponse
     {
         try {
-            $trainingcenter->delete();
+            $training_center->delete();
             return redirect()->route('admin.training-centers.index')
-                ->with('success', 'Registro eliminado exitosamente.');
+                ->with('success', 'Centro de formación eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.training-centers.index')
                 ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
-    
-    protected function getValidationRules(): array
-    {
-        $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
-        }
-        return $rules;
-    }
-    
-    // Note: Laravel resolves model bindings. 
-    // Ensure the parameter name $trainingcenter matches route.
 }

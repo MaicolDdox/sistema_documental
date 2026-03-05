@@ -4,101 +4,63 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\MincienciasTypology;
+use App\Models\MincienciasSubcategory;
 use Illuminate\Http\Request;
-
-
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class MincienciasTypologyController extends Controller
 {
-    private function getFields() {
-        return [
-            'nombre' => ['type' => 'text', 'options' => []],
-            'codigo' => ['type' => 'text', 'options' => []],
-            'descripccion' => ['type' => 'text', 'options' => []],
-
-        ];
-    }
-
     public function index(): View
     {
-        $items = MincienciasTypology::paginate(10);
-        return view('admin.parametric.index', [
-            'items' => $items,
-            'title' => 'Tipologías Minciencias',
-            'routePrefix' => 'admin.minciencias-typologies',
-            'fields' => $this->getFields()
-        ]);
+        $typologies = MincienciasTypology::withCount('subcategories')->orderBy('nombre')->get();
+        $subcategories = MincienciasSubcategory::with('mincienciasTypology')->orderBy('nombre')->get();
+        return view('admin.minciencias_typologies.index', compact('typologies', 'subcategories'));
     }
 
     public function create(): View
     {
-        return view('admin.parametric.create', [
-            'title' => 'Crear Tipologías Minciencias',
-            'routePrefix' => 'admin.minciencias-typologies',
-            'fields' => $this->getFields()
-        ]);
+        return view('admin.minciencias_typologies.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate($this->getValidationRules());
-        // Custom request logic applies if $request is not just a base Request.
-        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        MincienciasTypology::create($validated);
-        
-        return redirect()->route('admin.minciencias-typologies.index')
-            ->with('success', 'Registro creado exitosamente.');
-    }
-
-    public function edit(MincienciasTypology $mincienciastypology): View
-    {
-        return view('admin.parametric.edit', [
-            'item' => $mincienciastypology,
-            'title' => 'Editar Tipologías Minciencias',
-            'routePrefix' => 'admin.minciencias-typologies',
-            'fields' => $this->getFields()
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'codigo' => ['required', 'string', 'max:50'],
+            'descripccion' => ['nullable', 'string', 'max:500'],
         ]);
-    }
-
-    public function update(Request $request, MincienciasTypology $mincienciastypology): RedirectResponse
-    {
-        $validated = $request->validate($this->getValidationRules());
-        if (method_exists($request, 'validated') && 'Request' !== 'Request') {
-             $validated = $request->validated();
-        }
-        
-        $mincienciastypology->update($validated);
-        
+        MincienciasTypology::create($validated);
         return redirect()->route('admin.minciencias-typologies.index')
-            ->with('success', 'Registro actualizado exitosamente.');
+            ->with('success', 'Tipología creada correctamente.');
     }
 
-    public function destroy(MincienciasTypology $mincienciastypology): RedirectResponse
+    public function edit(MincienciasTypology $minciencias_typology): View
+    {
+        return view('admin.minciencias_typologies.edit', compact('minciencias_typology'));
+    }
+
+    public function update(Request $request, MincienciasTypology $minciencias_typology): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:255'],
+            'codigo' => ['required', 'string', 'max:50'],
+            'descripccion' => ['nullable', 'string', 'max:500'],
+        ]);
+        $minciencias_typology->update($validated);
+        return redirect()->route('admin.minciencias-typologies.index')
+            ->with('success', 'Tipología actualizada correctamente.');
+    }
+
+    public function destroy(MincienciasTypology $minciencias_typology): RedirectResponse
     {
         try {
-            $mincienciastypology->delete();
+            $minciencias_typology->delete();
             return redirect()->route('admin.minciencias-typologies.index')
-                ->with('success', 'Registro eliminado exitosamente.');
+                ->with('success', 'Tipología eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.minciencias-typologies.index')
-                ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
+                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
-    
-    protected function getValidationRules(): array
-    {
-        $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
-        }
-        return $rules;
-    }
-    
-    // Note: Laravel resolves model bindings. 
-    // Ensure the parameter name $mincienciastypology matches route.
 }

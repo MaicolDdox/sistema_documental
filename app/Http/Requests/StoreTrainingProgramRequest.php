@@ -11,7 +11,7 @@ class StoreTrainingProgramRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class StoreTrainingProgramRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nombre' => ['required', 'string', 'max:255'],
+            'training_record_id' => ['required', 'exists:training_records,id'],
+            'training_program_type_id' => ['required', 'exists:training_program_types,id'],
+            'descripccion' => ['nullable', 'string', 'max:500'],
+            'jornada' => ['required', 'in:diurna,nocturna,presencial'],
+            'modalidad' => ['required', 'in:presencial,virtual'],
+            'estado' => ['required', 'in:activo,inactivo'],
         ];
     }
 }

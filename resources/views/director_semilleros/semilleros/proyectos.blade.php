@@ -1,6 +1,6 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     @forelse($semillero->projects as $proyecto)
-    <div class="border border-slate-200 rounded-lg p-4 hover:border-blue-200 hover:shadow-sm transition-all bg-white flex flex-col h-full">
+    <div class="border border-slate-200 rounded-lg p-4 hover:border-[#39A900]/30 hover:shadow-sm transition-all bg-white flex flex-col h-full">
         <div class="flex justify-between items-start mb-3">
             <h4 class="text-sm font-bold text-slate-900 leading-tight">
                 {{ $proyecto->title }}
