@@ -62,7 +62,7 @@ class KnowledgeAreaController extends Controller
                 ->with('success', 'Área de conocimiento eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.knowledge-areas.index')
-                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
+                ->with('delete_error_area', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
 }

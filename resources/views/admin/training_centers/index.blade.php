@@ -7,17 +7,19 @@
         <span class="text-slate-900 font-medium">Centros de Formación</span>
     </nav>
 
+    <div x-data="trainingCentersIndex()">
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-xl font-semibold text-slate-900">Centros de Formación</h2>
             <p class="text-sm text-slate-500 mt-1">Tabla: centros_formaciones → departamentos, ciudades</p>
         </div>
-        <a href="{{ route('admin.training-centers.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
+        <button type="button" @click="modalNuevoCentro = true"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
             + Nuevo Centro
-        </a>
+        </button>
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 p-4 mb-6">
@@ -44,6 +46,7 @@
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Código</th>
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Departamento</th>
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ciudad</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                         <th class="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
                     </tr>
                 </thead>
@@ -55,19 +58,54 @@
                         <td class="px-4 py-3 text-slate-600">{{ $center->department?->nombre ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $center->city?->nombre ?? '—' }}</td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1">
-                                <a href="{{ route('admin.training-centers.edit', $center) }}" class="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Editar">
+                            @if($center->activo ?? true)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Activo</span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">Inactivo</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-end gap-1 flex-wrap">
+                                {{-- Ver detalle (modal) --}}
+                                <button type="button" @click="openDetalle({{ json_encode($center->only(['id','nombre','codigo']) + ['department' => $center->department?->nombre, 'city' => $center->city?->nombre, 'activo' => $center->activo ?? true]) }})"
+                                        class="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Ver detalle">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </button>
+                                {{-- Editar (modal) --}}
+                                <button type="button" @click="openEditar({{ $center->id }}, {{ json_encode($center->only(['nombre','codigo','department_id','city_id'])) }})"
+                                        class="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Editar">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                                     </svg>
-                                </a>
-                                <form method="POST" action="{{ route('admin.training-centers.destroy', $center) }}" class="inline" onsubmit="return confirm('¿Eliminar este centro de formación?');">
+                                </button>
+                                {{-- Eliminar: solo confirmación si está desactivado; si está activo se muestra modal de error --}}
+                                <form id="form-delete-{{ $center->id }}" method="POST" action="{{ route('admin.training-centers.destroy', $center) }}" class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Eliminar">
+                                    <button type="button" @click="intentEliminar({{ ($center->activo ?? true) ? 'true' : 'false' }}, 'form-delete-{{ $center->id }}', {{ json_encode($center->nombre) }})"
+                                            class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Eliminar">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                                         </svg>
+                                    </button>
+                                </form>
+                                {{-- Activar / Desactivar --}}
+                                <form method="POST" action="{{ route('admin.training-centers.toggle', $center) }}" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="p-2 rounded-lg text-slate-400 hover:text-[#39A900] hover:bg-green-50 transition-colors" title="{{ ($center->activo ?? true) ? 'Desactivar' : 'Activar' }}">
+                                        @if($center->activo ?? true)
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                            </svg>
+                                        @else
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                        @endif
                                     </button>
                                 </form>
                             </div>
@@ -75,7 +113,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-4 py-12 text-center text-slate-500">
+                        <td colspan="6" class="px-4 py-12 text-center text-slate-500">
                             No hay centros de formación registrados.
                         </td>
                     </tr>
@@ -88,5 +126,235 @@
             {{ $centers->links() }}
         </div>
         @endif
+    </div>
+
+    {{-- Modal Ver detalle --}}
+    <div x-show="modalDetalle" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalDetalle" @click.self="modalDetalle = false" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50"></div>
+            <div x-show="modalDetalle" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Detalle del centro</h3>
+                <template x-if="detalle">
+                    <dl class="space-y-3 text-sm">
+                        <div><dt class="text-slate-500 font-medium">Nombre</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.nombre"></dd></div>
+                        <div><dt class="text-slate-500 font-medium">Código</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.codigo"></dd></div>
+                        <div><dt class="text-slate-500 font-medium">Departamento</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.department || '—'"></dd></div>
+                        <div><dt class="text-slate-500 font-medium">Ciudad</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.city || '—'"></dd></div>
+                        <div><dt class="text-slate-500 font-medium">Estado</dt><dd class="mt-0.5"><span :class="detalle?.activo ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" x-text="detalle?.activo ? 'Activo' : 'Inactivo'"></span></dd></div>
+                    </dl>
+                </template>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" @click="modalDetalle = false" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Editar --}}
+    <div x-show="modalEditar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalEditar" @click.self="modalEditar = false" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50"></div>
+            <div x-show="modalEditar" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Editar centro de formación</h3>
+                <form :action="editFormAction" method="POST" id="form-editar-centro">
+                    @csrf
+                    @method('PUT')
+                    <div class="space-y-4">
+                        <div>
+                            <label for="edit_nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label>
+                            <input type="text" name="nombre" id="edit_nombre" :value="editData.nombre" required
+                                   class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        </div>
+                        <div>
+                            <label for="edit_codigo" class="block text-sm font-medium text-slate-700 mb-1">Código <span class="text-red-500">*</span></label>
+                            <input type="number" name="codigo" id="edit_codigo" :value="editData.codigo" min="0" required
+                                   class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        </div>
+                        <div>
+                            <label for="edit_department_id" class="block text-sm font-medium text-slate-700 mb-1">Departamento <span class="text-red-500">*</span></label>
+                            <select name="department_id" id="edit_department_id" required
+                                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <option value="">Seleccionar...</option>
+                                @foreach($departments as $dept)
+                                    <option value="{{ $dept->id }}">{{ $dept->nombre }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit_city_id" class="block text-sm font-medium text-slate-700 mb-1">Ciudad <span class="text-red-500">*</span></label>
+                            <select name="city_id" id="edit_city_id" required
+                                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <option value="">Seleccionar...</option>
+                                @foreach($cities as $city)
+                                    <option value="{{ $city->id }}" data-department="{{ $city->department_id }}">{{ $city->nombre }} ({{ $city->department?->nombre }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end gap-2">
+                        <button type="button" @click="modalEditar = false" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold">Actualizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: No se puede eliminar --}}
+    <div x-show="deleteError" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="deleteError" @click.self="deleteError = null" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/50"></div>
+            <div x-show="deleteError" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-2">No se puede eliminar</h3>
+                        <p class="text-sm text-slate-600" x-text="deleteError"></p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="button" @click="deleteError = null" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Confirmar eliminación (solo cuando el centro está desactivado) --}}
+    <div x-show="modalConfirmEliminar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalConfirmEliminar" @click.self="modalConfirmEliminar = false" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/40"></div>
+            <div x-show="modalConfirmEliminar" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-100">
+                <div class="text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                        <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-1">Eliminar centro de formación</h3>
+                    <p class="text-sm text-slate-500 mb-1" x-text="'«' + (confirmEliminarNombre || '') + '»'"></p>
+                    <p class="text-sm text-slate-600 mb-6">¿Está seguro? Esta acción no se puede deshacer.</p>
+                    <div class="flex gap-3 justify-center">
+                        <button type="button" @click="modalConfirmEliminar = false; pendingDeleteFormId = null"
+                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="button" @click="submitEliminar()"
+                                class="px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors shadow-sm">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Nuevo Centro --}}
+    <div x-show="modalNuevoCentro" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalNuevoCentro" @click.self="modalNuevoCentro = false" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/40"></div>
+            <div x-show="modalNuevoCentro" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                 class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Nuevo centro de formación</h3>
+                <p class="text-sm text-slate-500 mb-4">Registre un centro vinculado a departamento y ciudad.</p>
+                <form method="POST" action="{{ route('admin.training-centers.store') }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label for="modal_nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre <span class="text-red-500">*</span></label>
+                        <input type="text" name="nombre" id="modal_nombre" value="{{ old('nombre') }}" required
+                               class="w-full border @error('nombre') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="modal_codigo" class="block text-sm font-medium text-slate-700 mb-1">Código <span class="text-red-500">*</span></label>
+                        <input type="number" name="codigo" id="modal_codigo" value="{{ old('codigo') }}" min="0" required
+                               class="w-full border @error('codigo') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('codigo')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="modal_department_id" class="block text-sm font-medium text-slate-700 mb-1">Departamento <span class="text-red-500">*</span></label>
+                        <select name="department_id" id="modal_department_id" required class="w-full border @error('department_id') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <option value="">Seleccionar...</option>
+                            @foreach($departments as $dept)
+                                <option value="{{ $dept->id }}" {{ old('department_id') == $dept->id ? 'selected' : '' }}>{{ $dept->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('department_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="modal_city_id" class="block text-sm font-medium text-slate-700 mb-1">Ciudad <span class="text-red-500">*</span></label>
+                        <select name="city_id" id="modal_city_id" required class="w-full border @error('city_id') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <option value="">Seleccionar...</option>
+                            @foreach($cities as $city)
+                                <option value="{{ $city->id }}" data-department="{{ $city->department_id }}" {{ old('city_id') == $city->id ? 'selected' : '' }}>{{ $city->nombre }} ({{ $city->department?->nombre }})</option>
+                            @endforeach
+                        </select>
+                        @error('city_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="flex gap-3 justify-end pt-2">
+                        <button type="button" @click="modalNuevoCentro = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
+                        <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold transition-colors">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function trainingCentersIndex() {
+            return {
+                modalDetalle: false,
+                modalEditar: false,
+                modalNuevoCentro: @json($errors->any()),
+                deleteError: @json(session('delete_error')),
+                modalConfirmEliminar: false,
+                confirmEliminarNombre: '',
+                pendingDeleteFormId: null,
+                detalle: null,
+                editData: { nombre: '', codigo: '', department_id: '', city_id: '' },
+                editFormAction: '',
+                editId: null,
+                openDetalle(data) {
+                    this.detalle = data;
+                    this.modalDetalle = true;
+                },
+                openEditar(id, data) {
+                    this.editId = id;
+                    this.editFormAction = '{{ url('admin/training-centers') }}/' + id;
+                    this.editData = { nombre: data.nombre || '', codigo: data.codigo ?? '', department_id: String(data.department_id || ''), city_id: String(data.city_id || '') };
+                    this.modalEditar = true;
+                    this.$nextTick(() => {
+                        document.getElementById('edit_nombre').value = this.editData.nombre;
+                        document.getElementById('edit_codigo').value = this.editData.codigo;
+                        document.getElementById('edit_department_id').value = this.editData.department_id;
+                        document.getElementById('edit_city_id').value = this.editData.city_id;
+                    });
+                },
+                intentEliminar(activo, formId, nombre) {
+                    if (activo) {
+                        this.deleteError = 'Este centro está activo. Desactívelo desde el botón de acciones en la fila y vuelva a intentar eliminarlo.';
+                        return;
+                    }
+                    this.confirmEliminarNombre = nombre || '';
+                    this.pendingDeleteFormId = formId;
+                    this.modalConfirmEliminar = true;
+                },
+                submitEliminar() {
+                    if (this.pendingDeleteFormId) {
+                        document.getElementById(this.pendingDeleteFormId).submit();
+                    }
+                    this.modalConfirmEliminar = false;
+                    this.pendingDeleteFormId = null;
+                }
+            };
+        }
+    </script>
     </div>
 </x-app-layout>

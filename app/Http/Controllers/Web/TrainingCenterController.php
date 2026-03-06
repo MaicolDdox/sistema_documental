@@ -31,8 +31,24 @@ class TrainingCenterController extends Controller
         }
 
         $centers = $query->paginate(15)->withQueryString();
+        $departments = Department::orderBy('nombre')->get();
+        $cities = City::with('department')->orderBy('nombre')->get();
 
-        return view('admin.training_centers.index', compact('centers'));
+        return view('admin.training_centers.index', compact('centers', 'departments', 'cities'));
+    }
+
+    public function show(TrainingCenter $training_center)
+    {
+        $training_center->load(['department', 'city']);
+        return response()->json($training_center);
+    }
+
+    public function toggle(TrainingCenter $training_center): RedirectResponse
+    {
+        $training_center->update(['activo' => !$training_center->activo]);
+        $estado = $training_center->activo ? 'activado' : 'desactivado';
+        return redirect()->route('admin.training-centers.index')
+            ->with('success', "Centro de formación {$estado} correctamente.");
     }
 
     public function create(): View
@@ -63,15 +79,40 @@ class TrainingCenterController extends Controller
             ->with('success', 'Centro de formación actualizado correctamente.');
     }
 
-    public function destroy(TrainingCenter $training_center): RedirectResponse
+    public function destroy(Request $request, TrainingCenter $training_center)
     {
+        $razones = [];
+
+        if ($training_center->activo ?? true) {
+            $razones[] = 'está activo — desactívelo desde el botón de acciones en la fila';
+        }
+        if ($training_center->users()->exists()) {
+            $razones[] = 'tiene usuarios asignados — reasigne o elimine esas vinculaciones';
+        }
+        if ($training_center->researchGroups()->exists()) {
+            $razones[] = 'tiene grupos de investigación vinculados — desvincule los grupos primero';
+        }
+
+        if (!empty($razones)) {
+            $mensaje = 'No se puede eliminar este centro de formación porque ' . implode('; ', $razones) . '.';
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $mensaje], 422);
+            }
+            return redirect()->route('admin.training-centers.index')
+                ->with('delete_error', $mensaje);
+        }
+
         try {
             $training_center->delete();
             return redirect()->route('admin.training-centers.index')
                 ->with('success', 'Centro de formación eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
+            $mensaje = 'No se puede eliminar: el centro está asociado a otros registros en el sistema. Revise usuarios, grupos de investigación u otras relaciones antes de intentar de nuevo.';
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $mensaje], 422);
+            }
             return redirect()->route('admin.training-centers.index')
-                ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
+                ->with('delete_error', $mensaje);
         }
     }
 }

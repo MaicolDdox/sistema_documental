@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Enums\EstadoEnum;
 use App\Models\TrainingProgram;
 use App\Models\TrainingProgramType;
 use App\Models\TrainingRecord;
@@ -30,8 +31,10 @@ class TrainingProgramController extends Controller
         }
 
         $programs = $query->paginate(15)->withQueryString();
+        $records = TrainingRecord::orderBy('codigo')->get();
+        $types = TrainingProgramType::orderBy('nombre')->get();
 
-        return view('admin.training_programs.index', compact('programs'));
+        return view('admin.training_programs.index', compact('programs', 'records', 'types'));
     }
 
     public function create(): View
@@ -43,7 +46,19 @@ class TrainingProgramController extends Controller
 
     public function store(StoreTrainingProgramRequest $request): RedirectResponse
     {
-        TrainingProgram::create($request->validated());
+        $record = TrainingRecord::firstOrCreate(
+            ['codigo' => trim($request->input('ficha'))],
+            ['descripccion' => '']
+        );
+        $type = TrainingProgramType::firstOrCreate(
+            ['nombre' => trim($request->input('tipo'))],
+            ['descripccion' => '']
+        );
+        $data = $request->validated();
+        unset($data['ficha'], $data['tipo']);
+        $data['training_record_id'] = $record->id;
+        $data['training_program_type_id'] = $type->id;
+        TrainingProgram::create($data);
         return redirect()->route('admin.training-programs.index')
             ->with('success', 'Programa de formación creado correctamente.');
     }
@@ -57,20 +72,52 @@ class TrainingProgramController extends Controller
 
     public function update(UpdateTrainingProgramRequest $request, TrainingProgram $training_program): RedirectResponse
     {
-        $training_program->update($request->validated());
+        $record = TrainingRecord::firstOrCreate(
+            ['codigo' => trim($request->input('ficha'))],
+            ['descripccion' => '']
+        );
+        $type = TrainingProgramType::firstOrCreate(
+            ['nombre' => trim($request->input('tipo'))],
+            ['descripccion' => '']
+        );
+        $data = $request->validated();
+        unset($data['ficha'], $data['tipo']);
+        $data['training_record_id'] = $record->id;
+        $data['training_program_type_id'] = $type->id;
+        $training_program->update($data);
         return redirect()->route('admin.training-programs.index')
             ->with('success', 'Programa de formación actualizado correctamente.');
     }
 
+    public function toggle(TrainingProgram $training_program): RedirectResponse
+    {
+        $training_program->estado = $training_program->estado === EstadoEnum::Activo
+            ? EstadoEnum::Inactivo
+            : EstadoEnum::Activo;
+        $training_program->save();
+        $label = $training_program->estado === EstadoEnum::Activo ? 'activado' : 'desactivado';
+        return redirect()->route('admin.training-programs.index')
+            ->with('success', "Programa de formación {$label} correctamente.");
+    }
+
     public function destroy(TrainingProgram $training_program): RedirectResponse
     {
+        if ($training_program->estado === EstadoEnum::Activo) {
+            return redirect()->route('admin.training-programs.index')
+                ->with('delete_error', 'Este programa está activo. Desactívelo desde el botón de acciones en la fila y vuelva a intentar eliminarlo.');
+        }
+        $peopleCount = $training_program->people()->count();
+        if ($peopleCount > 0) {
+            return redirect()->route('admin.training-programs.index')
+                ->with('delete_error', "No se puede eliminar: hay {$peopleCount} persona(s) vinculada(s) a este programa. Reasigne o elimine esas vinculaciones primero.");
+        }
         try {
             $training_program->delete();
             return redirect()->route('admin.training-programs.index')
                 ->with('success', 'Programa de formación eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.training-programs.index')
-                ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
+                ->with('delete_error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
 }

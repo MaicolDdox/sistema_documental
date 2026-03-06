@@ -74,7 +74,7 @@ class UserCreate extends Component
         return view('livewire.admin.users.user-create', [
             'tiposDocumento' => TipoDocumentoEnum::cases(),
             'roles' => Role::all(),
-            'trainingCenters' => TrainingCenter::orderBy('nombre')->get(),
+            'trainingCenters' => TrainingCenter::activos()->orderBy('nombre')->get(),
         ]);
     }
 }

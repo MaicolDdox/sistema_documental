@@ -54,13 +54,18 @@ class MincienciasTypologyController extends Controller
 
     public function destroy(MincienciasTypology $minciencias_typology): RedirectResponse
     {
+        $count = $minciencias_typology->subcategories()->count();
+        if ($count > 0) {
+            return redirect()->route('admin.minciencias-typologies.index')
+                ->with('delete_error_typology', "No se puede eliminar: hay {$count} subcategoría(s) vinculada(s). Elimine o reasigne las subcategorías primero.");
+        }
         try {
             $minciencias_typology->delete();
             return redirect()->route('admin.minciencias-typologies.index')
                 ->with('success', 'Tipología eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.minciencias-typologies.index')
-                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
+                ->with('delete_error_typology', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
 }

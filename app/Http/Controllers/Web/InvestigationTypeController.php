@@ -49,7 +49,10 @@ class InvestigationTypeController extends Controller
         }
         
         InvestigationType::create($validated);
-        
+
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Tipo de investigación creado correctamente.');
+        }
         return redirect()->route('admin.investigation-types.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -72,7 +75,11 @@ class InvestigationTypeController extends Controller
         }
         
         $investigationtype->update($validated);
-        
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
         return redirect()->route('admin.investigation-types.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }

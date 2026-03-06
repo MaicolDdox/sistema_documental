@@ -18,7 +18,20 @@ class TrainingCenter extends Model
         'codigo',
         'department_id',
         'city_id',
+        'activo',
     ];
+
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
+
+    /**
+     * Scope: solo centros activos (los desactivados no deben aparecer en el sistema).
+     */
+    public function scopeActivos($query)
+    {
+        return $query->where('activo', true);
+    }
 
     // ─────────────────────────────────────────────
     // RELACIONES

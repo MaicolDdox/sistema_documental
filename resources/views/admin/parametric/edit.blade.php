@@ -5,9 +5,13 @@
         <a href="{{ route($routePrefix.'.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">Volver</a>
     </div>
 
+    @php
+        $segment = last(explode('.', $routePrefix));
+        $updateAction = url()->to(str_replace('.', '/', $routePrefix) . '/' . ($item->id ?? $item->getKey()));
+    @endphp
     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden max-w-3xl">
         <div class="p-5">
-            <form method="POST" action="{{ route($routePrefix.'.update', $item->id) }}" class="space-y-5">
+            <form method="POST" action="{{ $updateAction }}" class="space-y-5">
                 @csrf
                 @method('PUT')
                 @foreach($fields as $key => $fieldDef)
@@ -28,7 +32,8 @@
                                 @endforeach
                             </select>
                         @else
-                            <input type="{{ $fieldDef['type'] }}" name="{{ $key }}" id="{{ $key }}" value="{{ old($key, $item->$key) }}" required class="w-full border @error($key) border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                            @php $currentValue = old($key, $item && is_object($item) ? $item->getAttribute($key) : data_get($item, $key, '')); @endphp
+                            <input type="{{ $fieldDef['type'] }}" name="{{ $key }}" id="{{ $key }}" value="{{ e($currentValue ?? '') }}" required class="w-full border @error($key) border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                         @endif
                         @error($key) <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>

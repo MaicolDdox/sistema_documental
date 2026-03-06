@@ -49,7 +49,10 @@ class EntityPositionController extends Controller
         }
         
         EntityPosition::create($validated);
-        
+
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Cargo en entidad creado correctamente.');
+        }
         return redirect()->route('admin.entity-positions.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -60,6 +63,7 @@ class EntityPositionController extends Controller
             'item' => $entityposition,
             'title' => 'Editar Cargos de Entidades',
             'routePrefix' => 'admin.entity-positions',
+            'routeParam' => 'entity_position',
             'fields' => $this->getFields()
         ]);
     }
@@ -72,7 +76,11 @@ class EntityPositionController extends Controller
         }
         
         $entityposition->update($validated);
-        
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
         return redirect()->route('admin.entity-positions.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }

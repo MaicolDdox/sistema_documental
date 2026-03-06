@@ -1,4 +1,4 @@
-@extends('lider_semillero.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Proyectos')
 @section('header', '')

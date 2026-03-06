@@ -20,7 +20,8 @@ class AsignarRolController extends Controller
 
         $usuarios = User::with('person')
             ->when($user->training_center_id, fn ($q) => $q->where('training_center_id', $user->training_center_id))
-            ->orderBy('email')
+            ->whereDoesntHave('roles')
+            ->orderBy('numero_documento')
             ->get();
 
         $rolesAsignables = collect();

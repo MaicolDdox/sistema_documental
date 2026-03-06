@@ -1,4 +1,4 @@
-@extends('lider_semillero.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Archivos del Semillero')
 @section('header', '')
@@ -6,7 +6,6 @@
 @section('content')
 <div class="mb-6">
     <h1 class="text-2xl font-bold text-slate-900">Archivos del Semillero</h1>
-    <p class="text-sm text-slate-500 mt-0.5">tabla: archivos_semilleros</p>
 </div>
 
 @if(!$semillero)
@@ -27,10 +26,6 @@
 @if(session('error'))
 <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
 @endif
-
-<div class="rounded-xl bg-slate-100 border border-slate-200 px-4 py-2 mb-4 text-sm text-slate-700">
-    tabla: archivos_semilleros — <span class="font-medium">Solo puedes eliminar los que tú subiste</span>
-</div>
 
 <form action="{{ route('lider-sem.archivos.store') }}" method="post" enctype="multipart/form-data" class="mb-6" id="form-archivo-semillero">
     @csrf

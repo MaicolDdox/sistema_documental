@@ -1,9 +1,14 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Documentos Institucionales')
 @section('header', 'Repositorio de Documentos')
 
 @section('content')
+<div x-data="{ modalSubir: @json($errors->any() && old('_from_modal')), fileName: '' }">
+@if(session('success'))
+<div class="mb-4 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">{{ session('success') }}</div>
+@endif
+
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
         <h2 class="text-sm font-semibold text-slate-800">Documentos del Centro</h2>
@@ -11,10 +16,10 @@
     </div>
     
     @can('documentos.subir')
-    <a href="{{ route('dir-sem.documentos.create') }}" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all flex items-center gap-2 flex-shrink-0">
+    <button type="button" @click="modalSubir = true" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all flex items-center gap-2 flex-shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
         Subir Documento
-    </a>
+    </button>
     @endcan
 </div>
 
@@ -97,5 +102,75 @@
         {{ $documentos->links() }}
     </div>
     @endif
+</div>
+
+    {{-- Modal: Subir Documento --}}
+    @can('documentos.subir')
+    <div x-show="modalSubir" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalSubir" @click.self="modalSubir = false" class="fixed inset-0 bg-black/40" x-transition></div>
+            <div x-show="modalSubir" class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" x-transition>
+                <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#39A900]/10 text-[#39A900] flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900">Subir documento</h3>
+                            <p class="text-xs text-slate-500">Normativas, formatos o guías para los semilleros.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="modalSubir = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form action="{{ route('dir-sem.documentos.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
+                    @csrf
+                    <input type="hidden" name="_from_modal" value="1">
+                    <div class="space-y-4 mb-5">
+                        <div>
+                            <label for="modal_nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre del documento <span class="text-red-500">*</span></label>
+                            <input type="text" name="nombre" id="modal_nombre" value="{{ old('nombre') }}" required placeholder="Ej: Formato de inscripción v2"
+                                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('nombre') border-red-300 @enderror">
+                            @error('nombre') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label for="modal_semillero_id" class="block text-sm font-medium text-slate-700 mb-1">Semillero asociado (opcional)</label>
+                            <select name="semillero_id" id="modal_semillero_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <option value="">Documento institucional (global)</option>
+                                @foreach($semilleros ?? [] as $semillero)
+                                    <option value="{{ $semillero->id }}" {{ old('semillero_id') == $semillero->id ? 'selected' : '' }}>{{ $semillero->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @error('semillero_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Archivo <span class="text-red-500">*</span></label>
+                            <div class="mt-2 flex justify-center rounded-lg border border-dashed border-slate-300 px-4 py-8 hover:bg-slate-50 transition-colors bg-white">
+                                <div class="text-center">
+                                    <svg class="mx-auto h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd"/></svg>
+                                    <label for="modal_archivo" class="mt-2 cursor-pointer rounded-md font-semibold text-[#39A900] hover:text-[#2d8500] text-sm">
+                                        <span>Seleccionar archivo</span>
+                                        <input id="modal_archivo" name="archivo" type="file" class="sr-only" required accept=".pdf,.doc,.docx,.xls,.xlsx" @change="fileName = $event.target.files[0]?.name || ''">
+                                    </label>
+                                    <p class="text-xs text-slate-500 mt-1">PDF, DOCX, XLSX hasta 10MB</p>
+                                    <p x-show="fileName" x-text="'Archivo: ' + fileName" class="text-sm font-medium text-slate-700 mt-2"></p>
+                                </div>
+                            </div>
+                            @error('archivo') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
+                        <button type="button" @click="modalSubir = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+                            Subir Documento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endcan
 </div>
 @endsection

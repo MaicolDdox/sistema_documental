@@ -17,6 +17,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $centerId = $user->training_center_id;
 
+        // Semilleros del centro: los que pertenecen a un grupo de investigación de este centro
         $semillerosQuery = Seedling::with(['leader.person', 'members', 'advisors', 'researchGroup'])
             ->when($centerId, function ($q) use ($centerId) {
                 $q->whereHas('researchGroup', fn ($r) => $r->where('training_center_id', $centerId));
@@ -26,11 +27,15 @@ class DashboardController extends Controller
         $semillerosActivos = (clone $semillerosQuery)->active()->count();
         $totalSemilleros = $semilleros->count();
 
-        $lideresIds = $semilleros->pluck('leader_id')->filter()->unique()->values();
-        $totalLideres = $lideresIds->count();
-        $lideresEsteMes = $totalLideres > 0
-            ? User::whereIn('id', $lideresIds)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count()
+        // Líderes: todos los usuarios con rol lider_semillero del mismo centro (igual que en Líderes index)
+        $lideresQuery = User::role('lider_semillero')
+            ->when($centerId, fn ($q) => $q->where('training_center_id', $centerId))
+            ->with(['person', 'ledSeedlings']);
+        $totalLideres = (clone $lideresQuery)->count();
+        $lideresEsteMes = $centerId
+            ? (clone $lideresQuery)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count()
             : 0;
+        $misLideres = (clone $lideresQuery)->orderBy('email')->take(5)->get();
 
         $integrantesTotales = $semilleros->sum(fn ($s) => $s->members->count());
         $integrantesNuevos = 0;
@@ -52,9 +57,6 @@ class DashboardController extends Controller
         }
 
         $misSemilleros = (clone $semillerosQuery)->with(['leader.person', 'members'])->orderBy('nombre')->take(6)->get();
-        $misLideres = $lideresIds->isNotEmpty()
-            ? User::with('person')->whereIn('id', $lideresIds)->take(5)->get()
-            : collect();
 
         return view('director_semilleros.dashboard', [
             'totalSemilleros'     => $totalSemilleros,

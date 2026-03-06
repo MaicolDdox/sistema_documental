@@ -49,7 +49,10 @@ class TechnologicalLineController extends Controller
         }
         
         TechnologicalLine::create($validated);
-        
+
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Línea tecnológica creada correctamente.');
+        }
         return redirect()->route('admin.technological-lines.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -72,7 +75,11 @@ class TechnologicalLineController extends Controller
         }
         
         $technologicalline->update($validated);
-        
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
         return redirect()->route('admin.technological-lines.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }

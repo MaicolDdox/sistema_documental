@@ -60,7 +60,12 @@ class ExternalAdvisorController extends Controller
 
     public function destroy(ExternalAdvisor $externalAdvisor): RedirectResponse
     {
-        $externalAdvisor->delete();
-        return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo eliminado correctamente.');
+        try {
+            $externalAdvisor->delete();
+            return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo eliminado correctamente.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            return redirect()->route('admin.external-advisors.index')
+                ->with('delete_error', 'No se puede eliminar porque está asociado a semilleros u otros registros.');
+        }
     }
 }

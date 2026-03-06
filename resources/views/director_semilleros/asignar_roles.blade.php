@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Asignación de Roles')
 @section('header', 'Asignación de Roles')
@@ -31,8 +31,13 @@
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20 transition-all @error('user_id') border-red-300 @enderror">
                             <option value="">Seleccionar usuario...</option>
                             @foreach($usuarios as $u)
+                                @php
+                                    $nombre = $u->person ? $u->person->nombre_completo : $u->email;
+                                    $cedula = $u->numero_documento ?? '';
+                                    $label = $cedula ? "{$cedula} ({$nombre})" : $nombre;
+                                @endphp
                                 <option value="{{ $u->id }}" {{ old('user_id') == $u->id ? 'selected' : '' }}>
-                                    {{ $u->person ? $u->person->nombre_completo : $u->email }} ({{ $u->email }})
+                                    {{ $label }}
                                 </option>
                             @endforeach
                         </select>

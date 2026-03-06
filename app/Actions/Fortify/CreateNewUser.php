@@ -26,7 +26,7 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             // Datos de users
-            'training_center_id' => ['nullable', 'exists:training_centers,id'],
+            'training_center_id' => ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)],
             'email' => ['nullable', 'email', 'max:255', Rule::unique(User::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
             'numero_documento' => ['required', 'integer', 'unique:users,numero_documento'],

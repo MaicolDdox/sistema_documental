@@ -15,6 +15,7 @@ Route::middleware(['auth', 'role:administrador_sistema'])
 
         // Usuarios
         Route::get('usuarios/asignar-roles', [UsuarioController::class, 'asignarRoles'])->name('usuarios.asignar_roles');
+        Route::get('usuarios/usuarios-con-rol', [UsuarioController::class, 'usuariosConRol'])->name('usuarios.usuarios_con_rol');
         Route::post('usuarios/asignar-rol-store', [UsuarioController::class, 'storeAsignarRol'])->name('usuarios.asignar_rol_store');
         Route::resource('usuarios', UsuarioController::class)->except(['show']);
         Route::post('usuarios/{id}/toggle-estado', [UsuarioController::class, 'toggleEstado'])->name('usuarios.toggle_estado');

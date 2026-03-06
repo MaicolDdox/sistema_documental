@@ -23,8 +23,8 @@ class StoreTrainingProgramRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'training_record_id' => ['required', 'exists:training_records,id'],
-            'training_program_type_id' => ['required', 'exists:training_program_types,id'],
+            'ficha' => ['required', 'string', 'max:100'],
+            'tipo' => ['required', 'string', 'max:255'],
             'descripccion' => ['nullable', 'string', 'max:500'],
             'jornada' => ['required', 'in:diurna,nocturna,presencial'],
             'modalidad' => ['required', 'in:presencial,virtual'],

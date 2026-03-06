@@ -37,7 +37,11 @@ class LiderSemilleroController extends Controller
 
         $lideres = $query->orderBy('email')->paginate(10)->withQueryString();
 
-        return view('director_semilleros.lideres.index', compact('lideres'));
+        $semilleros = \App\Models\Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $user->training_center_id))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        return view('director_semilleros.lideres.index', compact('lideres', 'semilleros'));
     }
 
     public function create()
@@ -78,15 +82,20 @@ class LiderSemilleroController extends Controller
             'training_center_id' => Auth::user()->training_center_id,
             'email'              => $validated['email'],
             'numero_documento'   => $validated['numero_documento'],
-            'tipo_documento'     => \App\Enums\TipoDocumentoEnum::CC, // Default as we didn't ask for it
+            'tipo_documento'     => \App\Enums\TipoDocumentoEnum::CedulaCiudadana,
             'password'           => Hash::make($password),
             'estado'             => EstadoEnum::Activo,
         ]);
 
-        // Crear persona asociada
+        // Crear persona asociada (campos requeridos de people sin valor en el formulario)
         $newUser->person()->create([
-            'primer_nombre'   => $validated['nombre'],
-            'primer_apellido' => $validated['apellido'],
+            'primer_nombre'        => $validated['nombre'],
+            'primer_apellido'      => $validated['apellido'],
+            'segundo_apellido'     => '',
+            'email_institucional' => $validated['email'],
+            'genero'               => 'prefiero no decirlo',
+            'celular'             => 0,
+            'eps'                 => '',
         ]);
 
         // Asignar rol
@@ -175,6 +184,19 @@ class LiderSemilleroController extends Controller
         $lider->delete();
 
         return redirect()->route('dir-sem.lideres.index')->with('success', 'Líder eliminado correctamente.');
+    }
+
+    public function toggleEstado(User $lider)
+    {
+        $this->authorize('usuarios.editar');
+        $this->ensureLeaderOfCenter($lider);
+
+        $lider->update([
+            'estado' => $lider->estado === EstadoEnum::Activo ? EstadoEnum::Inactivo : EstadoEnum::Activo,
+        ]);
+
+        $msg = $lider->estado === EstadoEnum::Activo ? 'Líder activado.' : 'Líder desactivado.';
+        return redirect()->route('dir-sem.lideres.index')->with('success', $msg);
     }
 
     private function ensureLeaderOfCenter(User $lider): void

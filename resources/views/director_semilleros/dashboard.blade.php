@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Dashboard')
 @section('header', 'Dashboard')
@@ -93,7 +93,7 @@
             <div class="p-4 space-y-3">
                 @forelse($misLideres as $lider)
                 @php
-                    $semillero = $misSemilleros->firstWhere('leader_id', $lider->id);
+                    $semillero = $lider->ledSeedlings->first();
                     $iniciales = $lider->person ? (strtoupper(substr($lider->person->primer_nombre ?? '', 0, 1)) . strtoupper(substr($lider->person->primer_apellido ?? '', 0, 1))) : strtoupper(substr($lider->email ?? 'U', 0, 2));
                 @endphp
                 <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:bg-[#39A900]/05 hover:border-[#39A900]/20 transition-all duration-200">

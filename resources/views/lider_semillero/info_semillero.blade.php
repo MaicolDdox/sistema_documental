@@ -1,4 +1,4 @@
-@extends('lider_semillero.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Info del Semillero')
 @section('header', '')
@@ -41,12 +41,6 @@
         </div>
     </div>
     @else
-    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-        <p class="text-sm text-amber-800">
-            Solo puedes editar nombre, logo y descripción. El código, grupo y estado los gestiona el Director de Semilleros.
-        </p>
-    </div>
-
     <div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
             <h2 class="text-base font-semibold text-slate-900 font-heading">Información del Semillero</h2>
@@ -63,19 +57,20 @@
                 {{-- Logo --}}
                 <div class="flex flex-col sm:flex-row items-start gap-4">
                     <label class="block text-sm font-medium text-slate-700">Logo</label>
-                    <div class="flex items-center gap-4">
-                        <div class="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
-                            @if($semillero->logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($semillero->logo))
-                                <img src="{{ Storage::disk('public')->url($semillero->logo) }}" alt="Logo" class="w-full h-full object-cover">
+                    <div class="flex flex-col sm:flex-row items-start gap-4">
+                        <div class="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0" id="logo-preview-box">
+                            @if(!empty($semillero->logo))
+                                <img id="logo-preview" src="{{ asset('storage/' . $semillero->logo) }}" alt="Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling && this.nextElementSibling.classList.remove('hidden');">
+                                <svg id="logo-placeholder" class="w-10 h-10 text-[#39A900] hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
                             @else
-                                <svg class="w-10 h-10 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+                                <svg id="logo-placeholder" class="w-10 h-10 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
                             @endif
                         </div>
-                        <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                            <input type="file" name="logo" accept="image/jpeg,image/png,image/gif,image/webp" class="sr-only">
-                            <svg class="w-4 h-4 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Cambiar logo
-                        </label>
+                        <div class="flex flex-col gap-1">
+                            <input type="file" name="logo" id="input-logo" accept="image/jpeg,image/png,image/gif,image/webp" class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#39A900]/10 file:text-[#39A900] hover:file:bg-[#39A900]/20 file:cursor-pointer cursor-pointer">
+                            <p class="text-xs text-slate-500">Formatos: JPG, PNG, GIF o WebP. Máximo 2 MB.</p>
+                            <p id="logo-file-name" class="text-xs text-green-600 font-medium hidden"></p>
+                        </div>
                     </div>
                 </div>
 
@@ -145,6 +140,40 @@
             btn.disabled = true;
             btn.innerHTML = 'Guardando…';
         });
+    });
+
+    // Al elegir un archivo, mostrar nombre y vista previa del logo
+    document.getElementById('input-logo')?.addEventListener('change', function(e) {
+        var file = e.target.files && e.target.files[0];
+        var nameEl = document.getElementById('logo-file-name');
+        var box = document.getElementById('logo-preview-box');
+        if (!file) {
+            if (nameEl) { nameEl.classList.add('hidden'); nameEl.textContent = ''; }
+            return;
+        }
+        if (nameEl) {
+            nameEl.textContent = 'Nuevo archivo: ' + file.name;
+            nameEl.classList.remove('hidden');
+        }
+        if (box && file.type.indexOf('image/') === 0) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                var img = document.getElementById('logo-preview');
+                var placeholder = document.getElementById('logo-placeholder');
+                if (img) {
+                    img.src = reader.result;
+                } else {
+                    var newImg = document.createElement('img');
+                    newImg.id = 'logo-preview';
+                    newImg.alt = 'Logo';
+                    newImg.className = 'w-full h-full object-cover';
+                    newImg.src = reader.result;
+                    if (placeholder) placeholder.remove();
+                    box.appendChild(newImg);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
     });
 </script>
 @endpush

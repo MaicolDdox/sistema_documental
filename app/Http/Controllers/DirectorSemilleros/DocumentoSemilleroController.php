@@ -17,14 +17,15 @@ class DocumentoSemilleroController extends Controller
 
         $user = Auth::user();
 
-        // lista de documentos del centro con filtros
         $documentos = SeedlingFile::with(['seedling', 'user.person'])
-            ->whereHas('seedling.leader', function($q) use ($user) {
-                $q->where('training_center_id', $user->training_center_id);
-            })
+            ->whereHas('seedling.leader', fn ($q) => $q->where('training_center_id', $user->training_center_id))
             ->paginate(10);
 
-        return view('director_semilleros.documentos.index', compact('documentos'));
+        $semilleros = Seedling::whereHas('leader', fn ($q) => $q->where('training_center_id', $user->training_center_id))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+
+        return view('director_semilleros.documentos.index', compact('documentos', 'semilleros'));
     }
 
     public function create()

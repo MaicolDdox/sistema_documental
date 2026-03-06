@@ -79,11 +79,13 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         Route::resource('departments', DepartmentController::class)->names('departments');
         Route::resource('cities', CityController::class)->names('cities');
         Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
+        Route::patch('training-centers/{training_center}/toggle', [TrainingCenterController::class, 'toggle'])->name('training-centers.toggle');
         Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
         Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
         Route::resource('training-records', \App\Http\Controllers\Web\TrainingRecordController::class)->names('training-records');
         Route::resource('training-program-types', \App\Http\Controllers\Web\TrainingProgramTypeController::class)->names('training-program-types');
         Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
+        Route::patch('training-programs/{training_program}/toggle', [TrainingProgramController::class, 'toggle'])->name('training-programs.toggle');
         Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
         Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
         Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');

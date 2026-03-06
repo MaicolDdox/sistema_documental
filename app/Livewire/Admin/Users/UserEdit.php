@@ -80,6 +80,7 @@ class UserEdit extends Component
             'email_institucional' => $this->email_institucional ?: null,
             'role' => $this->role,
             'estado' => $this->estado,
+            'training_center_id' => $this->training_center_id,
         ], [
             'email' => ['nullable', 'email', 'max:255', Rule::unique(User::class)->ignore($this->user->id)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
@@ -89,6 +90,7 @@ class UserEdit extends Component
             'email_institucional' => ['nullable', 'email', 'max:255', Rule::unique('people', 'email_institucional')->ignore($this->user->person?->id)],
             'role' => ['required', 'string', 'exists:roles,name'],
             'estado' => ['required', Rule::enum(EstadoEnum::class)],
+            'training_center_id' => ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)],
         ])->validate();
 
         // Update user
@@ -129,7 +131,7 @@ class UserEdit extends Component
         return view('livewire.admin.users.user-edit', [
             'tiposDocumento' => TipoDocumentoEnum::cases(),
             'roles' => Role::all(),
-            'trainingCenters' => TrainingCenter::orderBy('nombre')->get(),
+            'trainingCenters' => TrainingCenter::activos()->orderBy('nombre')->get(),
             'estados' => EstadoEnum::cases(),
         ]);
     }

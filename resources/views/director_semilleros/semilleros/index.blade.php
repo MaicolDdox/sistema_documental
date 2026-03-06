@@ -1,9 +1,10 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Semilleros de Investigación')
 @section('header', '')
 
 @section('content')
+<div x-data="{ modalNuevoSemillero: @json($errors->any() && old('_from_modal')) }">
 {{-- Breadcrumbs --}}
 <nav class="text-sm text-slate-500 mb-2">
     <a href="{{ route('dir-sem.dashboard') }}" class="hover:text-[#39A900]">Gestión Semilleros</a>
@@ -47,10 +48,10 @@
         </button>
     </form>
     @can('semilleros.crear')
-    <a href="{{ route('dir-sem.semilleros.create') }}" class="sgd-btn-primary py-2.5 px-5 rounded-xl text-sm flex items-center justify-center gap-2 shrink-0">
+    <button type="button" @click="modalNuevoSemillero = true" class="sgd-btn-primary py-2.5 px-5 rounded-xl text-sm flex items-center justify-center gap-2 shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
         + Nuevo Semillero
-    </a>
+    </button>
     @endcan
 </div>
 
@@ -156,5 +157,79 @@
         {{ $semilleros->links() }}
     </div>
     @endif
+</div>
+
+    {{-- Modal: Nuevo Semillero --}}
+    @can('semilleros.crear')
+    <div x-show="modalNuevoSemillero" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div x-show="modalNuevoSemillero" @click.self="modalNuevoSemillero = false" class="fixed inset-0 bg-black/40" x-transition></div>
+            <div x-show="modalNuevoSemillero" class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" x-transition>
+                <div class="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                    <h3 class="text-lg font-semibold text-slate-900">Nuevo Semillero</h3>
+                    <button type="button" @click="modalNuevoSemillero = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form action="{{ route('dir-sem.semilleros.store') }}" method="POST" class="p-6">
+                    @csrf
+                    <input type="hidden" name="_from_modal" value="1">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="modal_nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre del Semillero <span class="text-red-500">*</span></label>
+                            <input type="text" name="nombre" id="modal_nombre" value="{{ old('nombre') }}" required placeholder="Ej: Semillero de Desarrollo de Software"
+                                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('nombre') border-red-300 @enderror">
+                            @error('nombre') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="modal_codigo" class="block text-sm font-medium text-slate-700 mb-1">Código</label>
+                                <input type="number" name="codigo" id="modal_codigo" value="{{ old('codigo', $siguienteCodigo ?? '') }}" min="1" step="1" placeholder="{{ $siguienteCodigo ?? 'Auto' }}"
+                                       class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('codigo') border-red-300 @enderror">
+                                @error('codigo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label for="modal_research_group_id" class="block text-sm font-medium text-slate-700 mb-1">Grupo de Investigación</label>
+                                <select name="research_group_id" id="modal_research_group_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('research_group_id') border-red-300 @enderror">
+                                    <option value="">Ninguno</option>
+                                    @foreach($gruposInvestigacion ?? [] as $grupo)
+                                        <option value="{{ $grupo->id }}" {{ old('research_group_id') == $grupo->id ? 'selected' : '' }}>{{ $grupo->nombre }} @if($grupo->codigo)({{ $grupo->codigo }})@endif</option>
+                                    @endforeach
+                                </select>
+                                @error('research_group_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                        <div>
+                            <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado <span class="text-red-500">*</span></label>
+                            <select name="lider_id" id="modal_lider_id" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('lider_id') border-red-300 @enderror">
+                                <option value="">Selecciona un líder...</option>
+                                @foreach($lideres ?? [] as $lider)
+                                    @php
+                                        $nombreLider = $lider->person ? trim(($lider->person->primer_nombre ?? '') . ' ' . ($lider->person->primer_apellido ?? '')) : $lider->email;
+                                        if ($nombreLider === '') { $nombreLider = $lider->email; }
+                                    @endphp
+                                    <option value="{{ $lider->id }}" {{ old('lider_id') == $lider->id ? 'selected' : '' }}>{{ $nombreLider }} ({{ $lider->email }})</option>
+                                @endforeach
+                            </select>
+                            @error('lider_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="modal_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción (opcional)</label>
+                            <textarea name="descripcion" id="modal_descripcion" rows="3" placeholder="Propósito, líneas de investigación..." class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('descripcion') border-red-300 @enderror">{{ old('descripcion') }}</textarea>
+                            @error('descripcion') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <div class="flex gap-3 justify-end pt-5 mt-5 border-t border-slate-100">
+                        <button type="button" @click="modalNuevoSemillero = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            Guardar Semillero
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endcan
 </div>
 @endsection
