@@ -15,6 +15,11 @@ class SeedlingAdvisor extends Model
     protected $fillable = [
         'seedling_id',
         'external_advisor_id',
+        'activo',
+    ];
+
+    protected $casts = [
+        'activo' => 'boolean',
     ];
 
     // ─────────────────────────────────────────────

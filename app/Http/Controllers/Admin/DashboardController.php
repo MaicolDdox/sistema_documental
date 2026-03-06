@@ -47,8 +47,8 @@ class DashboardController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Métricas: centros de formación (todos para admin)
-        $totalCentros = TrainingCenter::count();
+        // Métricas: solo centros activos (los desactivados no cuentan en el sistema)
+        $totalCentros = TrainingCenter::activos()->count();
 
         // Usuarios recientes (últimas cuentas creadas)
         $recentUsers = User::with(['person', 'roles'])

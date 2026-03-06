@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Detalle del Líder')
 @section('header', '')

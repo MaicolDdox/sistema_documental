@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Reportes')
 @section('header', 'Generación de Reportes')
@@ -21,9 +21,12 @@
         <h3 class="text-base font-semibold text-slate-900 mb-2">Semilleros con Métricas</h3>
         <p class="text-sm text-slate-500 flex-1 mb-5">Obtén un listado general de los semilleros del centro con la cantidad de integrantes, proyectos y productos activos.</p>
         
-        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto">
+        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto form-reporte" data-tipo="Semilleros con Métricas">
             @csrf
             <input type="hidden" name="tipo_reporte" value="Semilleros con Métricas">
+            <input type="hidden" name="semillero_id" id="form_semillero_1" value="">
+            <input type="hidden" name="fecha_desde" id="form_fecha_desde_1" value="">
+            <input type="hidden" name="fecha_hasta" id="form_fecha_hasta_1" value="">
             <div class="flex gap-2">
                 @can('reportes.exportar_pdf_excel')
                 <button type="submit" name="formato" value="pdf" class="flex-1 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-1">
@@ -47,9 +50,12 @@
         <h3 class="text-base font-semibold text-slate-900 mb-2">Aprendices por Semillero</h3>
         <p class="text-sm text-slate-500 flex-1 mb-5">Detalle nominal de los integrantes clasificados por cada semillero activo en el centro de formación.</p>
         
-        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto">
+        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto form-reporte" data-tipo="Aprendices por Semillero">
             @csrf
             <input type="hidden" name="tipo_reporte" value="Aprendices por Semillero">
+            <input type="hidden" name="semillero_id" id="form_semillero_2" value="">
+            <input type="hidden" name="fecha_desde" id="form_fecha_desde_2" value="">
+            <input type="hidden" name="fecha_hasta" id="form_fecha_hasta_2" value="">
             <div class="flex gap-2">
                 @can('reportes.exportar_pdf_excel')
                 <button type="submit" name="formato" value="pdf" class="flex-1 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-1">
@@ -73,9 +79,12 @@
         <h3 class="text-base font-semibold text-slate-900 mb-2">Proyectos por Estado</h3>
         <p class="text-sm text-slate-500 flex-1 mb-5">Estado actual de todos los proyectos de investigación vinculados a los semilleros (En formulación, En ejecución, Terminados, etc).</p>
         
-        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto">
+        <form action="{{ route('dir-sem.reportes.exportar') }}" method="POST" class="mt-auto form-reporte" data-tipo="Proyectos por Estado">
             @csrf
             <input type="hidden" name="tipo_reporte" value="Proyectos por Estado">
+            <input type="hidden" name="semillero_id" id="form_semillero_3" value="">
+            <input type="hidden" name="fecha_desde" id="form_fecha_desde_3" value="">
+            <input type="hidden" name="fecha_hasta" id="form_fecha_hasta_3" value="">
             <div class="flex gap-2">
                 @can('reportes.exportar_pdf_excel')
                 <button type="submit" name="formato" value="pdf" class="flex-1 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 px-3 rounded-lg text-sm transition-all flex items-center justify-center gap-1">
@@ -100,20 +109,39 @@
     </div>
     <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Semillero Específico</label>
-            <select class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] disabled:bg-slate-50" disabled>
-                <option value="">Selecciona (Próximamente)</option>
+            <label for="filtro_semillero_id" class="block text-sm font-medium text-slate-700 mb-1.5">Semillero Específico</label>
+            <select id="filtro_semillero_id" name="filtro_semillero_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20 transition-all">
+                <option value="">Todos los semilleros</option>
+                @foreach($semilleros ?? [] as $s)
+                    <option value="{{ $s->id }}">{{ $s->nombre }}@if($s->codigo) ({{ $s->codigo }})@endif</option>
+                @endforeach
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Rango de Fechas (Desde)</label>
-            <input type="date" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] disabled:bg-slate-50" disabled>
+            <label for="filtro_fecha_desde" class="block text-sm font-medium text-slate-700 mb-1.5">Rango de Fechas (Desde)</label>
+            <input type="date" id="filtro_fecha_desde" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20 transition-all">
         </div>
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1.5">Rango de Fechas (Hasta)</label>
-            <input type="date" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] disabled:bg-slate-50" disabled>
+            <label for="filtro_fecha_hasta" class="block text-sm font-medium text-slate-700 mb-1.5">Rango de Fechas (Hasta)</label>
+            <input type="date" id="filtro_fecha_hasta" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20 transition-all">
         </div>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.form-reporte').forEach(function(form) {
+    form.addEventListener('submit', function() {
+        var sem = document.getElementById('filtro_semillero_id');
+        var desde = document.getElementById('filtro_fecha_desde');
+        var hasta = document.getElementById('filtro_fecha_hasta');
+        var hidSem = form.querySelector('input[name="semillero_id"]');
+        var hidDesde = form.querySelector('input[name="fecha_desde"]');
+        var hidHasta = form.querySelector('input[name="fecha_hasta"]');
+        if (hidSem) hidSem.value = sem ? sem.value : '';
+        if (hidDesde) hidDesde.value = desde ? desde.value : '';
+        if (hidHasta) hidHasta.value = hasta ? hasta.value : '';
+    });
+});
+</script>
 
 @endsection

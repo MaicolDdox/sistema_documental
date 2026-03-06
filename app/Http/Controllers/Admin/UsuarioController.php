@@ -56,6 +56,32 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Roles que el usuario actual puede asignar (para chulitos y filtrado del select).
+     * - Administrador (usuarios.asignar_rol): todos.
+     * - Director semilleros (usuarios.crear_lider_semillero): lider_semillero.
+     * - Líder semillero: asesor_semillero.
+     * - Director investigación (usuarios.crear_investigador_asociado): investigador_asociado.
+     */
+    protected function getAssignableRoleNames(): array
+    {
+        $user = auth()->user();
+        if ($user->can('usuarios.asignar_rol')) {
+            return Role::orderBy('name')->pluck('name')->all();
+        }
+        $names = [];
+        if ($user->can('usuarios.crear_lider_semillero')) {
+            $names[] = 'lider_semillero';
+        }
+        if ($user->hasRole('lider_semillero')) {
+            $names[] = 'asesor_semillero';
+        }
+        if ($user->can('usuarios.crear_investigador_asociado')) {
+            $names[] = 'investigador_asociado';
+        }
+        return array_values(array_unique($names));
+    }
+
+    /**
      * Vista: Asignación de roles (formulario usuario + rol).
      * Permission: usuarios.asignar_rol
      */
@@ -65,29 +91,69 @@ class UsuarioController extends Controller
 
         $usuarios = User::with('person')
             ->where('training_center_id', auth()->user()->training_center_id)
-            ->orderBy('email')
+            ->whereDoesntHave('roles')
+            ->orderBy('numero_documento')
             ->get();
         $roles = Role::with('permissions')->orderBy('name')->get();
+        $roleNamesAssignable = $this->getAssignableRoleNames();
 
-        return view('admin.usuarios.asignar_roles', compact('usuarios', 'roles'));
+        return view('admin.usuarios.asignar_roles', compact('usuarios', 'roles', 'roleNamesAssignable'));
     }
 
     /**
-     * Guardar asignación de rol desde el formulario de la página Asignar Roles.
+     * Vista: Usuarios que ya tienen rol — listado y opción de agregar otro rol.
      * Permission: usuarios.asignar_rol
      */
-    public function storeAsignarRol(Request $request)
+    public function usuariosConRol(Request $request)
     {
         $this->authorize('usuarios.asignar_rol');
 
+        $query = User::with(['person', 'roles'])
+            ->where('training_center_id', auth()->user()->training_center_id)
+            ->whereHas('roles')
+            ->orderBy('numero_documento');
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('numero_documento', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%")
+                  ->orWhereHas('person', function ($q2) use ($term) {
+                      $q2->where('primer_nombre', 'like', "%{$term}%")
+                         ->orWhere('primer_apellido', 'like', "%{$term}%");
+                  });
+            });
+        }
+
+        $usuarios = $query->paginate(15)->withQueryString();
+        $roles = Role::orderBy('name')->get();
+        $roleNamesAssignable = $this->getAssignableRoleNames();
+
+        return view('admin.usuarios.usuarios_con_rol', compact('usuarios', 'roles', 'roleNamesAssignable'));
+    }
+
+    /**
+     * Guardar asignación de rol desde el formulario de la página Asignar Roles o Usuarios con rol.
+     * Solo se permite asignar roles que el usuario actual tiene permiso para asignar.
+     */
+    public function storeAsignarRol(Request $request)
+    {
+        $assignable = $this->getAssignableRoleNames();
+        if (empty($assignable)) {
+            abort(403, 'No tiene permiso para asignar roles.');
+        }
+
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'rol'     => ['required', 'string', 'exists:roles,name'],
+            'rol'     => ['required', 'string', 'exists:roles,name', 'in:' . implode(',', $assignable)],
         ]);
 
         $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($validated['user_id']);
         $usuario->assignRole($validated['rol']);
 
+        if ($request->input('_from') === 'usuarios_con_rol') {
+            return redirect()->route('admin.usuarios.usuarios_con_rol')->with('success', 'Rol agregado correctamente.');
+        }
         return redirect()->route('admin.usuarios.asignar_roles')->with('success', 'Rol asignado correctamente.');
     }
 
@@ -117,7 +183,7 @@ class UsuarioController extends Controller
             'numero_documento' => 'required|string|max:20|unique:users,numero_documento',
             'email'            => 'required|email|unique:users,email',
             'password'         => 'required|string|min:8',
-            'rol'              => 'required|exists:roles,name',
+            'rol'              => 'nullable|exists:roles,name',
         ]);
 
         $user = User::create([
@@ -137,8 +203,10 @@ class UsuarioController extends Controller
             'email_institucional' => $validated['email'],
         ]);
 
-        // Asignar Rol
-        $user->assignRole($validated['rol']);
+        // Asignar rol solo si se envió
+        if (!empty($validated['rol'])) {
+            $user->assignRole($validated['rol']);
+        }
 
         // Enviar credenciales (Si tiene permiso usuarios.asignar_credenciales)
         if (auth()->user()->can('usuarios.asignar_credenciales')) {
@@ -196,10 +264,18 @@ class UsuarioController extends Controller
             ]);
         } else {
             Person::create([
-                'user_id'         => $usuario->id,
-                'primer_nombre'   => $validated['nombre'],
-                'primer_apellido' => $validated['apellido'],
-                'email_institucional' => $validated['email'],
+                'user_id'              => $usuario->id,
+                'primer_nombre'        => $validated['nombre'],
+                'primer_apellido'      => $validated['apellido'],
+                'email_institucional'  => $validated['email'],
+                'entity_position_id'   => \App\Models\EntityPosition::first()?->id,
+                'linkage_type_id'      => \App\Models\LinkageType::first()?->id,
+                'training_program_id'  => \App\Models\TrainingProgram::first()?->id,
+                'segundo_nombre'       => null,
+                'segundo_apellido'     => '',
+                'genero'               => 'prefiero no decirlo',
+                'celular'              => 0,
+                'eps'                  => '',
             ]);
         }
 

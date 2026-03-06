@@ -39,14 +39,27 @@ Route::post('/forgot-password', SendPasswordResetLink::class)
     ->name('password.email');
 
 // ─── Dashboard: por rol se muestra panel correspondiente o se redirige ─────
+// Líder y director de semilleros siempre a su módulo (layout y dashboard propios)
 Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     $user = auth()->user();
+
+    // Evitar caché desactualizada de roles (Spatie)
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    if ($user->hasRole('lider_semillero')) {
+        return redirect()->to('/lider-semillero', 302);
+    }
+    if ($user->hasRole('director_semilleros')) {
+        return redirect()->to('/director-semilleros', 302);
+    }
     if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
         return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
     }
-    // Director de semilleros siempre va a su módulo (layout con PRINCIPAL, GESTIÓN SEMILLEROS, USUARIOS)
-    if ($user->hasRole('director_semilleros')) {
-        return redirect()->to('/director-semilleros', 302);
+    if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
+        return redirect()->to('/research/dashboard', 302);
+    }
+    if ($user->hasRole('asesor')) {
+        return redirect()->to('/seedlings', 302);
     }
     return view('dashboard.home');
 })->middleware(['auth', 'ensure.active', 'redirect.director'])->name('dashboard');
@@ -66,11 +79,13 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         Route::resource('departments', DepartmentController::class)->names('departments');
         Route::resource('cities', CityController::class)->names('cities');
         Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
+        Route::patch('training-centers/{training_center}/toggle', [TrainingCenterController::class, 'toggle'])->name('training-centers.toggle');
         Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
         Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
         Route::resource('training-records', \App\Http\Controllers\Web\TrainingRecordController::class)->names('training-records');
         Route::resource('training-program-types', \App\Http\Controllers\Web\TrainingProgramTypeController::class)->names('training-program-types');
         Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
+        Route::patch('training-programs/{training_program}/toggle', [TrainingProgramController::class, 'toggle'])->name('training-programs.toggle');
         Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
         Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
         Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');

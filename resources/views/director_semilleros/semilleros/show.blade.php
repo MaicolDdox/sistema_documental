@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Detalle de Semillero')
 @section('header', 'Modo Supervisión: ' . $semillero->nombre)

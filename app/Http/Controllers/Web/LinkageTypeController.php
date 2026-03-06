@@ -49,7 +49,10 @@ class LinkageTypeController extends Controller
         }
         
         LinkageType::create($validated);
-        
+
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Tipo de vinculación creado correctamente.');
+        }
         return redirect()->route('admin.linkage-types.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -72,7 +75,11 @@ class LinkageTypeController extends Controller
         }
         
         $linkagetype->update($validated);
-        
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
         return redirect()->route('admin.linkage-types.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }

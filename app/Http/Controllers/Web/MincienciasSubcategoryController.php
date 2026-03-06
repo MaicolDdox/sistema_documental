@@ -60,7 +60,7 @@ class MincienciasSubcategoryController extends Controller
                 ->with('success', 'Subcategoría eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.minciencias-typologies.index')
-                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
+                ->with('delete_error_subcategory', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
 }

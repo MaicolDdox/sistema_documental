@@ -21,6 +21,19 @@ class Login extends Component
     public function mount()
     {
         if (Auth::check()) {
+            $user = Auth::user();
+            if ($user->hasRole('lider_semillero')) {
+                $this->redirect('/lider-semillero');
+                return;
+            }
+            if ($user->hasRole('director_semilleros')) {
+                $this->redirect('/director-semilleros');
+                return;
+            }
+            if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+                $this->redirect('/admin/dashboard');
+                return;
+            }
             $this->redirectRoute('dashboard');
         }
     }
@@ -59,7 +72,23 @@ class Login extends Component
 
         request()->session()->regenerate();
 
-        // Si FortifyLoginResponse existe podriamos usarlo, por ahora direct redirect
+        // Redirigir según rol al módulo correspondiente (igual que LoginResponse)
+        if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+            return redirect()->to('/admin/dashboard');
+        }
+        if ($user->hasRole('director_semilleros')) {
+            return redirect()->to('/director-semilleros');
+        }
+        if ($user->hasRole('lider_semillero')) {
+            return redirect()->to('/lider-semillero');
+        }
+        if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
+            return redirect()->to('/research/dashboard');
+        }
+        if ($user->hasRole('asesor')) {
+            return redirect()->to('/seedlings');
+        }
+
         return redirect()->intended(route('dashboard'));
     }
 

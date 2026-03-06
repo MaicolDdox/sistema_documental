@@ -10,13 +10,26 @@ use Symfony\Component\HttpFoundation\Response;
 class RedirectDirectorToModule
 {
     /**
-     * Redirige al director de semilleros desde /dashboard a su módulo /director-semilleros
-     * para que use el layout correcto con el menú (PRINCIPAL, GESTIÓN SEMILLEROS, USUARIOS).
+     * Redirige director de semilleros y líder de semillero desde /dashboard a su módulo
+     * para que usen el layout correcto con su menú.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->hasRole('director_semilleros')) {
+        if (!Auth::check()) {
+            return $next($request);
+        }
+
+        $user = Auth::user();
+        $user->load('roles');
+
+        // Limpiar caché de permisos para que hasRole() use datos actuales
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        if ($user->hasRole('director_semilleros')) {
             return redirect()->to('/director-semilleros', 302);
+        }
+        if ($user->hasRole('lider_semillero')) {
+            return redirect()->to('/lider-semillero', 302);
         }
 
         return $next($request);

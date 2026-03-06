@@ -49,13 +49,18 @@ class KnowledgeGrandAreaController extends Controller
 
     public function destroy(KnowledgeGrandArea $knowledge_grand_area): RedirectResponse
     {
+        $count = $knowledge_grand_area->knowledgeAreas()->count();
+        if ($count > 0) {
+            return redirect()->route('admin.knowledge-areas.index')
+                ->with('delete_error_grand', "No se puede eliminar: hay {$count} área(s) vinculada(s). Elimine o reasigne las áreas primero.");
+        }
         try {
             $knowledge_grand_area->delete();
             return redirect()->route('admin.knowledge-areas.index')
                 ->with('success', 'Gran área de conocimiento eliminada correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
             return redirect()->route('admin.knowledge-areas.index')
-                ->with('error', 'No se puede eliminar porque está asociada a otros registros.');
+                ->with('delete_error_grand', 'No se puede eliminar porque está asociada a otros registros.');
         }
     }
 }

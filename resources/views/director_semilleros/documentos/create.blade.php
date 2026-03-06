@@ -1,4 +1,4 @@
-@extends('director_semilleros.layout')
+@extends('layouts.sgd')
 
 @section('title', 'Subir Documento')
 @section('header', 'Nuevo Documento Institucional')

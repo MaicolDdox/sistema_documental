@@ -62,20 +62,32 @@
          class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"></div>
 
     <!-- ═══ SIDEBAR ═══ -->
-    <aside class="w-64 min-h-screen bg-white border-r border-slate-200
+    <aside class="w-64 h-screen bg-white border-r border-slate-200
                   flex flex-col fixed left-0 top-0 z-50
                   transition-transform duration-300 ease-out shadow-xl lg:shadow-none
                   lg:translate-x-0"
            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
 
-        <!-- Logo + nombre del sistema -->
-        <div class="h-16 flex items-center px-5 border-b border-slate-100">
-            <a href="{{ route('dashboard') }}" class="flex items-center">
-                <img src="{{ asset('images/logo-sgd-horizontal.svg') }}" alt="Sistema de Gestión Documental" class="h-8 w-auto">
+        @php
+            $sidebarUser = Auth::user();
+            $dashboardUrl = $sidebarUser && ($sidebarUser->hasAnyRole('administrador_sistema', 'admin')) ? route('admin.dashboard')
+                : ($sidebarUser && $sidebarUser->hasRole('director_semilleros') ? route('dir-sem.dashboard')
+                : ($sidebarUser && $sidebarUser->hasRole('lider_semillero') ? route('lider-sem.dashboard')
+                : route('dashboard')));
+            $roleLabel = $sidebarUser && ($sidebarUser->hasAnyRole('administrador_sistema', 'admin')) ? 'Administrador'
+                : ($sidebarUser && $sidebarUser->hasRole('director_semilleros') ? 'Director de Semilleros'
+                : ($sidebarUser && $sidebarUser->hasRole('lider_semillero') ? 'Líder de Semillero'
+                : 'Usuario'));
+            $isDashboardActive = request()->routeIs('dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('dir-sem.dashboard') || request()->routeIs('lider-sem.dashboard');
+        @endphp
+        <!-- Logo -->
+        <div class="h-16 flex items-center px-4 border-b border-slate-100">
+            <a href="{{ $dashboardUrl }}" class="flex-1 flex items-center justify-center lg:flex-initial lg:justify-start" title="Sistema de Gestión Documental">
+                <img src="{{ asset('images/logo-sgd-icon.svg') }}" alt="SGD" class="h-9 w-auto">
             </a>
             <!-- Cerrar sidebar (solo móvil) -->
             <button @click="sidebarOpen = false"
-                    class="lg:hidden ml-auto text-slate-400 hover:text-slate-600">
+                    class="lg:hidden flex-shrink-0 text-slate-400 hover:text-slate-600 p-1">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -88,18 +100,16 @@
             <p class="text-xs font-semibold text-slate-400 uppercase
                       tracking-widest px-3 mb-2 mt-1">Principal</p>
 
-            <!-- Dashboard -->
-            <a href="{{ route('dashboard') }}"
+            <!-- Dashboard (enlace según rol) -->
+            <a href="{{ $dashboardUrl }}"
                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg
                       text-sm font-medium text-slate-600 transition-all cursor-pointer
-                      {{ request()->routeIs('dashboard') ? 'nav-item-active' : '' }}">
+                      {{ $isDashboardActive ? 'nav-item-active' : '' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M3.75 6v2.25a2.25 2.25 0 002.25 2.25h2.25a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 008.25 3.75H6A2.25 2.25 0 003.75 6zM3.75 15.75v2.25A2.25 2.25 0 006 20.25h2.25a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25zM13.5 6v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6zM13.5 15.75v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25h-2.25a2.25 2.25 0 00-2.25 2.25z"/>
                 </svg>
                 Dashboard
             </a>
-
-            @php $sidebarUser = Auth::user(); @endphp
 
             @if($sidebarUser && $sidebarUser->hasAnyRole('administrador_sistema', 'admin'))
                 {{-- Vistas desplegables para el rol Administrador (como en el mockup SGD) --}}
@@ -109,7 +119,7 @@
                     Gestión Usuarios
                 </p>
 
-                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.users.*', 'admin.users.manage*', 'admin.external-advisors.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.users.manage*', 'admin.external-advisors.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openAdminUsers = !openAdminUsers"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -134,6 +144,11 @@
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.asignar_roles') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0121.75 12.75a3 3 0 01-3 3z"/></svg>
                             Asignar Roles
+                        </a>
+                        <a href="{{ route('admin.usuarios.usuarios_con_rol') }}"
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.usuarios_con_rol') ? 'bg-slate-50 text-slate-900' : '' }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Usuarios con rol
                         </a>
                         <a href="{{ route('admin.external-advisors.index') }}"
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.external-advisors.*') ? 'bg-slate-50 text-slate-900' : '' }}">
@@ -192,56 +207,133 @@
                     </div>
                 </div>
 
-            @else
-                {{-- Menú original para otros roles (Director Semilleros, etc.) --}}
+            @elseif($sidebarUser && $sidebarUser->hasRole('director_semilleros'))
+                {{-- Menú Director de Semilleros --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN SEMILLEROS</p>
+                <div x-data="{ openSemilleros: {{ request()->routeIs('dir-sem.semilleros.*', 'dir-sem.documentos.*', 'dir-sem.reportes.*') ? 'true' : 'false' }} }" class="mb-1">
+                    <button type="button" @click="openSemilleros = !openSemilleros" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+                            <span>Mis Semilleros</span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openSemilleros ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="openSemilleros" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1">
+                        <a href="{{ route('dir-sem.semilleros.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.semilleros.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+                            Semilleros
+                        </a>
+                        <a href="{{ route('dir-sem.documentos.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.documentos.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                            Documentos
+                        </a>
+                        <a href="{{ route('dir-sem.reportes.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.reportes.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                            Reportes
+                        </a>
+                    </div>
+                </div>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">USUARIOS</p>
+                <div x-data="{ openUsuarios: {{ request()->routeIs('dir-sem.lideres.*', 'dir-sem.asignar-roles.*') ? 'true' : 'false' }} }" class="mb-1">
+                    <button type="button" @click="openUsuarios = !openUsuarios" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 4.5v15m7.5-7.5h-15"/></svg>
+                            <span>Usuarios</span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openUsuarios ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="openUsuarios" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1">
+                        <a href="{{ route('dir-sem.lideres.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.lideres.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                            Líderes de Semillero
+                        </a>
+                        <a href="{{ route('dir-sem.asignar-roles.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.asignar-roles.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0121.75 12.75a3 3 0 01-3 3z"/></svg>
+                            Asignar Roles
+                        </a>
+                    </div>
+                </div>
 
+            @elseif($sidebarUser && $sidebarUser->hasRole('lider_semillero'))
+                {{-- Menú Líder de Semillero --}}
+                @php
+                    $lidSemillero = $sidebarUser->ledSeedlings()->first();
+                    $lidIntegrantesCount = $lidSemillero ? $lidSemillero->members()->count() : 0;
+                    $lidPendingCount = 0;
+                    if ($lidSemillero) {
+                        $pIds = \Illuminate\Support\Facades\DB::table('project_seedlings')->where('seedling_id', $lidSemillero->id)->pluck('project_id');
+                        $prodIds = \Illuminate\Support\Facades\DB::table('products')->whereIn('project_id', $pIds)->pluck('id');
+                        $lidPendingCount = \App\Models\GroupProduct::whereIn('product_id', $prodIds)->whereIn('estado_revision', ['pendiente', 'en_revision'])->count();
+                    }
+                @endphp
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MI SEMILLERO</p>
+                <a href="{{ route('lider-sem.info-semillero') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.info-semillero') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+                    Info del Semillero
+                </a>
+                <a href="{{ route('lider-sem.integrantes') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.integrantes') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 4.5v15m7.5-7.5h-15"/></svg>
+                    Integrantes
+                    @if($lidIntegrantesCount > 0)<span class="ml-auto bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $lidIntegrantesCount }}</span>@endif
+                </a>
+                <a href="{{ route('lider-sem.asesores') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.asesores') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    Asesores
+                </a>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN</p>
+                <a href="{{ route('lider-sem.proyectos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.proyectos') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+                    Proyectos
+                </a>
+                <a href="{{ route('lider-sem.productos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.productos') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                    Productos
+                    @if($lidPendingCount > 0)<span class="ml-auto bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $lidPendingCount }}</span>@endif
+                </a>
+                <a href="{{ route('lider-sem.aprendices') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.aprendices') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342 50.645 50.645 0 010 2.676A50.697 50.697 0 0112 13.489z"/></svg>
+                    Aprendices
+                </a>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">DOCUMENTACIÓN</p>
+                <a href="{{ route('lider-sem.archivos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.archivos') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 20.552m5.108-11.479l-2.28-2.28"/></svg>
+                    Archivos Semillero
+                </a>
+                <a href="{{ route('lider-sem.doc-interna') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.doc-interna*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                    Doc. Interna
+                </a>
+
+            @else
+                {{-- Otros roles (permisos por capacidad) --}}
                 @can('semilleros.listar')
-                <!-- Sección Director Semilleros -->
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión Semilleros</p>
-                
-                <a href="{{ route('dir-sem.dashboard') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
-                    </svg>
+                <a href="{{ route('dir-sem.dashboard') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
                     Director Semilleros
                 </a>
                 @endcan
-
-                {{-- ZONA DE EXPANSIÓN FUTURA: agregar módulos aquí --}}
                 @can('usuarios.listar')
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
-                    Administración
-                </p>
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Administración</p>
                 <a href="{{ route('admin.usuarios.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.usuarios.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
                     Usuarios
                 </a>
                 @endcan
-
                 @can('catalogos.leer')
                 <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                    </svg>
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
                     Catálogos
                 </a>
                 @endcan
-
                 @hasrole('administrador_sistema|admin')
-                <div x-data="{ paramOpen: request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') }" class="mt-2">
+                <div x-data="{ paramOpen: {{ request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') ? 'true' : 'false' }} }" class="mt-2">
                     <button @click="paramOpen = !paramOpen" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
-                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                            </svg>
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
                             Datos Paramétricos
                         </div>
-                        <svg class="w-4 h-4 text-slate-400 transition-transform" :class="paramOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform" :class="paramOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div x-show="paramOpen" x-collapse class="pl-11 pr-3 py-2 space-y-1">
                         <a href="{{ route('admin.departments.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.departments.*') ? 'bg-slate-50 text-slate-900' : '' }}">Departamentos</a>
@@ -265,8 +357,10 @@
                 @endhasrole
 
             @endif
-        <!-- Footer del sidebar: usuario -->
-        <div class="border-t border-slate-100 p-3" x-data="{ open: false }">
+        </nav>
+
+        <!-- Footer del sidebar: usuario (fijo abajo, no se mueve) -->
+        <div class="border-t border-slate-100 p-3 shrink-0 mt-auto bg-white" x-data="{ open: false }">
             <button @click="open = !open"
                     class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                            hover:bg-slate-50 transition-all text-left">
@@ -355,21 +449,12 @@
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full bg-[#39A900]"></div>
-                    <span class="text-xs text-slate-500">
+                    <span class="text-xs font-medium text-slate-600">{{ $roleLabel ?? 'Usuario' }}</span>
+                    <span class="text-xs text-slate-400 hidden md:inline">—</span>
+                    <span class="text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">
                         {{ Auth::user()->name ?? Auth::user()->email ?? '' }}
                     </span>
                 </div>
-                @if(request()->is('admin/*') && Auth::check())
-                <form method="POST" action="{{ route('logout') }}" class="inline">
-                    @csrf
-                    <button type="submit" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors border border-slate-200 hover:border-red-200">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
-                        </svg>
-                        Cerrar sesión
-                    </button>
-                </form>
-                @endif
             </div>
         </header>
 
@@ -419,6 +504,7 @@
         </main>
     </div>
 
+    @stack('scripts')
     @livewireScripts
 </body>
 </html>

@@ -49,7 +49,10 @@ class ThematicAreaController extends Controller
         }
         
         ThematicArea::create($validated);
-        
+
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Área temática creada correctamente.');
+        }
         return redirect()->route('admin.thematic-areas.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -72,7 +75,11 @@ class ThematicAreaController extends Controller
         }
         
         $thematicarea->update($validated);
-        
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
         return redirect()->route('admin.thematic-areas.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }

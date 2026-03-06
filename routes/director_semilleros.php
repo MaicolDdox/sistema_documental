@@ -37,6 +37,7 @@ Route::middleware(['auth', 'role:director_semilleros'])
         Route::get('lideres/{lider}', [LiderSemilleroController::class, 'show'])->name('lideres.show');
         Route::get('lideres/{lider}/edit', [LiderSemilleroController::class, 'edit'])->name('lideres.edit');
         Route::put('lideres/{lider}', [LiderSemilleroController::class, 'update'])->name('lideres.update');
+        Route::post('lideres/{lider}/toggle-estado', [LiderSemilleroController::class, 'toggleEstado'])->name('lideres.toggle-estado');
         Route::delete('lideres/{lider}', [LiderSemilleroController::class, 'destroy'])->name('lideres.destroy');
 
         // Módulo Documentos Institucionales

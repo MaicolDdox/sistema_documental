@@ -11,21 +11,38 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureUserIsActive
 {
     /**
-     * Bloquea el acceso a usuarios con estado = inactivo.
-     * Si un usuario fue desactivado después de iniciar sesión,
-     * este middleware cierra su sesión en el siguiente request.
+     * Bloquea el acceso si:
+     * - El usuario está inactivo (estado), o
+     * - El usuario tiene centro de formación y ese centro está desactivado.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->estado !== EstadoEnum::Activo) {
-            Auth::guard('web')->logout();
+        if (!Auth::check()) {
+            return $next($request);
+        }
 
+        $user = Auth::user();
+
+        if ($user->estado !== EstadoEnum::Activo) {
+            Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-
             return redirect()->route('login')->withErrors([
                 'email' => __('Tu cuenta ha sido desactivada. Contacta al administrador.'),
             ]);
+        }
+
+        // Si el usuario tiene centro asignado y ese centro está desactivado, no puede acceder
+        if ($user->training_center_id) {
+            $center = $user->trainingCenter;
+            if ($center && !$center->activo) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->route('login')->withErrors([
+                    'email' => __('Tu centro de formación está desactivado. No puedes acceder al sistema. Contacta al administrador.'),
+                ]);
+            }
         }
 
         return $next($request);

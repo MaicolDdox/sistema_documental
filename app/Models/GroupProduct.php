@@ -33,6 +33,7 @@ class GroupProduct extends Model
         'evidencia',
         'autoriza_datos',
         'estado_revision',
+        'observaciones_revision',
     ];
 
     protected $casts = [

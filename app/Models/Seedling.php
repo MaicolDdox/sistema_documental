@@ -56,6 +56,16 @@ class Seedling extends Model
         return $this->hasMany(SeedlingFile::class, 'seedling_id');
     }
 
+    public function internalDocuments(): HasMany
+    {
+        return $this->hasMany(SeedlingInternalDocument::class, 'seedling_id');
+    }
+
+    public function seedlingAdvisors(): HasMany
+    {
+        return $this->hasMany(SeedlingAdvisor::class, 'seedling_id');
+    }
+
     // BelongsToMany
     public function advisors(): BelongsToMany
     {
@@ -64,7 +74,7 @@ class Seedling extends Model
             'seedling_advisors',
             'seedling_id',
             'external_advisor_id'
-        )->withTimestamps();
+        )->withPivot('activo')->withTimestamps();
     }
 
     public function members(): BelongsToMany

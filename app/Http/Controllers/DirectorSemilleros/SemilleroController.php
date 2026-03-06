@@ -48,7 +48,22 @@ class SemilleroController extends Controller
 
         $semilleros = $query->orderBy('nombre')->paginate(10)->withQueryString();
 
-        return view('director_semilleros.semilleros.index', compact('semilleros', 'tab'));
+        $lideres = User::role('lider_semillero')
+            ->with('person')
+            ->where('training_center_id', $user->training_center_id)
+            ->active()
+            ->orderBy('email')
+            ->get();
+
+        $gruposInvestigacion = ResearchGroup::query()
+            ->when($user->training_center_id, fn ($q) => $q->where('training_center_id', $user->training_center_id))
+            ->active()
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'codigo']);
+
+        $siguienteCodigo = (int) Seedling::max('codigo') + 1;
+
+        return view('director_semilleros.semilleros.index', compact('semilleros', 'tab', 'lideres', 'gruposInvestigacion', 'siguienteCodigo'));
     }
 
     /**

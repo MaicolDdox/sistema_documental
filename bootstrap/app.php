@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/director_semilleros.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/lider_semillero.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
         },
     )
