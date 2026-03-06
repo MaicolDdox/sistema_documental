@@ -2,43 +2,61 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\EstadoEnum;
+use App\Enums\JornadaEnum;
+use App\Enums\ModalidadEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainingProgram extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $table = 'training_programs';
+
     protected $fillable = [
-        'name',
-        'program_code',
-        'program_type',
-        'other_program_type',
-        'training_center_id',
-        'status',
+        'training_record_id',
+        'training_program_type_id',
+        'nombre',
+        'descripccion',
+        'jornada',
+        'modalidad',
+        'estado',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'jornada' => JornadaEnum::class,
+        'modalidad' => ModalidadEnum::class,
+        'estado' => EstadoEnum::class,
+    ];
+
+    // ─────────────────────────────────────────────
+    // RELACIONES
+    // ─────────────────────────────────────────────
+
+    public function trainingRecord(): BelongsTo
     {
-        return [
-            'id' => 'integer',
-            'training_center_id' => 'integer',
-        ];
+        return $this->belongsTo(TrainingRecord::class, 'training_record_id');
     }
 
-    public function trainingCenter(): BelongsTo
+    public function trainingProgramType(): BelongsTo
     {
-        return $this->belongsTo(TrainingCenter::class);
+        return $this->belongsTo(TrainingProgramType::class, 'training_program_type_id');
+    }
+
+    public function people(): HasMany
+    {
+        return $this->hasMany(Person::class, 'training_program_id');
+    }
+
+    // ─────────────────────────────────────────────
+    // SCOPES
+    // ─────────────────────────────────────────────
+
+    public function scopeActive($query)
+    {
+        return $query->where('estado', EstadoEnum::Activo);
     }
 }

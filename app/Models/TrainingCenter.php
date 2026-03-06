@@ -2,34 +2,58 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TrainingCenter extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $table = 'training_centers';
+
     protected $fillable = [
-        'name',
-        'code',
-        'city',
-        'department',
+        'nombre',
+        'codigo',
+        'department_id',
+        'city_id',
+        'activo',
+    ];
+
+    protected $casts = [
+        'activo' => 'boolean',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Scope: solo centros activos (los desactivados no deben aparecer en el sistema).
      */
-    protected function casts(): array
+    public function scopeActivos($query)
     {
-        return [
-            'id' => 'integer',
-        ];
+        return $query->where('activo', true);
+    }
+
+    // ─────────────────────────────────────────────
+    // RELACIONES
+    // ─────────────────────────────────────────────
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    public function researchGroups(): HasMany
+    {
+        return $this->hasMany(ResearchGroup::class, 'training_center_id');
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'training_center_id');
     }
 }

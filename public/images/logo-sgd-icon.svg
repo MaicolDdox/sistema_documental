@@ -1,0 +1,8 @@
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="10" fill="#ffffff" 
+        stroke="#0a1628" stroke-width="2"/>
+  <text x="24" y="31" text-anchor="middle"
+        font-family="Inter, sans-serif"
+        font-weight="700" font-size="15"
+        fill="#39A900" letter-spacing="0.5">SGD</text>
+</svg>

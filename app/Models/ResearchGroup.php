@@ -2,52 +2,85 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\EstadoEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ResearchGroup extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $table = 'research_groups';
+
     protected $fillable = [
-        'group_code',
-        'name',
-        'description',
-        'logo_path',
-        'director_id',
         'training_center_id',
-        'status',
-        'founded_on',
+        'nombre',
+        'codigo',
+        'logo',
+        'descripccion',
+        'estado',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'id' => 'integer',
-            'director_id' => 'integer',
-            'training_center_id' => 'integer',
-            'founded_on' => 'date',
-        ];
-    }
+    protected $casts = [
+        'estado' => EstadoEnum::class,
+    ];
 
-    public function director(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    // ─────────────────────────────────────────────
+    // RELACIONES
+    // ─────────────────────────────────────────────
 
+    // BelongsTo
     public function trainingCenter(): BelongsTo
     {
-        return $this->belongsTo(TrainingCenter::class);
+        return $this->belongsTo(TrainingCenter::class, 'training_center_id');
+    }
+
+    // HasMany
+    public function seedlings(): HasMany
+    {
+        return $this->hasMany(Seedling::class, 'research_group_id');
+    }
+
+    public function researchGroupUsers(): HasMany
+    {
+        return $this->hasMany(ResearchGroupUser::class, 'research_group_id');
+    }
+
+    public function macroProjectLinkages(): HasMany
+    {
+        return $this->hasMany(MacroProjectLinkage::class, 'research_group_id');
+    }
+
+    // BelongsToMany
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'research_group_users',
+            'research_group_id',
+            'user_id'
+        )->withPivot('rol')->withTimestamps();
+    }
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Project::class,
+            'project_groups',
+            'research_group_id',
+            'project_id'
+        )->withPivot('tipo_participacion')->withTimestamps();
+    }
+
+    // ─────────────────────────────────────────────
+    // SCOPES
+    // ─────────────────────────────────────────────
+
+    public function scopeActive($query)
+    {
+        return $query->where('estado', EstadoEnum::Activo);
     }
 }
