@@ -458,8 +458,8 @@
             </div>
         </header>
 
-        <!-- Área de contenido -->
-        <main class="sgd-main flex-1 p-6">
+        <!-- Área de contenido (min-w-0 evita que el título y textos se corten en flex) -->
+        <main class="sgd-main flex-1 p-6 min-w-0">
             <!-- Flash Messages -->
             @if(session('success'))
             <div x-data="{ show: true }" x-show="show" class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">

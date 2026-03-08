@@ -31,8 +31,11 @@ Route::middleware(['auth', 'role:lider_semillero'])
         // Integrantes del semillero (tarjetas con estado Con/Sin proyecto)
         Route::get('integrantes', [IntegrantesController::class, 'index'])->name('integrantes');
 
-        // Asesores del semillero (tabla, estado activo/inactivo, activar/desactivar)
+        // Asesores del semillero (tabla, estado activo/inactivo, activar/desactivar, crear, editar, eliminar)
         Route::get('asesores', [AsesoresController::class, 'index'])->name('asesores');
+        Route::post('asesores', [AsesoresController::class, 'store'])->name('asesores.store');
+        Route::put('asesores/{vinculo}', [AsesoresController::class, 'update'])->name('asesores.update');
+        Route::delete('asesores/{vinculo}', [AsesoresController::class, 'destroy'])->name('asesores.destroy');
         Route::patch('asesores/{vinculo}/toggle', [AsesoresController::class, 'toggle'])->name('asesores.toggle');
 
         // Proyectos vinculados al semillero (solo visualización)
