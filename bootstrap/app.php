@@ -9,9 +9,23 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/director_semilleros.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/lider_semillero.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/admin.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'ensure.active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'redirect.director' => \App\Http\Middleware\RedirectDirectorToModule::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

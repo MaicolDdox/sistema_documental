@@ -1,0 +1,84 @@
+<x-app-layout>
+    <x-slot name="header">Editar Catálogo</x-slot>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-xl font-semibold text-slate-900">Editar Catálogo</h2>
+        <p class="text-sm text-slate-500 mt-1">Modifica los detalles del catálogo en el sistema.</p>
+    </div>
+    <a href="{{ route('admin.catalogos.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all hidden sm:inline-block">
+        Volver al listado
+    </a>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden max-w-3xl">
+    <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <h3 class="text-sm font-semibold text-slate-900">Detalles del Catálogo</h3>
+    </div>
+    
+    <div class="p-5">
+        <form method="POST" action="{{ route('admin.catalogos.update', $catalogo->id) }}" class="space-y-5">
+            @csrf
+            @method('PUT')
+
+            <!-- Tipo -->
+            <div>
+                <label for="tipo" class="block text-sm font-medium text-slate-700 mb-1.5">Tipo de Catálogo <span class="text-red-500">*</span></label>
+                <select name="tipo" id="tipo" required
+                        class="w-full border @error('tipo') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                    <option value="">Selecciona el tipo...</option>
+                    @php $tipos = ['area_conocimiento', 'tipo_proyecto', 'programa_formacion', 'linea_investigacion', 'red_conocimiento', 'tipo_documento', 'estado_proyecto']; @endphp
+                    @foreach($tipos as $tipo)
+                        <option value="{{ $tipo }}" {{ old('tipo', $catalogo->tipo) == $tipo ? 'selected' : '' }}>
+                            {{ ucfirst(str_replace('_', ' ', $tipo)) }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('tipo')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Nombre -->
+            <div>
+                <label for="nombre" class="block text-sm font-medium text-slate-700 mb-1.5">Nombre <span class="text-red-500">*</span></label>
+                <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $catalogo->nombre) }}" required
+                       class="w-full border @error('nombre') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                @error('nombre')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label for="descripcion" class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+                <textarea name="descripcion" id="descripcion" rows="3"
+                          class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">{{ old('descripcion', $catalogo->descripcion) }}</textarea>
+                @error('descripcion')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Activo -->
+            <div class="flex items-start">
+                <div class="flex items-center h-5">
+                    <input type="checkbox" name="activo" id="activo" value="1" {{ old('activo', $catalogo->activo) ? 'checked' : '' }}
+                           class="w-4 h-4 text-[#39A900] bg-white border-slate-300 rounded focus:ring-[#39A900]/50 focus:ring-2 transition-all cursor-pointer">
+                </div>
+                <div class="ml-3 text-sm">
+                    <label for="activo" class="font-medium text-slate-700 cursor-pointer">Estado Activo</label>
+                    <p class="text-slate-500">Si está desmarcado, el catálogo no aparecerá en las listas de selección del sistema.</p>
+                </div>
+            </div>
+
+            <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+                <a href="{{ route('admin.catalogos.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">
+                    Cancelar
+                </a>
+                <button type="submit" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">
+                    Actualizar Catálogo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</x-app-layout>

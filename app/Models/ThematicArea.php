@@ -2,32 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ThematicArea extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $table = 'thematic_areas';
+
     protected $fillable = [
-        'name',
-        'description',
+        'nombre',
+        'descripccion',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    // ─────────────────────────────────────────────
+    // RELACIONES
+    // ─────────────────────────────────────────────
+
+    public function projects(): HasMany
     {
-        return [
-            'id' => 'integer',
-        ];
+        return $this->hasMany(Project::class, 'thematic_area_id');
     }
 }

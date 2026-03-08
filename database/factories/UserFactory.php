@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\EstadoEnum;
+use App\Enums\TipoDocumentoEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,15 +26,27 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana,
+            'numero_documento' => fake()->unique()->numberBetween(10000000, 2000000000),
             'password' => static::$password ??= Hash::make('password'),
+            'estado' => EstadoEnum::Activo,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * Set the user as inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'estado' => EstadoEnum::Inactivo,
+        ]);
     }
 
     /**
