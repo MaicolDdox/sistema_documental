@@ -1,0 +1,168 @@
+@extends('asesor_semillero.layout')
+
+@section('title', 'Productos del Semillero')
+@section('header', 'Productos del Semillero')
+
+@section('header-actions')
+    @can('productos.registrar')
+        <a href="{{ route('asesor.productos.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+           style="background:#39A900">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Registrar Producto
+        </a>
+    @endcan
+@endsection
+
+@section('content')
+{{-- Filtro por proyecto --}}
+<form method="GET" class="mb-4 flex gap-3 flex-wrap">
+    <select name="proyecto" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+        <option value="">Todos los proyectos</option>
+        @foreach($proyectos as $proy)
+            <option value="{{ $proy->id }}" {{ request('proyecto') == $proy->id ? 'selected' : '' }}>{{ Str::limit($proy->nombre, 50) }}</option>
+        @endforeach
+    </select>
+</form>
+
+@if($productos->isEmpty())
+<div class="bg-white rounded-xl border border-slate-200 p-10 text-center">
+    <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>
+    <p class="text-slate-500 text-sm">No hay productos registrados.</p>
+    @can('productos.registrar')
+        <a href="{{ route('asesor.productos.create') }}" class="mt-3 inline-block text-sm font-medium" style="color:#39A900">Registrar el primer producto →</a>
+    @endcan
+</div>
+@else
+<div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+    <table class="w-full text-sm min-w-[700px]">
+        <thead>
+            <tr class="border-b border-slate-100 bg-slate-50">
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nombre del producto</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Semillero</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Proyecto</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Autores</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Archivo / Enlace</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($productos as $product)
+            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                {{-- Nombre --}}
+                <td class="px-4 py-3">
+                    <p class="font-medium text-slate-800 max-w-[180px] truncate" title="{{ $product->nombre }}">{{ $product->nombre }}</p>
+                </td>
+                {{-- Semillero --}}
+                @php
+                    $sem = \Illuminate\Support\Facades\DB::table('project_seedlings')
+                        ->join('seedlings','seedlings.id','=','project_seedlings.seedling_id')
+                        ->where('project_seedlings.project_id', $product->project_id)
+                        ->value('seedlings.nombre');
+                @endphp
+                <td class="px-4 py-3">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-[#39A900] text-xs font-medium">
+                        {{ $sem ?? '—' }}
+                    </span>
+                </td>
+                {{-- Proyecto --}}
+                <td class="px-4 py-3 text-xs text-slate-600 max-w-[150px]">
+                    <span title="{{ $product->project?->nombre }}">{{ Str::limit($product->project?->nombre, 35) ?? '—' }}</span>
+                </td>
+                {{-- Autores --}}
+                <td class="px-4 py-3">
+                    @if($product->productAuthors->isNotEmpty())
+                    <div class="flex items-center -space-x-1.5">
+                        @foreach($product->productAuthors->take(4) as $pa)
+                        @php
+                            $nombre = trim(($pa->projectAuthor?->user?->person?->primer_nombre ?? '') . ' ' . ($pa->projectAuthor?->user?->person?->primer_apellido ?? ''));
+                        @endphp
+                        <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                             style="background:#0a1628"
+                             title="{{ $nombre ?: 'Autor' }}">
+                            {{ strtoupper(substr($nombre ?: 'A', 0, 1)) }}
+                        </div>
+                        @endforeach
+                        @if($product->productAuthors->count() > 4)
+                        <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center bg-slate-200 text-slate-600 text-xs font-bold">
+                            +{{ $product->productAuthors->count() - 4 }}
+                        </div>
+                        @endif
+                    </div>
+                    @else
+                    <span class="text-xs text-slate-400">—</span>
+                    @endif
+                </td>
+                {{-- Archivo / URL --}}
+                <td class="px-4 py-3 text-xs">
+                    <div class="flex flex-col gap-1">
+                        @if($product->archivo)
+                            <a href="{{ asset('storage/' . $product->archivo) }}" target="_blank"
+                               class="inline-flex items-center gap-1 text-blue-600 hover:underline whitespace-nowrap">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                                Archivo
+                            </a>
+                        @endif
+                        @if($product->url_repositorio)
+                            <a href="{{ $product->url_repositorio }}" target="_blank"
+                               class="inline-flex items-center gap-1 text-purple-600 hover:underline whitespace-nowrap">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                Enlace
+                            </a>
+                        @endif
+                        @if(!$product->archivo && !$product->url_repositorio)
+                            <span class="text-slate-400">—</span>
+                        @endif
+                    </div>
+                </td>
+                {{-- Estado revisión --}}
+                <td class="px-4 py-3">
+                    @php
+                        $er = $product->estado_revision ?? 'pendiente';
+                        $badge = match($er) {
+                            'aprobado'  => 'bg-green-100 text-green-700',
+                            'rechazado' => 'bg-red-100 text-red-700',
+                            default     => 'bg-amber-100 text-amber-700',
+                        };
+                        $dot = match($er) {
+                            'aprobado'  => 'bg-green-500',
+                            'rechazado' => 'bg-red-500',
+                            default     => 'bg-amber-500',
+                        };
+                        $label = match($er) {
+                            'aprobado'  => 'Aprobado',
+                            'rechazado' => 'Rechazado',
+                            default     => 'Pendiente',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badge }}">
+                        <div class="w-1.5 h-1.5 rounded-full {{ $dot }}"></div>
+                        {{ $label }}
+                    </span>
+                </td>
+
+                {{-- Acciones --}}
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-1.5 whitespace-nowrap">
+                        @can('productos.ver_detalle')
+                        <a href="{{ route('asesor.productos.show', $product->id) }}"
+                           class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Ver</a>
+                        @endcan
+                        @can('productos.editar')
+                        <a href="{{ route('asesor.productos.edit', $product->id) }}"
+                           class="text-xs px-2.5 py-1.5 rounded-lg text-white transition-all hover:opacity-90" style="background:#39A900">Editar</a>
+                        @endcan
+                    </div>
+                </td>
+            </tr>
+
+            @endforeach
+        </tbody>
+    </table>
+</div>
+@if($productos->hasPages())
+<div class="mt-4">{{ $productos->links() }}</div>
+@endif
+@endif
+@endsection

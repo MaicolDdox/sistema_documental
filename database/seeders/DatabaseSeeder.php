@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
             TrainingCenterSeeder::class,
             UserSeeder::class,
             RolesAndPermissionsSeeder::class,
+            // Catálogos módulo Asesor Semillero
+            LineasInvestigacionesSeeder::class,
+            LineasTecnologicasSeeder::class,
+            AreasTematicasSeeder::class,
+            ModalidadesProyectosSeeder::class,
+            TiposInvestigacionesSeeder::class,
+            CargosEntidadesSeeder::class,
         ]);
     }
 }
