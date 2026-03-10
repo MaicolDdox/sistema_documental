@@ -14,6 +14,8 @@ class ProductEvidence extends Model
 
     protected $fillable = [
         'product_id',
+        'nombre',
+        'uploaded_by',
         'archivo',
         'url_archivo',
         'descripccion',
@@ -26,5 +28,10 @@ class ProductEvidence extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }

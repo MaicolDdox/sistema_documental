@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->group(base_path('routes/lider_semillero.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/asesor_semillero.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
