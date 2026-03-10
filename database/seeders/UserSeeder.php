@@ -65,11 +65,26 @@ class UserSeeder extends Seeder
             ],
         ];
 
+        $rolesByEmail = [
+            'ydmoreno@sena.edu.co'    => 'administrador_sistema',
+            'jovalenciap@sena.edu.co' => 'administrador_sistema',
+            'directorsem@sena.edu.co' => 'director_semilleros',
+            'dirsemillero@sena.edu.co'=> 'director_semilleros',
+            'lidersem@sena.edu.co'    => 'lider_semillero',
+            'asesorsem@sena.edu.co'   => 'asesor_semillero',
+        ];
+
         foreach ($users as $userData) {
-            User::firstOrCreate(
+            // firstOrCreate no borra ni reemplaza, solo crea si no existe
+            $user = User::firstOrCreate(
                 ['numero_documento' => $userData['numero_documento']],
                 $userData
             );
+
+            // Asignar rol correspondiente
+            if (isset($rolesByEmail[$user->email])) {
+                $user->assignRole($rolesByEmail[$user->email]);
+            }
         }
 
         $this->command->info('✅ Usuarios creados:');
