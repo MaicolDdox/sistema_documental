@@ -21,8 +21,8 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             CitySeeder::class,
             TrainingCenterSeeder::class,
+            RolesAndPermissionsSeeder::class, // ← debe ir ANTES de UserSeeder
             UserSeeder::class,
-            RolesAndPermissionsSeeder::class,
             // Catálogos módulo Asesor Semillero
             LineasInvestigacionesSeeder::class,
             LineasTecnologicasSeeder::class,
@@ -30,6 +30,8 @@ class DatabaseSeeder extends Seeder
             ModalidadesProyectosSeeder::class,
             TiposInvestigacionesSeeder::class,
             CargosEntidadesSeeder::class,
+            LinkageTypesSeeder::class,
+            TrainingProgramsSeeder::class,
         ]);
     }
 }
