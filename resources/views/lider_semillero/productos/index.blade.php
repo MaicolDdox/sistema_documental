@@ -21,12 +21,15 @@
 </div>
 @else
 <div x-data="{
+    modalDetalle: false,
     modalAprobar: false,
     modalRechazar: false,
     modalRegistrar: false,
     selectedId: null,
     selectedTitulo: '',
+    detalleId: null,
     baseUrl: '{{ url('lider-semillero/productos') }}',
+    openDetalle(id) { this.detalleId = id; this.modalDetalle = true; },
     openAprobar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAprobar = true; },
     openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; }
 }" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif">
@@ -51,8 +54,8 @@
 @endif
 
 <div class="mb-4">
-    <h2 class="text-base font-semibold text-slate-900">Productos del Semillero</h2>
-    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero y NO los tuyos propios</p>
+    <h2 class="text-base font-semibold text-slate-900">Productos del semillero</h2>
+    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero (no puedes aprobar los tuyos propios)</p>
 </div>
 
 <div class="sgd-table-card bg-white overflow-hidden">
@@ -115,22 +118,49 @@
                     </td>
                     <td class="px-5 py-3 text-slate-600">{{ $repositorio }}</td>
                     <td class="px-5 py-3">
-                        @if($gp->es_mio)
-                        <span class="text-xs text-slate-500 italic">No puedes aprobar los tuyos</span>
-                        @else
-                        <div class="flex items-center gap-2">
+                        @php
+                            $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
+                            $accionesBloqueadas = $gp->es_mio || !in_array($estadoRev, ['pendiente', 'en_revision'], true);
+                        @endphp
+                        <div class="flex items-center gap-1.5 whitespace-nowrap">
+                            {{-- Ver detalle (modal) --}}
                             <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
-                                @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition">✓ Aprobar</button>
-                            <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
-                                @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">✗ Rechazar</button>
+                               @click="openDetalle({{ $gp->id }})"
+                               class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition"
+                               title="Ver detalle">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
+                                    <circle cx="12" cy="12" r="3.25" />
+                                </svg>
+                            </button>
+
+                            @if($accionesBloqueadas)
+                                <span class="ml-1 text-[11px] text-slate-400 italic">Sin acciones</span>
+                            @else
+                                {{-- Aprobar --}}
+                                <button type="button"
+                                    data-id="{{ $gp->id }}"
+                                    data-titulo="{{ e($gp->titulo ?? '') }}"
+                                    @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition"
+                                    title="Aprobar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+                                {{-- Rechazar --}}
+                                <button type="button"
+                                    data-id="{{ $gp->id }}"
+                                    data-titulo="{{ e($gp->titulo ?? '') }}"
+                                    @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white transition"
+                                    title="Rechazar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            @endif
                         </div>
-                        @endif
                     </td>
                 </tr>
                 @empty
@@ -184,6 +214,82 @@
                     <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">✓ Confirmar</button>
                 </div>
             </form>
+        </div>
+    </div>
+</template>
+
+{{-- Modal Detalle producto --}}
+<template x-teleport="body">
+    <div x-show="modalDetalle" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50" @click="modalDetalle = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            @click.stop
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Detalle del producto</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Información del producto registrado en tu semillero</p>
+                </div>
+                <button type="button" @click="modalDetalle = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5 space-y-5">
+                @foreach($productos as $gp)
+                @php
+                    $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
+                    $tipoNombre = $gp->mincienciasTypology?->nombre ?? '—';
+                    $autorNombre = $gp->author?->person?->nombre_completo ?? $gp->author?->email ?? '—';
+                    $proyectoNombre = $gp->product?->project?->nombre ?? '—';
+                    $repositorio = $gp->url_repositorio ? $gp->url_repositorio : ($gp->evidencia ? 'Archivo adjunto' : '—');
+                @endphp
+                <div x-show="detalleId === {{ $gp->id }}" x-cloak class="space-y-4">
+                    <div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">{{ $gp->titulo ?? 'Sin título' }}</h4>
+                        <p class="text-xs text-slate-500">Proyecto: {{ $proyectoNombre }}</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Tipo de producto</p>
+                            <p class="text-sm font-medium text-slate-800">{{ $tipoNombre }}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Autor</p>
+                            <p class="text-sm font-medium text-slate-800">{{ $autorNombre }}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Estado de revisión</p>
+                            <p class="text-sm font-medium text-slate-800 capitalize">
+                                {{ str_replace('_', ' ', $estadoRev) }}
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Repositorio / evidencia</p>
+                            @if($gp->url_repositorio)
+                                <a href="{{ $gp->url_repositorio }}" target="_blank" class="text-sm text-sky-600 hover:underline break-all">
+                                    {{ $gp->url_repositorio }}
+                                </a>
+                            @elseif($gp->evidencia)
+                                <p class="text-sm text-slate-700">Archivo cargado en el sistema.</p>
+                            @else
+                                <p class="text-sm text-slate-400">No se registró archivo ni URL.</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
         </div>
     </div>
 </template>
@@ -280,13 +386,21 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto origen *</label>
-                    <select name="project_id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+                    <select name="project_id" id="registro-project-id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
                         <option value="">Seleccione...</option>
                         @foreach($proyectosParaRegistro ?? [] as $p)
                         <option value="{{ $p->id }}" {{ old('project_id') == $p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>
                         @endforeach
                     </select>
                     @error('project_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Autores vinculados *</label>
+                    <select name="autores[]" id="registro-autores" multiple required
+                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900] min-h-[3rem]">
+                    </select>
+                    <p class="mt-1 text-xs text-slate-500">Selecciona los aprendices/asesores que serán autores del producto.</p>
+                    @error('autores')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">¿Tiene repositorio en línea?</label>
@@ -334,3 +448,46 @@
 </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const projectSelect = document.getElementById('registro-project-id');
+    const autoresSelect = document.getElementById('registro-autores');
+    if (!projectSelect || !autoresSelect) return;
+
+    const oldAutores = @json(old('autores', []));
+
+    function cargarAutores(projectId) {
+        autoresSelect.innerHTML = '';
+        if (!projectId) return;
+
+        fetch(`{{ url('lider-semillero/api/proyecto') }}/${projectId}/autores`)
+            .then(resp => resp.ok ? resp.json() : [])
+            .then(data => {
+                autoresSelect.innerHTML = '';
+                data.forEach(function (item) {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.nombre;
+                    if (oldAutores.includes(item.id) || oldAutores.includes(String(item.id))) {
+                        opt.selected = true;
+                    }
+                    autoresSelect.appendChild(opt);
+                });
+            })
+            .catch(() => {
+                autoresSelect.innerHTML = '';
+            });
+    }
+
+    if (projectSelect.value) {
+        cargarAutores(projectSelect.value);
+    }
+
+    projectSelect.addEventListener('change', function () {
+        cargarAutores(this.value);
+    });
+});
+</script>
+@endpush

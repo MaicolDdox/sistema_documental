@@ -12,7 +12,9 @@ use App\Models\KnowledgeGrandArea;
 use App\Models\MincienciasSubcategory;
 use App\Models\MincienciasTypology;
 use App\Models\Product;
+use App\Models\ProductAuthor;
 use App\Models\Project;
+use App\Models\ProjectAuthor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,6 +67,25 @@ class ProductosController extends Controller
     }
 
     /**
+     * Muestra el detalle de un producto para revisión por parte del líder.
+     */
+    public function show(GroupProduct $groupProduct): View
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (! $semillero || ! $this->perteneceAlSemillero($groupProduct, $semillero->id)) {
+            abort(403, 'No puedes ver este producto.');
+        }
+
+        $groupProduct->load(['author.person', 'product.project', 'mincienciasTypology']);
+        $groupProduct->es_mio = $groupProduct->author_id === Auth::id();
+
+        return view('lider_semillero.productos.show', [
+            'semillero' => $semillero,
+            'producto' => $groupProduct,
+        ]);
+    }
+
+    /**
      * Registra un nuevo producto (estado_revision = pendiente). El usuario debe ser autor en proyecto_autores del proyecto.
      */
     public function store(Request $request): RedirectResponse
@@ -92,6 +113,8 @@ class ProductosController extends Controller
             'minciencias_typology_id' => 'required|exists:minciencias_typologies,id',
             'project_id' => 'required|exists:projects,id',
             'tiene_repositorio' => 'required|boolean',
+            'autores' => 'required|array',
+            'autores.*' => 'integer|exists:project_authors,id',
         ];
         if ($tieneRepositorio) {
             $rules['url_repositorio'] = 'required|url|max:500';
@@ -130,6 +153,15 @@ class ProductosController extends Controller
             'estado' => EstadoEnum::Activo,
         ]);
 
+        // Vincular autores seleccionados al producto
+        $autorIds = $validated['autores'] ?? [];
+        foreach ($autorIds as $projectAuthorId) {
+            ProductAuthor::firstOrCreate([
+                'product_id'        => $product->id,
+                'project_author_id' => (int) $projectAuthorId,
+            ]);
+        }
+
         $groupProductData = [
             'author_id' => Auth::id(),
             'product_id' => $product->id,
@@ -155,6 +187,45 @@ class ProductosController extends Controller
     }
 
     /**
+     * Devuelve autores (project_authors) de un proyecto para el líder.
+     */
+    public function apiAutoresPorProyecto(int $project_id): \Illuminate\Http\JsonResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (!$semillero) {
+            return response()->json([]);
+        }
+
+        // Verificar que el proyecto pertenece al semillero del líder
+        $pertenece = DB::table('project_seedlings')
+            ->where('project_id', $project_id)
+            ->where('seedling_id', $semillero->id)
+            ->exists();
+
+        if (!$pertenece) {
+            return response()->json([]);
+        }
+
+        $autores = ProjectAuthor::with('user.person')
+            ->where('project_id', $project_id)
+            ->where('activo', true)
+            ->get()
+            ->map(function (ProjectAuthor $pa) {
+                $p = $pa->user?->person;
+                $nombre = $p
+                    ? trim($p->primer_nombre.' '.$p->segundo_nombre.' '.$p->primer_apellido.' '.$p->segundo_apellido)
+                    : ($pa->user?->email ?? 'Autor');
+
+                return [
+                    'id' => $pa->id,
+                    'nombre' => $nombre,
+                ];
+            });
+
+        return response()->json($autores);
+    }
+
+    /**
      * Aprueba un producto. Solo si pertenece al semillero del líder y no es autor del producto.
      * Observaciones opcionales.
      */
@@ -172,6 +243,14 @@ class ProductosController extends Controller
         $groupProduct->estado_revision = EstadoRevisionEnum::Aprobado;
         $groupProduct->observaciones_revision = $request->input('observaciones');
         $groupProduct->save();
+
+        // Sincronizar estado con el registro base del producto (vista del asesor)
+        if ($groupProduct->product) {
+            $groupProduct->product->update([
+                'estado_revision'      => EstadoRevisionEnum::Aprobado->value,
+                'observacion_revision' => $request->input('observaciones'),
+            ]);
+        }
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto aprobado correctamente.');
@@ -208,6 +287,14 @@ class ProductosController extends Controller
         $groupProduct->estado_revision = EstadoRevisionEnum::Rechazado;
         $groupProduct->observaciones_revision = $validated['observaciones'];
         $groupProduct->save();
+
+        // Sincronizar estado con el registro base del producto (vista del asesor)
+        if ($groupProduct->product) {
+            $groupProduct->product->update([
+                'estado_revision'      => EstadoRevisionEnum::Rechazado->value,
+                'observacion_revision' => $validated['observaciones'],
+            ]);
+        }
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto rechazado.');

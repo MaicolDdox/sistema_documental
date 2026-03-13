@@ -124,7 +124,10 @@ class DashboardController extends Controller
         return $miSemillero->members()
             ->with('person')
             ->get()
-            ->filter(fn ($u) => !$userIdsConProyectoActivo->contains($u->id))
+            ->map(function ($u) use ($userIdsConProyectoActivo) {
+                $u->tiene_proyecto_activo = $userIdsConProyectoActivo->contains($u->id);
+                return $u;
+            })
             ->take(10)
             ->values();
     }
