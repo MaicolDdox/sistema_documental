@@ -55,8 +55,11 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
         return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
     }
-    if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
-        return redirect()->to('/research/dashboard', 302);
+    if ($user->hasRole('director_investigacion')) {
+        return redirect()->to('/director', 302);
+    }
+    if ($user->hasRole('investigador_asociado')) {
+        return redirect()->to('/investigador', 302);
     }
     if ($user->hasRole('asesor_semillero')) {
         return redirect()->to('/asesor-semillero/dashboard', 302);

@@ -61,45 +61,32 @@
             <thead>
                 <tr>
                     <th class="text-left">Producto</th>
-                    <th class="text-left">Tipo</th>
-                    <th class="text-left">Autor</th>
+                    <th class="text-left">Autor / Remitente</th>
                     <th class="text-left">Estado revisión</th>
                     <th class="text-left">Repositorio</th>
                     <th class="text-left">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($productos as $gp)
+                @forelse($productos as $prod)
                 @php
-                    $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
-                    $tipoNombre = $gp->mincienciasTypology?->nombre ?? '—';
-                    $autorNombre = $gp->author?->person?->nombre_completo ?? $gp->author?->email ?? '—';
-                    $iniciales = $gp->author && $gp->author->person
-                        ? strtoupper(mb_substr($gp->author->person->primer_nombre ?? '', 0, 1) . mb_substr($gp->author->person->primer_apellido ?? '', 0, 1))
-                        : ($gp->author ? strtoupper(mb_substr($gp->author->email ?? '?', 0, 2)) : '—');
-                    $proyectoNombre = $gp->product?->project?->nombre ?? '—';
-                    $repositorio = $gp->url_repositorio ? '✓ URL' : ($gp->evidencia ? 'Archivo' : '—');
+                    $estadoRev = $prod->estado_revision->value ?? (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
+                    $autorNombre = $prod->autor?->person?->nombre_completo ?? $prod->autor?->email ?? '—';
+                    $iniciales = $prod->autor && $prod->autor->person
+                        ? strtoupper(mb_substr($prod->autor->person->primer_nombre ?? '', 0, 1) . mb_substr($prod->autor->person->primer_apellido ?? '', 0, 1))
+                        : ($prod->autor ? strtoupper(mb_substr($prod->autor->email ?? '?', 0, 2)) : '—');
+                    $proyectoNombre = $prod->project?->nombre ?? '—';
+                    $repositorio = $prod->url_repositorio ? '✓ URL' : ($prod->archivo ? 'Archivo' : '—');
                 @endphp
-                <tr class="{{ $gp->es_mio ? 'bg-slate-50/80' : '' }}">
+                <tr class="{{ $prod->es_mio ? 'bg-slate-50/80' : '' }}">
                     <td class="px-5 py-3">
-                        <div class="font-medium text-slate-800">{{ $gp->titulo ?? '—' }}</div>
+                        <div class="font-medium text-slate-800">{{ $prod->nombre ?? '—' }}</div>
                         <div class="text-xs text-slate-500 mt-0.5">Proyecto: {{ $proyectoNombre }}</div>
-                    </td>
-                    <td class="px-5 py-3">
-                        @if(stripos($tipoNombre, 'artículo') !== false || stripos($tipoNombre, 'articulo') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $tipoNombre }}</span>
-                        @elseif(stripos($tipoNombre, 'prototipo') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ $tipoNombre }}</span>
-                        @elseif(stripos($tipoNombre, 'software') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{{ $tipoNombre }}</span>
-                        @else
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $tipoNombre }}</span>
-                        @endif
                     </td>
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-2">
                             <span class="w-8 h-8 rounded-full bg-[#39A900]/20 text-[#39A900] flex items-center justify-center text-xs font-semibold shrink-0">{{ $iniciales ?: '?' }}</span>
-                            <span class="text-slate-700">{{ $autorNombre }}{{ $gp->es_mio ? ' (tú)' : '' }}</span>
+                            <span class="text-slate-700">{{ $autorNombre }}{{ $prod->es_mio ? ' (tú)' : '' }}</span>
                         </div>
                     </td>
                     <td class="px-5 py-3">
@@ -115,18 +102,18 @@
                     </td>
                     <td class="px-5 py-3 text-slate-600">{{ $repositorio }}</td>
                     <td class="px-5 py-3">
-                        @if($gp->es_mio)
+                        @if($prod->es_mio)
                         <span class="text-xs text-slate-500 italic">No puedes aprobar los tuyos</span>
                         @else
                         <div class="flex items-center gap-2">
                             <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
+                                data-id="{{ $prod->id }}"
+                                data-titulo="{{ e($prod->nombre ?? '') }}"
                                 @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
                                 class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition">✓ Aprobar</button>
                             <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
+                                data-id="{{ $prod->id }}"
+                                data-titulo="{{ e($prod->nombre ?? '') }}"
                                 @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
                                 class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">✗ Rechazar</button>
                         </div>
@@ -267,16 +254,6 @@
                         class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
                         placeholder="Ej: Análisis de calidad del agua en zonas rurales">
                     @error('titulo')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de producto *</label>
-                    <select name="minciencias_typology_id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
-                        <option value="">Seleccione...</option>
-                        @foreach($tipologias ?? [] as $t)
-                        <option value="{{ $t->id }}" {{ old('minciencias_typology_id') == $t->id ? 'selected' : '' }}>{{ $t->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('minciencias_typology_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto origen *</label>

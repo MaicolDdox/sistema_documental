@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:lider_semillero'])
+Route::middleware(['auth', 'ensure.active', 'role:lider_semillero'])
     ->prefix('lider-semillero')
     ->name('lider-sem.')
     ->group(function () {
@@ -44,8 +44,8 @@ Route::middleware(['auth', 'role:lider_semillero'])
         // Productos del semillero: listar, registrar, aprobar/rechazar
         Route::get('productos', [ProductosController::class, 'index'])->name('productos');
         Route::post('productos', [ProductosController::class, 'store'])->name('productos.store');
-        Route::patch('productos/{groupProduct}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
-        Route::patch('productos/{groupProduct}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
+        Route::patch('productos/{producto}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
+        Route::patch('productos/{producto}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
 
         // Aprendices: registro y vinculación
         Route::get('aprendices', [AprendicesController::class, 'index'])->name('aprendices');

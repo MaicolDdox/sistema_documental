@@ -18,18 +18,20 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            DepartmentSeeder::class,
-            CitySeeder::class,
-            TrainingCenterSeeder::class,
-            UserSeeder::class,
-            RolesAndPermissionsSeeder::class,
+            DepartmentSeeder::class ,
+            CitySeeder::class ,
+            TrainingCenterSeeder::class ,
+            RolesAndPermissionsSeeder::class ,
+            ResearchGroupSeeder::class ,
+            UserSeeder::class ,
+
             // Catálogos módulo Asesor Semillero
-            LineasInvestigacionesSeeder::class,
-            LineasTecnologicasSeeder::class,
-            AreasTematicasSeeder::class,
-            ModalidadesProyectosSeeder::class,
-            TiposInvestigacionesSeeder::class,
-            CargosEntidadesSeeder::class,
+            LineasInvestigacionesSeeder::class ,
+            LineasTecnologicasSeeder::class ,
+            AreasTematicasSeeder::class ,
+            ModalidadesProyectosSeeder::class ,
+            TiposInvestigacionesSeeder::class ,
+            CargosEntidadesSeeder::class ,
         ]);
     }
 }

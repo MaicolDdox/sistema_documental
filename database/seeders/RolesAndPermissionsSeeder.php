@@ -181,6 +181,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'productos.crear', 'productos.listar', 'productos.ver_detalle', 'productos.editar', 'productos.ver_estado_revision', 'productos.ver_observaciones',
             'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_propia',
             'catalogos.leer',
+            'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
         ];
 
         $rolInvAsoc = Role::firstOrCreate(['name' => 'investigador_asociado', 'guard_name' => 'web']);

@@ -49,9 +49,9 @@ class ResearchGroup extends Model
         return $this->hasMany(ResearchGroupUser::class, 'research_group_id');
     }
 
-    public function macroProjectLinkages(): HasMany
+    public function macroProjects(): HasMany
     {
-        return $this->hasMany(MacroProjectLinkage::class, 'research_group_id');
+        return $this->hasMany(MacroProject::class, 'research_group_id');
     }
 
     // BelongsToMany

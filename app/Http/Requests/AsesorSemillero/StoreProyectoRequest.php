@@ -24,8 +24,7 @@ class StoreProyectoRequest extends FormRequest
             'fecha_inicio'           => 'required|date',
             'fecha_fin'              => 'nullable|date|after_or_equal:fecha_inicio',
             'tiene_macroproyecto'    => 'required|boolean',
-            'codigo_macro'           => 'required_if:tiene_macroproyecto,1|nullable|string|max:100',
-            'nombre_macro'           => 'required_if:tiene_macroproyecto,1|nullable|string|max:255',
+            'macro_project_id'       => 'required_if:tiene_macroproyecto,1|nullable|integer',
         ];
     }
 
@@ -40,8 +39,7 @@ class StoreProyectoRequest extends FormRequest
             'fecha_inicio.required'        => 'La fecha de inicio es obligatoria.',
             'fecha_fin.after_or_equal'     => 'La fecha de fin debe ser igual o posterior a la fecha de inicio.',
             'tiene_macroproyecto.required' => 'Debe indicar si el proyecto tiene macroproyecto.',
-            'codigo_macro.required_if'     => 'El código del macroproyecto es obligatorio cuando el proyecto está vinculado a uno.',
-            'nombre_macro.required_if'     => 'El nombre del macroproyecto es obligatorio cuando el proyecto está vinculado a uno.',
+            'macro_project_id.required_if' => 'Debe seleccionar un macroproyecto cuando indica que el proyecto está vinculado a uno.',
         ];
     }
 }

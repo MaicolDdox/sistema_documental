@@ -6,7 +6,7 @@ use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AsesorSemillero\StoreProyectoRequest;
 use App\Models\InvestigationType;
-use App\Models\MacroProjectLinkage;
+use App\Models\MacroProject;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
 use App\Models\ProjectModality;
@@ -63,7 +63,7 @@ class ProyectoController extends Controller
                 'investigationType',
                 'projectAuthors',
                 'products',
-                'macroProjectLinkages',
+                'macroProject',
             ])->whereIn('id', $projectIds);
 
             if ($request->filled('buscar')) {
@@ -88,9 +88,13 @@ class ProyectoController extends Controller
         $areasTematicas   = ThematicArea::orderBy('nombre')->get();
         $modalidades      = ProjectModality::orderBy('nombre')->get();
         $tiposInves       = InvestigationType::orderBy('nombre')->get();
+        $macroProyectos   = MacroProject::where('research_group_id', $semillero->research_group_id)
+            ->where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get();
 
         return view('asesor_semillero.proyectos.create', compact(
-            'semillero', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves'
+            'semillero', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves', 'macroProyectos'
         ));
     }
 
@@ -107,23 +111,23 @@ class ProyectoController extends Controller
 
         $validated = $request->validated();
 
-        // Validar macroproyecto si aplica
         if ($validated['tiene_macroproyecto']) {
-            $researchGroupId = $semillero->research_group_id;
-            $macroExiste = DB::table('project_groups')
-                ->join('projects', 'projects.id', '=', 'project_groups.project_id')
-                ->where('project_groups.research_group_id', $researchGroupId)
-                ->where('projects.nombre', 'like', '%' . $validated['codigo_macro'] . '%')
-                ->exists();
-
-            if (!$macroExiste) {
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors(['codigo_macro' => 'El macroproyecto ingresado no está registrado en el grupo de investigación asociado a este semillero.']);
-            }
+            $request->validate([
+                'macro_project_id' => [
+                    'required',
+                    function ($attribute, $value, $fail) use ($semillero) {
+                        $exists = MacroProject::where('id', $value)
+                            ->where('research_group_id', $semillero->research_group_id)
+                            ->exists();
+                        if (!$exists) {
+                            $fail('El macroproyecto seleccionado no es válido para el grupo de investigación de este semillero.');
+                        }
+                    },
+                ],
+            ]);
         }
 
-        DB::transaction(function () use ($validated, $semillero) {
+        DB::transaction(function () use ($validated, $semillero, $request) {
             // 1. Crear el proyecto
             $proyecto = Project::create([
                 'project_creator_id'    => Auth::id(),
@@ -138,6 +142,7 @@ class ProyectoController extends Controller
                 'fecha_fin'             => $validated['fecha_fin'] ?? null,
                 'estado'                => EstadoEnum::Activo,
                 'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
+                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
             ]);
 
             // 2. Vincular proyecto al semillero
@@ -154,16 +159,6 @@ class ProyectoController extends Controller
                 'user_id'    => Auth::id(),
                 'activo'     => true,
             ]);
-
-            // 4. Si tiene macroproyecto, insertar en macro_project_linkages
-            if ($validated['tiene_macroproyecto']) {
-                MacroProjectLinkage::create([
-                    'project_id'       => $proyecto->id,
-                    'research_group_id' => $semillero->research_group_id,
-                    'codigo'           => $validated['codigo_macro'],
-                    'nombre'           => $validated['nombre_macro'],
-                ]);
-            }
         });
 
         return redirect()->route('asesor.proyectos.index')
@@ -182,7 +177,7 @@ class ProyectoController extends Controller
         $autores   = ProjectAuthor::with('user.person')->where('project_id', $id)->where('activo', true)->get();
         $productos = $proyecto->products()->with('groupProducts.mincienciasTypology')->get();
         $evidencias = $proyecto->projectEvidences()->latest()->get();
-        $macro     = $proyecto->macroProjectLinkages()->first();
+        $macro     = $proyecto->macroProject;
 
         return view('asesor_semillero.proyectos.show', compact(
             'proyecto', 'autores', 'productos', 'evidencias', 'macro', 'semillero'
@@ -201,10 +196,13 @@ class ProyectoController extends Controller
         $lineasTec      = TechnologicalLine::orderBy('nombre')->get();
         $areasTematicas = ThematicArea::orderBy('nombre')->get();
         $modalidades    = ProjectModality::orderBy('nombre')->get();
-        $macro          = $proyecto->macroProjectLinkages()->first();
+        $macroProyectos = MacroProject::where('research_group_id', $semillero->research_group_id)
+            ->where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get();
 
         return view('asesor_semillero.proyectos.edit', compact(
-            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macro'
+            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macroProyectos'
         ));
     }
 
@@ -218,7 +216,7 @@ class ProyectoController extends Controller
         $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
         $validated = $request->validated();
 
-        DB::transaction(function () use ($proyecto, $validated, $semillero) {
+        DB::transaction(function () use ($proyecto, $validated, $semillero, $request) {
             // Actualizar proyecto — SE IGNORA investigation_type_id (bloqueado post-creación)
             $proyecto->update([
                 'research_line_id'      => $validated['research_line_id'],
@@ -230,21 +228,8 @@ class ProyectoController extends Controller
                 'fecha_inicio'          => $validated['fecha_inicio'],
                 'fecha_fin'             => $validated['fecha_fin'] ?? null,
                 'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
+                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
             ]);
-
-            // Actualizar macroproyecto
-            if ($validated['tiene_macroproyecto']) {
-                MacroProjectLinkage::updateOrCreate(
-                    ['project_id' => $proyecto->id],
-                    [
-                        'research_group_id' => $semillero->research_group_id,
-                        'codigo'            => $validated['codigo_macro'],
-                        'nombre'            => $validated['nombre_macro'],
-                    ]
-                );
-            } else {
-                MacroProjectLinkage::where('project_id', $proyecto->id)->delete();
-            }
         });
 
         return redirect()->route('asesor.proyectos.show', $proyecto->id)
