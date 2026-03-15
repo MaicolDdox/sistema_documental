@@ -28,6 +28,7 @@ class Project extends Model
         'fecha_fin',
         'estado',
         'vinculacion_macro_proyecto',
+        'macro_project_id',
     ];
 
     protected $casts = [
@@ -78,9 +79,9 @@ class Project extends Model
         return $this->hasMany(ProjectAuthor::class, 'project_id');
     }
 
-    public function macroProjectLinkages(): HasMany
+    public function macroProject(): BelongsTo
     {
-        return $this->hasMany(MacroProjectLinkage::class, 'project_id');
+        return $this->belongsTo(MacroProject::class, 'macro_project_id');
     }
 
     public function projectEvidences(): HasMany

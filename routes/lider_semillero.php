@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:lider_semillero'])
+Route::middleware(['auth', 'ensure.active', 'role:lider_semillero'])
     ->prefix('lider-semillero')
     ->name('lider-sem.')
     ->group(function () {

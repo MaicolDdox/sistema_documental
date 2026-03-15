@@ -109,16 +109,20 @@
     </div>
 </div>
 
+@php
+    $asesoresData = [];
+@endphp
 <div x-data="{
     selectedAsesor: null,
     modalDetalle: false,
     modalEditar: false,
     modalEliminar: false,
     modalActivar: false,
-    openDetalle(d) { this.selectedAsesor = d; this.modalDetalle = true; },
-    openEditar(d) { this.selectedAsesor = d; this.modalEditar = true; },
-    openEliminar(d) { this.selectedAsesor = d; this.modalEliminar = true; },
-    openActivar(d) { this.selectedAsesor = d; this.modalActivar = true; }
+    openDetalle(id) { this.selectedAsesor = window.asesoresData[id] || null; this.modalDetalle = true; },
+    openEditar(id) { this.selectedAsesor = window.asesoresData[id] || null; this.modalEditar = true; },
+    openEliminar(id) { this.selectedAsesor = window.asesoresData[id] || null; this.modalEliminar = true; },
+    openActivar(id) { this.selectedAsesor = window.asesoresData[id] || null; this.modalActivar = true; },
+    urlBase: '{{ url('lider-semillero/asesores') }}'
 }">
 <div class="sgd-table-card bg-white overflow-hidden">
     <div class="overflow-x-auto">
@@ -150,6 +154,7 @@
                         'tieneCuenta' => $tiene_cuenta,
                         'activo' => $activo,
                     ];
+                    $asesoresData[$vinculo->id] = $rowData;
                 @endphp
                 <tr>
                     <td class="px-5 py-3 font-medium text-slate-800">{{ $a->nombre_completo ?? '—' }}</td>
@@ -177,17 +182,17 @@
                     </td>
                     <td class="px-5 py-3">
                         <div class="flex flex-wrap items-center gap-1.5">
-                            <button type="button" @click="openDetalle(@json($rowData))" title="Detalle" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+                            <button type="button" @click="openDetalle({{ $vinculo->id }})" title="Detalle" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </button>
-                            <button type="button" @click="openEditar(@json($rowData))" title="Editar" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+                            <button type="button" @click="openEditar({{ $vinculo->id }})" title="Editar" class="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
                             </button>
-                            <button type="button" @click="openEliminar(@json($rowData))" title="Eliminar" class="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
+                            <button type="button" @click="openEliminar({{ $vinculo->id }})" title="Eliminar" class="p-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
                             </button>
                             @can('asesores_externos.vincular_semillero')
-                            <button type="button" @click="openActivar(@json($rowData))" title="{{ $activo ? 'Desactivar' : 'Activar' }}" class="p-2 rounded-lg transition-colors {{ $activo ? 'border border-amber-200 text-amber-700 hover:bg-amber-50' : 'border border-green-200 text-green-700 hover:bg-green-50' }}">
+                            <button type="button" @click="openActivar({{ $vinculo->id }})" title="{{ $activo ? 'Desactivar' : 'Activar' }}" class="p-2 rounded-lg transition-colors {{ $activo ? 'border border-amber-200 text-amber-700 hover:bg-amber-50' : 'border border-green-200 text-green-700 hover:bg-green-50' }}">
                                 @if($activo)
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                 @else
@@ -209,10 +214,10 @@
         </table>
     </div>
 </div>
+<script>window.asesoresData = @json($asesoresData ?? []);</script>
 
 {{-- Modal Detalle --}}
-<template x-teleport="body">
-    <div x-show="modalDetalle" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+    <div x-show="modalDetalle" x-cloak class="fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalDetalle" @click.self="modalDetalle = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalDetalle" class="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full" x-transition>
@@ -235,11 +240,9 @@
             </div>
         </div>
     </div>
-</template>
 
 {{-- Modal Editar --}}
-<template x-teleport="body">
-    <div x-show="modalEditar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+    <div x-show="modalEditar" x-cloak class="fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalEditar" @click.self="modalEditar = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalEditar" class="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full" x-transition>
@@ -247,82 +250,81 @@
                     <h3 class="text-lg font-semibold text-slate-900">Editar asesor</h3>
                     <button type="button" @click="modalEditar = false" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
-                <form x-ref="editForm" :action="'{{ url('lider-semillero/asesores') }}/' + (selectedAsesor?.vinculoId || '')" method="POST" class="p-6 space-y-4">
-                    @csrf
-                    @method('PUT')
-                    <template x-if="selectedAsesor">
+                <template x-if="selectedAsesor">
+                    <form :action="urlBase + '/' + selectedAsesor.vinculoId" method="POST" class="p-6 space-y-4">
+                        @csrf
+                        @method('PUT')
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Nombre completo <span class="text-red-500">*</span></label>
-                                <input type="text" name="nombre_completo" :value="selectedAsesor?.nombre" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <input type="text" name="nombre_completo" :value="selectedAsesor.nombre" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                                <input type="email" name="email" :value="selectedAsesor?.email" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <input type="email" name="email" :value="selectedAsesor.email" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
-                                <input type="text" name="telefono" :value="selectedAsesor?.telefono" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <input type="text" name="telefono" :value="selectedAsesor.telefono" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Institución / Especialidad</label>
-                                <input type="text" name="institucion" :value="selectedAsesor?.institucion" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <input type="text" name="institucion" :value="selectedAsesor.institucion" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             </div>
                         </div>
-                    </template>
-                    <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
-                        <button type="button" @click="modalEditar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                        <button type="submit" class="sgd-btn-primary px-5 py-2.5 rounded-xl text-sm font-medium">Guardar cambios</button>
-                    </div>
-                </form>
+                        <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
+                            <button type="button" @click="modalEditar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                            <button type="submit" class="sgd-btn-primary px-5 py-2.5 rounded-xl text-sm font-medium">Guardar cambios</button>
+                        </div>
+                    </form>
+                </template>
             </div>
         </div>
     </div>
-</template>
 
 {{-- Modal Eliminar --}}
-<template x-teleport="body">
-    <div x-show="modalEliminar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+    <div x-show="modalEliminar" x-cloak class="fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalEliminar" @click.self="modalEliminar = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalEliminar" class="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full" x-transition>
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-slate-900 mb-2">Eliminar asesor</h3>
-                    <p class="text-sm text-slate-600 mb-4">¿Desvincular a <strong x-text="selectedAsesor?.nombre"></strong> del semillero? El asesor dejará de estar vinculado a este semillero.</p>
-                    <form :action="'{{ url('lider-semillero/asesores') }}/' + (selectedAsesor?.vinculoId || '')" method="POST" class="flex gap-3 justify-end">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" @click="modalEliminar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                        <button type="submit" @click="modalEliminar = false" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium">Eliminar</button>
-                    </form>
+                    <p class="text-sm text-slate-600 mb-4" x-show="selectedAsesor">¿Desvincular a <strong x-text="selectedAsesor?.nombre"></strong> del semillero? El asesor dejará de estar vinculado a este semillero.</p>
+                    <template x-if="selectedAsesor">
+                        <form :action="urlBase + '/' + selectedAsesor.vinculoId" method="POST" class="flex gap-3 justify-end">
+                            @csrf
+                            @method('DELETE')
+                            <button type="button" @click="modalEliminar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                            <button type="submit" @click="modalEliminar = false" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium">Eliminar</button>
+                        </form>
+                    </template>
                 </div>
             </div>
         </div>
     </div>
-</template>
 
 {{-- Modal Activar / Desactivar --}}
-<template x-teleport="body">
-    <div x-show="modalActivar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+    <div x-show="modalActivar" x-cloak class="fixed inset-0 z-[100] overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalActivar" @click.self="modalActivar = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalActivar" class="relative bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full" x-transition>
                 <div class="p-6">
                     <h3 class="text-lg font-semibold text-slate-900 mb-2" x-text="selectedAsesor?.activo ? 'Desactivar asesor' : 'Activar asesor'"></h3>
-                    <p class="text-sm text-slate-600 mb-4" x-text="selectedAsesor?.activo ? '¿Desactivar a ' + (selectedAsesor?.nombre || '') + ' en el semillero? No aparecerá como asesor activo.' : '¿Activar a ' + (selectedAsesor?.nombre || '') + ' en el semillero?'"></p>
-                    <form :action="'{{ url('lider-semillero/asesores') }}/' + (selectedAsesor?.vinculoId || '') + '/toggle'" method="POST" class="flex gap-3 justify-end">
-                        @csrf
-                        @method('PATCH')
-                        <button type="button" @click="modalActivar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                        <button type="submit" @click="modalActivar = false" class="px-4 py-2.5 rounded-xl text-sm font-medium" :class="selectedAsesor?.activo ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-green-600 hover:bg-green-700 text-white'">
-                            <span x-text="selectedAsesor?.activo ? 'Desactivar' : 'Activar'"></span>
-                        </button>
-                    </form>
+                    <p class="text-sm text-slate-600 mb-4" x-show="selectedAsesor" x-text="selectedAsesor?.activo ? '¿Desactivar a ' + (selectedAsesor?.nombre || '') + ' en el semillero? No aparecerá como asesor activo.' : '¿Activar a ' + (selectedAsesor?.nombre || '') + ' en el semillero?'"></p>
+                    <template x-if="selectedAsesor">
+                        <form :action="urlBase + '/' + selectedAsesor.vinculoId + '/toggle'" method="POST" class="flex gap-3 justify-end">
+                            @csrf
+                            @method('PATCH')
+                            <button type="button" @click="modalActivar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                            <button type="submit" @click="modalActivar = false" class="px-4 py-2.5 rounded-xl text-sm font-medium" :class="selectedAsesor?.activo ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-green-600 hover:bg-green-700 text-white'">
+                                <span x-text="selectedAsesor?.activo ? 'Desactivar' : 'Activar'"></span>
+                            </button>
+                        </form>
+                    </template>
                 </div>
             </div>
         </div>
     </div>
-</template>
 </div>
 @endif
 @endsection

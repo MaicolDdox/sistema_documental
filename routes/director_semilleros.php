@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:director_semilleros'])
+Route::middleware(['auth', 'ensure.active', 'role:director_semilleros'])
     ->prefix('director-semilleros')
     ->name('dir-sem.')
     ->group(function () {

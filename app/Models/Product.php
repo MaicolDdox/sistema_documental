@@ -18,7 +18,11 @@ class Product extends Model
         'project_id',
         'nombre',
         'archivo',
+        'archivo_nombre',
+        'url_repositorio',
         'estado',
+        'estado_revision',
+        'observacion_revision',
     ];
 
     protected $casts = [
