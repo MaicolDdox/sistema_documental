@@ -84,6 +84,15 @@ class Project extends Model
         return $this->belongsTo(MacroProject::class, 'macro_project_id');
     }
 
+    /**
+     * Alias de compatibilidad para código legado que aún
+     * espera una relación llamada macroProjectLinkages().
+     */
+    public function macroProjectLinkages(): BelongsTo
+    {
+        return $this->macroProject();
+    }
+
     public function projectEvidences(): HasMany
     {
         return $this->hasMany(ProjectEvidence::class, 'project_id');

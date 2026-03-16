@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\Admin\CatalogoController;
 use App\Http\Controllers\Admin\DashboardController;
 
-Route::middleware(['auth', 'role:administrador_sistema'])
+Route::middleware(['auth', 'role:administrador_sistema|admin|director_investigacion'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -22,7 +22,9 @@ Route::middleware(['auth', 'role:administrador_sistema'])
         Route::post('usuarios/{id}/asignar-rol', [UsuarioController::class, 'asignarRol'])->name('usuarios.asignar_rol');
         Route::post('usuarios/{id}/revocar-rol', [UsuarioController::class, 'revocarRol'])->name('usuarios.revocar_rol');
 
-        // Catálogos
-        Route::get('catalogos/simples', [CatalogoController::class, 'simples'])->name('catalogos.simples');
-        Route::resource('catalogos', CatalogoController::class)->except(['show']);
+        // Catálogos (habilitados también para Director de Investigación)
+        Route::middleware('role:administrador_sistema|admin|director_investigacion')->group(function () {
+            Route::get('catalogos/simples', [CatalogoController::class, 'simples'])->name('catalogos.simples');
+            Route::resource('catalogos', CatalogoController::class)->except(['show']);
+        });
     });

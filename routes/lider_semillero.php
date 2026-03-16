@@ -45,8 +45,9 @@ Route::middleware(['auth', 'ensure.active', 'role:lider_semillero'])
         Route::get('productos', [ProductosController::class, 'index'])->name('productos');
         Route::get('productos/{groupProduct}', [ProductosController::class, 'show'])->name('productos.show');
         Route::post('productos', [ProductosController::class, 'store'])->name('productos.store');
-        Route::patch('productos/{groupProduct}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
-        Route::patch('productos/{groupProduct}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
+        // Usamos {producto} para que el binding coincida con Product $producto en el controlador
+        Route::patch('productos/{producto}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
+        Route::patch('productos/{producto}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
         Route::get('api/proyecto/{project_id}/autores', [ProductosController::class, 'apiAutoresPorProyecto'])->name('productos.autores');
 
         // Aprendices: registro y vinculación

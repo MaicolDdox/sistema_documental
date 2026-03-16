@@ -210,6 +210,58 @@
                     </div>
                 </div>
 
+            @elseif($sidebarUser && $sidebarUser->hasRole('director_investigacion'))
+                {{-- Menú Director de Investigación --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
+                    Administración
+                </p>
+                <a href="{{ route('admin.usuarios.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('admin.usuarios.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                    Usuarios
+                </a>
+
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
+                    Mi Grupo de Investigación
+                </p>
+                <a href="{{ route('director.investigadores.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.investigadores.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+                    </svg>
+                    Investigadores
+                </a>
+                <a href="{{ route('director.productos.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.productos.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+                    </svg>
+                    Productos
+                </a>
+                <a href="{{ route('director.documentos.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.documentos.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                    </svg>
+                    Documentos del Grupo
+                </a>
+                <a href="{{ route('director.reportes.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.reportes.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                    </svg>
+                    Reportes
+                </a>
+                <a href="{{ route('director.macroproyectos.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.macroproyectos.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5M3.75 9h16.5M3.75 13.5h16.5M3.75 18h16.5"/>
+                    </svg>
+                    Macroproyectos
+                </a>
+
             @elseif($sidebarUser && $sidebarUser->hasRole('director_semilleros'))
                 {{-- Menú Director de Semilleros --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN SEMILLEROS</p>
@@ -284,13 +336,17 @@
                 {{-- Menú Líder de Semillero --}}
                 @php
                     $lidSemillero = $sidebarUser->ledSeedlings()->first();
-                    // Badge se usaba como recordatorio genérico de integrantes; lo quitamos para no confundir
+                    // Contadores para badges del menú del líder
                     $lidIntegrantesCount = 0;
                     $lidPendingCount = 0;
                     if ($lidSemillero) {
-                        $pIds = \Illuminate\Support\Facades\DB::table('project_seedlings')->where('seedling_id', $lidSemillero->id)->pluck('project_id');
-                        $prodIds = \Illuminate\Support\Facades\DB::table('products')->whereIn('project_id', $pIds)->pluck('id');
-                        $lidPendingCount = \App\Models\GroupProduct::whereIn('product_id', $prodIds)->whereIn('estado_revision', ['pendiente', 'en_revision'])->count();
+                        $pIds = \Illuminate\Support\Facades\DB::table('project_seedlings')
+                            ->where('seedling_id', $lidSemillero->id)
+                            ->pluck('project_id');
+                        // Productos ligados a esos proyectos (módulo semilleros)
+                        $lidPendingCount = \App\Models\Product::whereIn('project_id', $pIds)
+                            ->whereIn('estado_revision', ['pendiente', 'en_revision'])
+                            ->count();
                     }
                 @endphp
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MI SEMILLERO</p>
@@ -403,12 +459,14 @@
                     Usuarios
                 </a>
                 @endcan
-                @can('catalogos.leer')
-                <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-                    Catálogos
-                </a>
-                @endcan
+                @hasrole('administrador_sistema|admin')
+                    @can('catalogos.leer')
+                    <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                        Catálogos
+                    </a>
+                    @endcan
+                @endhasrole
                 @hasrole('administrador_sistema|admin')
                 <div x-data="{ paramOpen: {{ request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') ? 'true' : 'false' }} }" class="mt-2">
                     <button @click="paramOpen = !paramOpen" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">

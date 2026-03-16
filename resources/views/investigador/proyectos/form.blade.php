@@ -1,6 +1,16 @@
 <x-app-layout>
     <x-slot name="header">{{ $proyecto ? 'Editar Proyecto' : 'Nuevo Proyecto' }}</x-slot>
 
+    {{-- Cuando el formulario se abre embebido en un iframe (modal) y la creación/actualización fue exitosa,
+         recargamos la página padre para que cierre el modal y actualice la lista. --}}
+    @if(request()->boolean('embedded') && session('success'))
+        <script>
+            if (window.parent && window.parent !== window) {
+                window.parent.location.reload();
+            }
+        </script>
+    @endif
+
     <div class="max-w-3xl">
 
         @if(session('success'))

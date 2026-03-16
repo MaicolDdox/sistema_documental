@@ -33,8 +33,9 @@ class ProyectoService
             ]);
 
             // Vincular al grupo de investigación
+            // La columna tipo_participacion es un ENUM: origen | aliado | cooperacion
             $proyecto->researchGroups()->attach($grupoId, [
-                'tipo_participacion' => 'principal',
+                'tipo_participacion' => 'origen',
             ]);
 
             return $proyecto;

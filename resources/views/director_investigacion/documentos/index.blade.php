@@ -26,7 +26,7 @@
 
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-medium text-slate-700 mb-1.5">Nombre del documento</label>
-                <input type="text" name="nombre" value="{{ old('nombre') }}" required
+                <input type="text" name="titulo" value="{{ old('titulo') }}" required
                        placeholder="Ej: Acta de Reunión Enero 2026"
                        class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
             </div>

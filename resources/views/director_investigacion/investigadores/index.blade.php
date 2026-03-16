@@ -1,19 +1,21 @@
 <x-app-layout>
     <x-slot name="header">Investigadores del Grupo</x-slot>
 
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Investigadores</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Miembros del grupo de investigación</p>
+    <div x-data="{ createOpen: false, createUrl: '{{ route('director.investigadores.create') }}?embedded=1' }">
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Investigadores</h1>
+                <p class="text-sm text-slate-500 mt-0.5">Miembros del grupo de investigación</p>
+            </div>
+            <button type="button"
+               @click="createOpen = true"
+               class="sgd-btn-primary px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Nuevo Investigador
+            </button>
         </div>
-        <a href="{{ route('director.investigadores.create') }}"
-           class="sgd-btn-primary px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Nuevo Investigador
-        </a>
-    </div>
 
     <div class="sgd-table-card bg-white overflow-hidden">
         <div class="overflow-x-auto">
@@ -63,38 +65,40 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="px-4 py-3" x-data="{ open: false }">
-                            <div class="relative">
-                                <button @click="open = !open" @click.away="open = false"
-                                        class="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"/>
-                                    </svg>
-                                </button>
-                                <div x-show="open" x-cloak
-                                     class="absolute right-0 z-10 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                                    {{-- Cambiar estado --}}
-                                    <form method="POST" action="{{ route('director.investigadores.toggle-estado', $inv) }}">
-                                        @csrf @method('PATCH')
-                                        <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                {{-- Activar / desactivar --}}
+                                <form method="POST" action="{{ route('director.investigadores.toggle-estado', $inv) }}">
+                                    @csrf @method('PATCH')
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all"
+                                            title="{{ ($inv?->estado?->value ?? '') === 'activo' ? 'Desactivar investigador' : 'Activar investigador' }}">
+                                        @if(($inv?->estado?->value ?? '') === 'activo')
+                                            {{-- Icono apagar --}}
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v9m6.364-6.364A9 9 0 1112 4.5"/>
                                             </svg>
-                                            {{ ($inv?->estado?->value ?? '') === 'activo' ? 'Desactivar' : 'Activar' }}
-                                        </button>
-                                    </form>
-                                    {{-- Desvincular --}}
-                                    <form method="POST" action="{{ route('director.investigadores.desvincular', $inv) }}"
-                                          onsubmit="return confirm('¿Desvincular este investigador del grupo?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/>
+                                        @else
+                                            {{-- Icono encender --}}
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5.25v13.5m6.364-9.75A9 9 0 115.636 9"/>
                                             </svg>
-                                            Desvincular
-                                        </button>
-                                    </form>
-                                </div>
+                                        @endif
+                                    </button>
+                                </form>
+
+                                {{-- Desvincular --}}
+                                <form method="POST" action="{{ route('director.investigadores.desvincular', $inv) }}"
+                                      onsubmit="return confirm('¿Desvincular este investigador del grupo?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit"
+                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-all"
+                                            title="Desvincular investigador">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+                                        </svg>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
@@ -114,6 +118,26 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+
+        {{-- Modal creación investigador (iframe con formulario completo) --}}
+        <div x-show="createOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Nuevo Investigador</h2>
+                    <button type="button" @click="createOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="createUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

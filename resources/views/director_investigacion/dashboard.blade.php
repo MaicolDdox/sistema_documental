@@ -12,51 +12,126 @@
             : collect();
 
         $totalInvestigadores = $userIds->count();
+
         $productosPendientes = \App\Models\GroupProduct::whereIn('author_id', $userIds)
-            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Pendiente)->count();
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Pendiente)
+            ->count();
+        $productosEnRevision = \App\Models\GroupProduct::whereIn('author_id', $userIds)
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::EnRevision)
+            ->count();
         $productosAprobados  = \App\Models\GroupProduct::whereIn('author_id', $userIds)
-            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)->count();
-        $productosTotal      = \App\Models\GroupProduct::whereIn('author_id', $userIds)->count();
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)
+            ->count();
+        $productosRechazados = \App\Models\GroupProduct::whereIn('author_id', $userIds)
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Rechazado)
+            ->count();
+        $productosTotal      = $productosPendientes + $productosEnRevision + $productosAprobados + $productosRechazados;
 
         $ultimosProductos = \App\Models\GroupProduct::with(['author.person', 'product'])
             ->whereIn('author_id', $userIds)
             ->latest()->take(6)->get();
     @endphp
 
-    {{-- Encabezado --}}
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p class="text-sm text-slate-500 mt-0.5">
-            {{ $grupo?->nombre ?? 'Grupo de Investigación' }} — Panel del Director
-        </p>
+    {{-- Encabezado / hero --}}
+    <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <p class="text-xs font-semibold tracking-[0.2em] text-[#39A900] uppercase mb-1">Panel del Director</p>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                Dashboard
+                @if($grupo)
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        {{ $grupo->codigo }}
+                    </span>
+                @endif
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">
+                {{ $grupo?->nombre ?? 'Grupo de Investigación' }} · Seguimiento global de investigadores y productos.
+            </p>
+        </div>
+        @if($grupo)
+        <div class="flex items-center gap-4 bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+            <div class="w-10 h-10 rounded-xl bg-[#f0fdf4] flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#39A900]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5m-16.5 4.5h16.5m-16.5 4.5h10.5M8.25 19.5h7.5" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Mi Grupo</p>
+                <p class="text-sm font-medium text-slate-900 leading-tight">{{ $grupo->nombre }}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    {{ ucfirst($grupo->estado->value ?? 'activo') }}
+                </p>
+            </div>
+        </div>
+        @endif
     </div>
 
-    {{-- 4 tarjetas de resumen --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 mb-1">Investigadores</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $totalInvestigadores }}</p>
-            <p class="text-xs text-slate-500 mt-1 border-b-2 border-[#39A900] pb-0.5 w-fit">en mi grupo</p>
+    {{-- Tarjetas de resumen --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm relative overflow-hidden">
+            <div class="absolute -top-6 -right-4 w-20 h-20 bg-[#f0fdf4] rounded-full opacity-60"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Investigadores</p>
+                    <div class="w-8 h-8 rounded-lg bg-[#f0fdf4] flex items-center justify-center">
+                        <svg class="w-4 h-4 text-[#39A900]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372A9.337 9.337 0 0021 18M4.5 19.5A9.375 9.375 0 019 15.75M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21C6.293 21 4.112 20.355 2.25 19.234l-.001-.109A6.375 6.375 0 018.624 15c1.747 0 3.345.72 4.5 1.878M15 10.5a3.75 3.75 0 10-7.5 0 3.75 3.75 0 007.5 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-outfit font-bold text-slate-900">{{ $totalInvestigadores }}</p>
+                <p class="text-xs text-slate-400 mt-1">en mi grupo</p>
+            </div>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 mb-1">Productos totales</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $productosTotal }}</p>
-            <p class="text-xs text-slate-500 mt-1">registrados</p>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Productos totales</p>
+                <div class="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5M4.5 9h15M9 13.5h6m-8.25 4.5h10.5" />
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-outfit font-bold text-slate-900">{{ $productosTotal }}</p>
+            <p class="text-xs text-slate-400 mt-1">registrados por el grupo</p>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-amber-100 p-5 shadow-sm bg-amber-50/40">
-            <p class="text-xs font-medium text-amber-600 mb-1">Pendientes de revisión</p>
-            <p class="text-2xl font-bold text-amber-700">{{ $productosPendientes }}</p>
+
+        <div class="bg-white rounded-xl border border-amber-100 p-5 shadow-sm bg-amber-50/60">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide">Pendientes de revisión</p>
+                <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.007v.008H12v-.008z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-outfit font-bold text-amber-700">{{ $productosPendientes }}</p>
             <a href="{{ route('director.productos.index', ['estado_revision' => 'pendiente']) }}"
-               class="text-xs text-amber-600 mt-1 hover:underline block">Ver pendientes →</a>
+               class="text-xs font-semibold text-amber-700 mt-1 hover:underline inline-flex items-center gap-1">
+                Ver pendientes
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-green-100 p-5 shadow-sm bg-green-50/40">
-            <p class="text-xs font-medium text-green-600 mb-1">Aprobados</p>
-            <p class="text-2xl font-bold text-green-700">{{ $productosAprobados }}</p>
-            <p class="text-xs text-green-600 mt-1">productos validados</p>
+
+        <div class="bg-white rounded-xl border border-green-100 p-5 shadow-sm bg-green-50/60">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-green-700 uppercase tracking-wide">Aprobados</p>
+                <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-green-700" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <p class="text-3xl font-outfit font-bold text-green-700">{{ $productosAprobados }}</p>
+            <p class="text-xs text-green-700 mt-1">productos validados</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {{-- Últimos productos --}}
         <div class="lg:col-span-2">
             <div class="sgd-table-card bg-white overflow-hidden">
@@ -128,7 +203,7 @@
             </div>
         </div>
 
-        {{-- Acciones rápidas --}}
+        {{-- Acciones rápidas + Info grupo --}}
         <div class="space-y-4">
             <div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
@@ -169,14 +244,14 @@
                 </div>
             </div>
 
-            {{-- Info del grupo --}}
+            {{-- Info del grupo + resumen de estados --}}
             @if($grupo)
             <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                 <h3 class="text-sm font-semibold text-slate-900 mb-3">Mi Grupo</h3>
-                <div class="space-y-2 text-sm">
+                <div class="space-y-2 text-sm mb-4">
                     <div class="flex justify-between">
                         <span class="text-slate-500">Nombre</span>
-                        <span class="font-medium text-slate-800 text-right max-w-[140px]">{{ $grupo->nombre }}</span>
+                        <span class="font-medium text-slate-800 text-right max-w-[160px]">{{ $grupo->nombre }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Código</span>
@@ -184,14 +259,119 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Estado</span>
-                        <span class="inline-flex items-center gap-1 text-green-700 text-xs font-medium">
+                        <span class="inline-flex items-center gap-1.5 text-green-700 text-xs font-medium">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                             {{ ucfirst($grupo->estado->value ?? 'activo') }}
                         </span>
+                    </div>
+                </div>
+
+                {{-- Mini resumen de estados --}}
+                <div class="border-t border-slate-100 pt-3 mt-1">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Estados de productos</p>
+                    <div class="space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>Pendiente
+                            </span>
+                            <span class="font-semibold text-slate-700">{{ $productosPendientes }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-sky-400"></span>En revisión
+                            </span>
+                            <span class="font-semibold text-slate-700">{{ $productosEnRevision }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>Aprobado
+                            </span>
+                            <span class="font-semibold text-slate-700">{{ $productosAprobados }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span>Rechazado
+                            </span>
+                            <span class="font-semibold text-slate-700">{{ $productosRechazados }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
             @endif
         </div>
     </div>
+
+    {{-- Donut de estados de productos --}}
+    @if($productosTotal > 0)
+        <div class="mt-4 bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-900">Distribución de estados de productos</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Visión rápida del avance de revisión en el grupo.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <div class="flex justify-center">
+                    <div class="relative w-40 h-40">
+                        <canvas id="chartEstadosDirector" width="160" height="160"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-2xl font-outfit font-bold text-slate-900">{{ $productosTotal }}</span>
+                            <span class="text-[11px] text-slate-400">productos</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>Pendiente
+                        </span>
+                        <span class="font-semibold text-slate-700">{{ $productosPendientes }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>En revisión
+                        </span>
+                        <span class="font-semibold text-slate-700">{{ $productosEnRevision }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>Aprobado
+                        </span>
+                        <span class="font-semibold text-slate-700">{{ $productosAprobados }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>Rechazado
+                        </span>
+                        <span class="font-semibold text-slate-700">{{ $productosRechazados }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const ctx = document.getElementById('chartEstadosDirector');
+                if (!ctx) return;
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pendiente', 'En revisión', 'Aprobado', 'Rechazado'],
+                        datasets: [{
+                            data: [{{ $productosPendientes }}, {{ $productosEnRevision }}, {{ $productosAprobados }}, {{ $productosRechazados }}],
+                            backgroundColor: ['#fbbf24', '#38bdf8', '#22c55e', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 6,
+                        }]
+                    },
+                    options: {
+                        cutout: '70%',
+                        plugins: { legend: { display: false } },
+                        animation: { animateRotate: true, duration: 800 }
+                    }
+                });
+            });
+        </script>
+    @endif
 </x-app-layout>

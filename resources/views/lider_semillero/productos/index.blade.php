@@ -106,13 +106,14 @@
                     <td class="px-5 py-3 text-slate-600">{{ $repositorio }}</td>
                     <td class="px-5 py-3">
                         @php
-                            $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
-                            $accionesBloqueadas = $gp->es_mio || !in_array($estadoRev, ['pendiente', 'en_revision'], true);
+                            // Usamos el estado del registro de la fila actual ($prod)
+                            $estadoRev = $prod->estado_revision->value ?? (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
+                            $accionesBloqueadas = $prod->es_mio || !in_array($estadoRev, ['pendiente', 'en_revision'], true);
                         @endphp
                         <div class="flex items-center gap-1.5 whitespace-nowrap">
                             {{-- Ver detalle (modal) --}}
                             <button type="button"
-                               @click="openDetalle({{ $gp->id }})"
+                               @click="openDetalle({{ $prod->id }})"
                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition"
                                title="Ver detalle">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -126,8 +127,8 @@
                             @else
                                 {{-- Aprobar --}}
                                 <button type="button"
-                                    data-id="{{ $gp->id }}"
-                                    data-titulo="{{ e($gp->titulo ?? '') }}"
+                                    data-id="{{ $prod->id }}"
+                                    data-titulo="{{ e($prod->nombre ?? '') }}"
                                     @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
                                     class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition"
                                     title="Aprobar">
@@ -137,8 +138,8 @@
                                 </button>
                                 {{-- Rechazar --}}
                                 <button type="button"
-                                    data-id="{{ $gp->id }}"
-                                    data-titulo="{{ e($gp->titulo ?? '') }}"
+                                    data-id="{{ $prod->id }}"
+                                    data-titulo="{{ e($prod->nombre ?? '') }}"
                                     @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
                                     class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white transition"
                                     title="Rechazar">

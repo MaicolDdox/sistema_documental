@@ -17,8 +17,15 @@
                             {{ $integrante->initials() }}
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-slate-900">{{ $integrante->person->primer_nombre ?? '' }} {{ $integrante->person->primer_apellido ?? '' }}</p>
-                            <p class="text-xs text-slate-400 mt-0.5">Ficha: {{ $integrante->person->enrollments->first()->trainingRecord->training_record_code ?? 'N/A' }}</p>
+                            <p class="text-sm font-medium text-slate-900">
+                                {{ $integrante->person->primer_nombre ?? '' }} {{ $integrante->person->primer_apellido ?? '' }}
+                            </p>
+                            @php
+                                $fichaCodigo = $integrante->person?->enrollments?->first()?->trainingRecord?->training_record_code ?? null;
+                            @endphp
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                Ficha: {{ $fichaCodigo ?: 'N/A' }}
+                            </p>
                         </div>
                     </div>
                 </td>

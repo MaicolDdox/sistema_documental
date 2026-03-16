@@ -76,7 +76,9 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
 Route::middleware(['auth', 'ensure.active'])->group(function () {
 
     // ─── Módulo: Admin ───────────────────────────────────────────────────────
-    Route::middleware(['role:administrador_sistema|admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Acceso para cualquier usuario autenticado y activo.
+    // Los permisos finos se controlan dentro de las vistas / componentes.
+    Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard del admin (vista pendiente de creación)
         // Route::view('dashboard', 'admin.dashboard')->name('dashboard');

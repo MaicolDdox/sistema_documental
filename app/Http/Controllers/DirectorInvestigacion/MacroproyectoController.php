@@ -114,4 +114,34 @@ class MacroproyectoController extends Controller
         return redirect()->route('director.macroproyectos.index')
             ->with('success', 'Macroproyecto eliminado.');
     }
+
+    /**
+     * Cambia el estado del macroproyecto a activo.
+     */
+    public function activar(MacroProject $macroproyecto)
+    {
+        if ($macroproyecto->research_group_id !== $this->getGrupoId()) {
+            abort(403);
+        }
+
+        $macroproyecto->update(['estado' => 'activo']);
+
+        return redirect()->route('director.macroproyectos.index')
+            ->with('success', 'Macroproyecto activado correctamente.');
+    }
+
+    /**
+     * Cambia el estado del macroproyecto a inactivo.
+     */
+    public function desactivar(MacroProject $macroproyecto)
+    {
+        if ($macroproyecto->research_group_id !== $this->getGrupoId()) {
+            abort(403);
+        }
+
+        $macroproyecto->update(['estado' => 'inactivo']);
+
+        return redirect()->route('director.macroproyectos.index')
+            ->with('success', 'Macroproyecto desactivado correctamente.');
+    }
 }

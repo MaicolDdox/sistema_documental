@@ -45,7 +45,8 @@ class DocumentoGrupoController extends Controller
         $grupoId = $this->getGrupoId();
 
         $validated = $request->validate([
-            'nombre'   => ['required', 'string', 'max:255'],
+            'titulo'   => ['required', 'string', 'max:255'],
+            'tipo'     => ['nullable', 'string', 'max:50'],
             'archivo'  => ['required', 'file', 'mimes:pdf,doc,docx,xls,xlsx,ppt,pptx', 'max:20480'],
         ]);
 
@@ -54,8 +55,9 @@ class DocumentoGrupoController extends Controller
         SeedlingInternalDocument::create([
             'seedling_id' => $grupoId,
             'user_id'     => Auth::id(),
-            'nombre'      => $validated['nombre'],
-            'archivo'     => $path,
+            'titulo'      => $validated['titulo'],
+            'tipo'        => $validated['tipo'] ?? 'otro',
+            'url_archivo' => $path,
         ]);
 
         return redirect()

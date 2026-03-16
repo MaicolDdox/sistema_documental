@@ -222,8 +222,8 @@ class ProductosController extends Controller
     public function aprobar(Request $request, Product $producto): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || !$this->perteneceAlSemillero($producto, $semillero->id)) {
-            abort(403, 'No puedes aprobar este producto.');
+        if (!$semillero) {
+            abort(403, 'No tienes un semillero asignado como líder.');
         }
 
         $autorPrincipal = $producto->productAuthors->first()?->projectAuthor?->user;
@@ -236,12 +236,12 @@ class ProductosController extends Controller
         $producto->observacion_revision = $request->input('observaciones');
         $producto->save();
 
-        // Sincronizar estado con el registro base del producto (vista del asesor)
-        if ($groupProduct->product) {
-            $groupProduct->product->update([
-                'estado_revision'      => EstadoRevisionEnum::Aprobado->value,
-                'observacion_revision' => $request->input('observaciones'),
-            ]);
+        // Sincronizar también con el registro en group_products (tablero del investigador)
+        $groupProduct = GroupProduct::where('product_id', $producto->id)->first();
+        if ($groupProduct) {
+            $groupProduct->estado_revision = EstadoRevisionEnum::Aprobado;
+            $groupProduct->observaciones_revision = $request->input('observaciones');
+            $groupProduct->save();
         }
 
         return redirect()->route('lider-sem.productos')
@@ -268,8 +268,8 @@ class ProductosController extends Controller
         $validated = $validator->validated();
 
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || !$this->perteneceAlSemillero($producto, $semillero->id)) {
-            abort(403, 'No puedes rechazar este producto.');
+        if (!$semillero) {
+            abort(403, 'No tienes un semillero asignado como líder.');
         }
 
         $autorPrincipal = $producto->productAuthors->first()?->projectAuthor?->user;
@@ -282,12 +282,12 @@ class ProductosController extends Controller
         $producto->observacion_revision = $validated['observaciones'];
         $producto->save();
 
-        // Sincronizar estado con el registro base del producto (vista del asesor)
-        if ($groupProduct->product) {
-            $groupProduct->product->update([
-                'estado_revision'      => EstadoRevisionEnum::Rechazado->value,
-                'observacion_revision' => $validated['observaciones'],
-            ]);
+        // Sincronizar también con el registro en group_products (tablero del investigador)
+        $groupProduct = GroupProduct::where('product_id', $producto->id)->first();
+        if ($groupProduct) {
+            $groupProduct->estado_revision = EstadoRevisionEnum::Rechazado;
+            $groupProduct->observaciones_revision = $validated['observaciones'];
+            $groupProduct->save();
         }
 
         return redirect()->route('lider-sem.productos')

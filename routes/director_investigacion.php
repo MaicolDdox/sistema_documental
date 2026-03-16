@@ -63,4 +63,8 @@ Route::middleware(['auth', 'ensure.active', 'role:director_investigacion'])
 
         // ── Catálogo de Macroproyectos ───────────────────────────────
         Route::resource('macroproyectos', MacroproyectoController::class);
+        Route::patch('macroproyectos/{macroproyecto}/activar', [MacroproyectoController::class, 'activar'])
+            ->name('macroproyectos.activar');
+        Route::patch('macroproyectos/{macroproyecto}/desactivar', [MacroproyectoController::class, 'desactivar'])
+            ->name('macroproyectos.desactivar');
     });
