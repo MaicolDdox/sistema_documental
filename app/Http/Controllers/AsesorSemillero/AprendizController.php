@@ -65,7 +65,7 @@ class AprendizController extends Controller
                 });
             }
 
-            $aprendices = $query->paginate(15)->withQueryString();
+            $aprendices = $query->paginate(10)->withQueryString();
         }
 
         return view('asesor_semillero.aprendices.index', compact('semillero', 'aprendices'));

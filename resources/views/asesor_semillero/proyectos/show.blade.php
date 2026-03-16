@@ -1,18 +1,19 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Detalle del Proyecto</x-slot>
 
-@section('title', $proyecto->nombre)
-@section('header', 'Detalle del Proyecto')
-
-@section('header-actions')
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
     @can('proyectos.editar')
         <a href="{{ route('asesor.proyectos.edit', $proyecto->id) }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-all">
             Editar
         </a>
     @endcan
-@endsection
+    </div>
+</div>
 
-@section('content')
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
     {{-- Columna principal --}}
@@ -184,4 +185,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-app-layout>

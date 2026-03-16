@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Evidencias del Proyecto</x-slot>
 
-@section('title', 'Evidencias del Proyecto')
-@section('header', 'Evidencias del Proyecto')
-
-@section('content')
 <div class="mb-3">
     <a href="{{ route('asesor.proyectos.show', $proyecto->id) }}" class="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
@@ -94,4 +91,4 @@
         @endif
     </div>
 </div>
-@endsection
+</x-app-layout>

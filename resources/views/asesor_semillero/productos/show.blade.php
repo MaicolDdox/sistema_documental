@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Detalle del Producto</x-slot>
 
-@section('title', 'Detalle del Producto')
-@section('header', 'Detalle del Producto')
-
-@section('content')
 
 {{-- Modal de vista previa --}}
 <div x-data="{
@@ -276,4 +273,4 @@
 
     </div>
 </div>
-@endsection
+</x-app-layout>

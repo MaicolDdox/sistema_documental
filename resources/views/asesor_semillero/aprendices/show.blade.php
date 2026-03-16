@@ -1,9 +1,10 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Detalle del Aprendiz</x-slot>
 
-@section('title', 'Detalle del Aprendiz')
-@section('header', 'Detalle del Aprendiz')
-
-@section('header-actions')
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
     @can('aprendices.editar')
         <a href="{{ route('asesor.aprendices.edit', $aprendiz->id) }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
@@ -11,9 +12,9 @@
             Editar
         </a>
     @endcan
-@endsection
+    </div>
+</div>
 
-@section('content')
 <div class="max-w-2xl">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         {{-- Avatar + nombre --}}
@@ -106,4 +107,4 @@
         </a>
     </div>
 </div>
-@endsection
+</x-app-layout>

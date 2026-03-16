@@ -1,15 +1,15 @@
-@extends('asesor_semillero.layout')
-
-@section('title', 'Dashboard — Asesor Semillero')
-@section('header', 'Dashboard')
-
 @php
 use Illuminate\Support\Facades\DB;
 use App\Models\Seedling;
 use App\Models\Project;
 use App\Models\Product;
 use App\Models\ProjectAuthor;
+@endphp
 
+<x-app-layout>
+<x-slot name="header">Dashboard</x-slot>
+
+@php
 // Todos los semilleros del asesor (puede tener varios)
 $semilleros = Seedling::whereHas('advisors', function ($q) {
     $q->where('external_advisors.user_id', auth()->id())
@@ -55,7 +55,6 @@ $proyectosSinIntegrantes = Project::whereIn('id', $allProjectIds)
 $semillero = $semilleros->first();
 @endphp
 
-@section('content')
 
 {{-- ─── Bienvenida ────────────────────────────────────── --}}
 <div class="mb-6 bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -296,7 +295,43 @@ $semillero = $semilleros->first();
 {{-- ─── Acciones rápidas ──────────────────────────────── --}}
 <div class="bg-white rounded-xl border border-slate-200 p-5">
     <h3 class="text-sm font-semibold text-slate-900 mb-4">Acciones rápidas</h3>
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap gap-3" x-data="{ openExportModal: false }">
+        <button @click="openExportModal = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Descargar Reporte General
+        </button>
+
+        {{-- Modal de Reporte --}}
+        <div x-show="openExportModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+            <div @click.away="openExportModal = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100" x-transition>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Descargar Reporte</h3>
+                    <button @click="openExportModal = false" class="text-slate-400 hover:text-red-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form method="GET" action="{{ route('asesor.exportar.dashboard') }}">
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                        <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                            <option value="">Todo el histórico</option>
+                            <option value="hoy">El día de hoy</option>
+                            <option value="semanal">Esta semana</option>
+                            <option value="mensual">Este mes</option>
+                            <option value="anual">Este año</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="openExportModal = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Generar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         @can('aprendices.registrar')
         <a href="{{ route('asesor.aprendices.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-sm"
@@ -359,4 +394,4 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 @endif
 
-@endsection
+</x-app-layout>

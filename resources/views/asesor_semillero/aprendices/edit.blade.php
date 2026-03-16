@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Editar Aprendiz</x-slot>
 
-@section('title', 'Editar Aprendiz')
-@section('header', 'Editar Aprendiz')
-
-@section('content')
 <div class="max-w-3xl">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <div class="mb-5 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
@@ -145,4 +142,4 @@
         </form>
     </div>
 </div>
-@endsection
+</x-app-layout>
