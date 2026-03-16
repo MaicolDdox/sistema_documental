@@ -12,6 +12,8 @@ use App\Models\KnowledgeGrandArea;
 use App\Models\MincienciasSubcategory;
 use App\Models\MincienciasTypology;
 use App\Models\Product;
+use App\Models\ProductAuthor;
+use App\Models\ProjectAuthor;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,21 +32,21 @@ class ProductosController extends Controller
         $semillero = Auth::user()->ledSeedlings()->first();
         $productos = collect();
         $proyectosParaRegistro = collect();
-        $tipologias = MincienciasTypology::orderBy('nombre')->get();
 
         if ($semillero) {
             $projectIds = DB::table('project_seedlings')
                 ->where('seedling_id', $semillero->id)
                 ->pluck('project_id');
-            $productIds = DB::table('products')->whereIn('project_id', $projectIds)->pluck('id');
 
-            $productos = GroupProduct::with(['author.person', 'product.project', 'mincienciasTypology'])
-                ->whereIn('product_id', $productIds)
+            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person'])
+                ->whereIn('project_id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()
-                ->map(function ($gp) {
-                    $gp->es_mio = $gp->author_id === Auth::id();
-                    return $gp;
+                ->map(function ($prod) {
+                    $autorPrincipal = $prod->productAuthors->first()?->projectAuthor?->user;
+                    $prod->es_mio = $autorPrincipal && $autorPrincipal->id === Auth::id();
+                    $prod->autor = $autorPrincipal;
+                    return $prod;
                 });
 
             // Proyectos del semillero donde el usuario es autor (para registrar producto)
@@ -60,7 +62,6 @@ class ProductosController extends Controller
             'semillero' => $semillero,
             'productos' => $productos,
             'proyectosParaRegistro' => $proyectosParaRegistro,
-            'tipologias' => $tipologias,
         ]);
     }
 
@@ -89,7 +90,6 @@ class ProductosController extends Controller
         $tieneRepositorio = $request->boolean('tiene_repositorio');
         $rules = [
             'titulo' => 'required|string|max:500',
-            'minciencias_typology_id' => 'required|exists:minciencias_typologies,id',
             'project_id' => 'required|exists:projects,id',
             'tiene_repositorio' => 'required|boolean',
         ];
@@ -101,20 +101,10 @@ class ProductosController extends Controller
 
         $validated = $request->validate($rules, [
             'titulo.required' => 'El título del producto es obligatorio.',
-            'minciencias_typology_id.required' => 'El tipo de producto es obligatorio.',
             'project_id.required' => 'El proyecto origen es obligatorio.',
             'url_repositorio.required' => 'La URL del repositorio es obligatoria cuando tiene repositorio en línea.',
             'evidencia.required' => 'El archivo del producto es obligatorio cuando no tiene repositorio en línea.',
         ]);
-
-        $typology = MincienciasTypology::find($validated['minciencias_typology_id']);
-        $subcategory = MincienciasSubcategory::where('minciencias_typology_id', $typology->id)->first();
-        $knowledgeGrand = KnowledgeGrandArea::first();
-        $knowledgeArea = KnowledgeArea::first();
-        if (!$subcategory || !$knowledgeGrand || !$knowledgeArea) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'Faltan catálogos de configuración. Contacta al administrador.');
-        }
 
         $archivoProducto = '';
         if ($tieneRepositorio) {
@@ -127,28 +117,21 @@ class ProductosController extends Controller
             'project_id' => $validated['project_id'],
             'nombre' => $validated['titulo'],
             'archivo' => $archivoProducto,
+            'url_repositorio' => $tieneRepositorio ? $validated['url_repositorio'] : null,
             'estado' => EstadoEnum::Activo,
+            'estado_revision' => EstadoRevisionEnum::Pendiente,
         ]);
 
-        $groupProductData = [
-            'author_id' => Auth::id(),
-            'product_id' => $product->id,
-            'tipo_proyecto_origen' => TipoProyectoOrigenEnum::Semilleros,
-            'codigo_proyecto_origen' => '0',
-            'titulo' => $validated['titulo'],
-            'anio_publicacion' => (int) now()->format('Y'),
-            'nombre_programa_formacion_impacto' => 'N/A',
-            'minciencias_typology_id' => $validated['minciencias_typology_id'],
-            'minciencias_subcategory_id' => $subcategory->id,
-            'knowledge_grand_area_id' => $knowledgeGrand->id,
-            'knowledge_area_id' => $knowledgeArea->id,
-            'tiene_repositorio' => $tieneRepositorio,
-            'url_repositorio' => $tieneRepositorio ? $validated['url_repositorio'] : null,
-            'evidencia' => !$tieneRepositorio ? $archivoProducto : null,
-            'autoriza_datos' => false,
-            'estado_revision' => EstadoRevisionEnum::Pendiente,
-        ];
-        GroupProduct::create($groupProductData);
+        $projectAuthorUser = ProjectAuthor::where('project_id', $validated['project_id'])
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($projectAuthorUser) {
+            ProductAuthor::create([
+                'product_id' => $product->id,
+                'project_author_id' => $projectAuthorUser->id,
+            ]);
+        }
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto registrado correctamente. Estado de revisión: pendiente.');
@@ -158,20 +141,22 @@ class ProductosController extends Controller
      * Aprueba un producto. Solo si pertenece al semillero del líder y no es autor del producto.
      * Observaciones opcionales.
      */
-    public function aprobar(Request $request, GroupProduct $groupProduct): RedirectResponse
+    public function aprobar(Request $request, Product $producto): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || !$this->perteneceAlSemillero($groupProduct, $semillero->id)) {
+        if (!$semillero || !$this->perteneceAlSemillero($producto, $semillero->id)) {
             abort(403, 'No puedes aprobar este producto.');
         }
-        if ($groupProduct->author_id === Auth::id()) {
+
+        $autorPrincipal = $producto->productAuthors->first()?->projectAuthor?->user;
+        if ($autorPrincipal && $autorPrincipal->id === Auth::id()) {
             return redirect()->route('lider-sem.productos')
                 ->with('error', 'No puedes aprobar tus propios productos.');
         }
 
-        $groupProduct->estado_revision = EstadoRevisionEnum::Aprobado;
-        $groupProduct->observaciones_revision = $request->input('observaciones');
-        $groupProduct->save();
+        $producto->estado_revision = EstadoRevisionEnum::Aprobado;
+        $producto->observacion_revision = $request->input('observaciones');
+        $producto->save();
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto aprobado correctamente.');
@@ -181,7 +166,7 @@ class ProductosController extends Controller
      * Rechaza un producto. Solo si pertenece al semillero del líder y no es autor del producto.
      * Observaciones obligatorias.
      */
-    public function rechazar(Request $request, GroupProduct $groupProduct): RedirectResponse
+    public function rechazar(Request $request, Product $producto): RedirectResponse
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'observaciones' => 'required|string|max:2000',
@@ -191,36 +176,37 @@ class ProductosController extends Controller
         if ($validator->fails()) {
             return redirect()->route('lider-sem.productos')
                 ->withErrors($validator)
-                ->with('rechazar_id', $groupProduct->id)
+                ->with('rechazar_id', $producto->id)
                 ->withInput();
         }
         $validated = $validator->validated();
 
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || !$this->perteneceAlSemillero($groupProduct, $semillero->id)) {
+        if (!$semillero || !$this->perteneceAlSemillero($producto, $semillero->id)) {
             abort(403, 'No puedes rechazar este producto.');
         }
-        if ($groupProduct->author_id === Auth::id()) {
+
+        $autorPrincipal = $producto->productAuthors->first()?->projectAuthor?->user;
+        if ($autorPrincipal && $autorPrincipal->id === Auth::id()) {
             return redirect()->route('lider-sem.productos')
                 ->with('error', 'No puedes rechazar tus propios productos.');
         }
 
-        $groupProduct->estado_revision = EstadoRevisionEnum::Rechazado;
-        $groupProduct->observaciones_revision = $validated['observaciones'];
-        $groupProduct->save();
+        $producto->estado_revision = EstadoRevisionEnum::Rechazado;
+        $producto->observacion_revision = $validated['observaciones'];
+        $producto->save();
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto rechazado.');
     }
 
-    private function perteneceAlSemillero(GroupProduct $groupProduct, int $seedlingId): bool
+    private function perteneceAlSemillero(Product $producto, int $seedlingId): bool
     {
-        $projectId = $groupProduct->product?->project_id;
-        if (!$projectId) {
+        if (!$producto->project_id) {
             return false;
         }
         return DB::table('project_seedlings')
-            ->where('project_id', $projectId)
+            ->where('project_id', $producto->project_id)
             ->where('seedling_id', $seedlingId)
             ->exists();
     }

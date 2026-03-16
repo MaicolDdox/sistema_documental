@@ -22,16 +22,28 @@ class Login extends Component
     {
         if (Auth::check()) {
             $user = Auth::user();
-            if ($user->hasRole('lider_semillero')) {
-                $this->redirect('/lider-semillero');
+            if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+                $this->redirect('/admin/dashboard');
                 return;
             }
             if ($user->hasRole('director_semilleros')) {
                 $this->redirect('/director-semilleros');
                 return;
             }
-            if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
-                $this->redirect('/admin/dashboard');
+            if ($user->hasRole('lider_semillero')) {
+                $this->redirect('/lider-semillero');
+                return;
+            }
+            if ($user->hasRole('director_investigacion')) {
+                $this->redirect('/director');
+                return;
+            }
+            if ($user->hasRole('investigador_asociado')) {
+                $this->redirect('/investigador');
+                return;
+            }
+            if ($user->hasRole('asesor_semillero')) {
+                $this->redirect('/asesor-semillero/dashboard');
                 return;
             }
             $this->redirectRoute('dashboard');
@@ -72,7 +84,7 @@ class Login extends Component
 
         request()->session()->regenerate();
 
-        // Redirigir según rol al módulo correspondiente (igual que LoginResponse)
+        // Redirigir según rol al módulo correspondiente
         if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
             return redirect()->to('/admin/dashboard');
         }
@@ -82,8 +94,14 @@ class Login extends Component
         if ($user->hasRole('lider_semillero')) {
             return redirect()->to('/lider-semillero');
         }
-        if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
-            return redirect()->to('/research/dashboard');
+        if ($user->hasRole('director_investigacion')) {
+            return redirect()->to('/director');
+        }
+        if ($user->hasRole('investigador_asociado')) {
+            return redirect()->to('/investigador');
+        }
+        if ($user->hasRole('asesor_semillero')) {
+            return redirect()->to('/asesor-semillero/dashboard');
         }
         if ($user->hasRole('asesor')) {
             return redirect()->to('/seedlings');
