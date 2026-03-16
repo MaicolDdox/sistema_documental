@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Crear Nuevo Proyecto</x-slot>
 
-@section('title', 'Nuevo Proyecto')
-@section('header', 'Crear Nuevo Proyecto')
-
-@section('content')
 <div class="max-w-3xl" x-data="{ tienesMacro: {{ old('tiene_macroproyecto', '0') }} == 1 }">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <form method="POST" action="{{ route('asesor.proyectos.store') }}" novalidate>
@@ -140,4 +137,4 @@
         </form>
     </div>
 </div>
-@endsection
+</x-app-layout>

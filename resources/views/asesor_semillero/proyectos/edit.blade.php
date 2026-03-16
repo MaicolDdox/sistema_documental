@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Editar Proyecto</x-slot>
 
-@section('title', 'Editar Proyecto')
-@section('header', 'Editar Proyecto')
-
-@section('content')
 <div class="max-w-3xl" x-data="{ tienesMacro: {{ old('tiene_macroproyecto', $proyecto->vinculacion_macro_proyecto ? '1' : '0') }} == 1 }">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <div class="mb-5 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
@@ -140,4 +137,4 @@
         </form>
     </div>
 </div>
-@endsection
+</x-app-layout>

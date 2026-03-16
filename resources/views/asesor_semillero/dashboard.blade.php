@@ -1,15 +1,15 @@
-@extends('asesor_semillero.layout')
-
-@section('title', 'Dashboard — Asesor Semillero')
-@section('header', 'Dashboard')
-
 @php
 use Illuminate\Support\Facades\DB;
 use App\Models\Seedling;
 use App\Models\Project;
 use App\Models\Product;
 use App\Models\ProjectAuthor;
+@endphp
 
+<x-app-layout>
+<x-slot name="header">Dashboard</x-slot>
+
+@php
 // Todos los semilleros del asesor (puede tener varios)
 $semilleros = Seedling::whereHas('advisors', function ($q) {
     $q->where('external_advisors.user_id', auth()->id())
@@ -55,7 +55,6 @@ $proyectosSinIntegrantes = Project::whereIn('id', $allProjectIds)
 $semillero = $semilleros->first();
 @endphp
 
-@section('content')
 
 {{-- ─── Bienvenida ────────────────────────────────────── --}}
 <div class="mb-6 bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -395,4 +394,4 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 @endif
 
-@endsection
+</x-app-layout>

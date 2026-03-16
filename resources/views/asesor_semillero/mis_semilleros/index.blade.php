@@ -1,9 +1,10 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Mis Semilleros y Proyectos</x-slot>
 
-@section('title', 'Mis Semilleros y Proyectos')
-@section('header', 'Mis Semilleros y Proyectos')
-
-@section('header-actions')
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
 <div x-data="{ openExport: false }" class="flex items-center gap-2">
     <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
         <svg class="w-4 h-4" transform="rotate(180)" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
@@ -41,9 +42,9 @@
         </div>
     </div>
 </div>
-@endsection
+    </div>
+</div>
 
-@section('content')
 
 @if($semilleros->isEmpty())
 {{-- Estado vacío --}}
@@ -198,4 +199,4 @@
 </div>
 @endif
 
-@endsection
+</x-app-layout>

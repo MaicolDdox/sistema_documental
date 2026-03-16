@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Editar Producto</x-slot>
 
-@section('title', 'Editar Producto')
-@section('header', 'Editar Producto')
-
-@section('content')
 <div class="max-w-2xl" x-data="{
     fileName: null,
     handleFile(e) {
@@ -148,4 +145,4 @@
         </div>
     </form>
 </div>
-@endsection
+</x-app-layout>

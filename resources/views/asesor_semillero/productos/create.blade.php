@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Registrar Nuevo Producto</x-slot>
 
-@section('title', 'Registrar Producto')
-@section('header', 'Registrar Nuevo Producto')
-
-@section('content')
 <div class="max-w-2xl" x-data="{
     semilleroId: '{{ old('semillero_id', $semilleroSeleccionado ?? '') }}',
     proyectoId: '{{ old('project_id', $proyecto_id ?? '') }}',
@@ -270,4 +267,4 @@
         </div>
     </form>
 </div>
-@endsection
+</x-app-layout>

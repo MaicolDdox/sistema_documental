@@ -1,9 +1,6 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Registrar Nuevo Aprendiz</x-slot>
 
-@section('title', 'Registrar Aprendiz')
-@section('header', 'Registrar Nuevo Aprendiz')
-
-@section('content')
 <div class="max-w-3xl">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <p class="text-sm text-slate-500 mb-6">
@@ -156,4 +153,4 @@
         </form>
     </div>
 </div>
-@endsection
+</x-app-layout>

@@ -1,9 +1,10 @@
-@extends('asesor_semillero.layout')
+<x-app-layout>
+<x-slot name="header">Productos del Semillero</x-slot>
 
-@section('title', 'Productos del Semillero')
-@section('header', 'Productos del Semillero')
-
-@section('header-actions')
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
 <div x-data="{ openExport: false }" class="flex items-center gap-2">
     <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
@@ -50,9 +51,9 @@
         </a>
     @endcan
 </div>
-@endsection
+    </div>
+</div>
 
-@section('content')
 {{-- Filtro por proyecto --}}
 <form method="GET" class="mb-4 flex gap-3 flex-wrap">
     <select name="proyecto" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
@@ -203,4 +204,4 @@
 <div class="mt-4">{{ $productos->links() }}</div>
 @endif
 @endif
-@endsection
+</x-app-layout>
