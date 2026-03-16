@@ -1,22 +1,59 @@
 <x-app-layout>
-@php
-    $aprendicesParaEditar = $aprendices ? $aprendices->keyBy('id') : collect();
-    if (isset($editAprendiz) && $editAprendiz && !$aprendicesParaEditar->has($editAprendiz->id)) {
-        $aprendicesParaEditar->put($editAprendiz->id, $editAprendiz);
-    }
-@endphp
-<div x-data="{
-        openCreate: {{ request('registrar') || ($errors->any() && old('_from_modal')) ? 'true' : 'false' }},
-        showDetailId: null,
-        editId: {{ $editAprendiz?->id ?? 'null' }},
-        confirmDeleteId: null
-    }">
-{{-- Mensaje local de éxito (además del global en layout) --}}
-@if(session('success'))
-    <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
-        {{ session('success') }}
+<x-slot name="header">Aprendices del Semillero</x-slot>
+
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
+<div x-data="{ openExport: false }" class="flex items-center gap-2">
+    <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Descargar Reportes
+    </button>
+
+    {{-- Modal de Exportación --}}
+    <div x-show="openExport" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+        <div @click.away="openExport = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-left" x-transition>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Descargar Reporte de Aprendices</h3>
+                <button @click="openExport = false" class="text-slate-400 hover:text-red-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="GET" action="{{ route('asesor.exportar.aprendices') }}">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                    <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                        <option value="">Todo el histórico</option>
+                        <option value="hoy">El día de hoy</option>
+                        <option value="semanal">Esta semana</option>
+                        <option value="mensual">Este mes</option>
+                        <option value="anual">Este año</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" @click="openExport = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        Generar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-@endif
+
+    @can('aprendices.registrar')
+        <a href="{{ route('asesor.aprendices.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+           style="background:#39A900">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Registrar Aprendiz
+        </a>
+    @endcan
+</div>
+    </div>
+</div>
+
 
 {{-- Botón Registrar en la parte superior --}}
 @can('aprendices.registrar')
@@ -160,458 +197,4 @@
 <div class="mt-4">{{ $aprendices->links() }}</div>
 @endif
 @endif
-
-{{-- Modal detalle del aprendiz --}}
-<div x-show="showDetailId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true" x-transition>
-    <div class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200"
-         @click.self="showDetailId = null">
-        <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 rounded-t-2xl z-10">
-            <h2 class="text-base font-semibold text-slate-900">Detalle del aprendiz</h2>
-            <button type="button" @click="showDetailId = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div class="p-6">
-            @foreach($aprendices as $ap)
-            @php $p = $ap->person; @endphp
-            <div x-show="showDetailId === {{ $ap->id }}" x-cloak class="space-y-5">
-                {{-- Avatar + nombre --}}
-                <div class="flex items-center gap-4 pb-5 border-b border-slate-100">
-                    <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-bold flex-shrink-0 shadow-sm" style="background: linear-gradient(135deg, #0a1628 0%, #1e3a5f 100%);">
-                        {{ strtoupper(substr($p?->primer_nombre ?? 'A', 0, 1)) }}{{ strtoupper(substr($p?->primer_apellido ?? 'P', 0, 1)) }}
-                    </div>
-                    <div class="min-w-0">
-                        <p class="font-semibold text-slate-900 text-lg">
-                            {{ $p?->primer_nombre }} {{ $p?->segundo_nombre }} {{ $p?->primer_apellido }} {{ $p?->segundo_apellido }}
-                        </p>
-                        <p class="text-xs text-slate-500 mt-0.5">{{ $p?->entityPosition?->nombre ?? '—' }}</p>
-                    </div>
-                </div>
-
-                {{-- Documento --}}
-                <div>
-                    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Documento</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <p class="text-xs text-slate-400">Tipo</p>
-                            <p class="text-sm font-medium text-slate-700 capitalize">{{ str_replace(['_', 'cedula '], [' ', 'Cédula '], $ap->tipo_documento?->value ?? '—') }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">Número</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $ap->numero_documento }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">Género</p>
-                            <p class="text-sm font-medium text-slate-700 capitalize">{{ $p?->genero ?? '—' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">EPS</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $p?->eps ?? '—' }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Contacto --}}
-                <div>
-                    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Contacto</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <p class="text-xs text-slate-400">Celular</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $p?->celular ?? '—' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">Teléfono fijo</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $p?->telefono ?? '—' }}</p>
-                        </div>
-                        <div class="col-span-2">
-                            <p class="text-xs text-slate-400">Correo institucional</p>
-                            <p class="text-sm font-medium text-slate-700 break-all">{{ $p?->email_institucional ?? '—' }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Formación --}}
-                <div>
-                    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Formación</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-xs text-slate-400">Programa de formación</p>
-                            <p class="text-sm font-medium text-slate-700">
-                                {{ $p?->trainingProgram?->nombre ?? '—' }}
-                                @if($p?->trainingProgram?->trainingProgramType)
-                                    <span class="text-slate-500">({{ $p->trainingProgram->trainingProgramType->nombre }})</span>
-                                @endif
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">Tipo de vinculación</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $p?->linkageType?->nombre ?? '—' }}</p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-
-{{-- Modal editar aprendiz --}}
-@if($semillero && $aprendicesParaEditar->isNotEmpty())
-<div x-show="editId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true" x-transition>
-    <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-slate-200" @click.self="editId = null">
-        <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 rounded-t-2xl z-10">
-            <h2 class="text-base font-semibold text-slate-900">Editar aprendiz</h2>
-            <button type="button" @click="editId = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div class="p-6">
-            <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-                El correo institucional se usa como identificador de inicio de sesión. Solo modifícalo si es un error tipográfico.
-            </div>
-            @foreach($aprendicesParaEditar as $ap)
-            @php $p = $ap->person; @endphp
-            <form method="POST" action="{{ route('asesor.aprendices.update', $ap->id) }}" novalidate x-show="editId === {{ $ap->id }}" x-cloak class="space-y-5">
-                @csrf
-                @method('PUT')
-
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">Datos personales</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Primer nombre <span class="text-red-500">*</span></label>
-                            <input type="text" name="primer_nombre" value="{{ old('primer_nombre', $p?->primer_nombre) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('primer_nombre') border-red-400 @enderror">
-                            @error('primer_nombre') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Segundo nombre</label>
-                            <input type="text" name="segundo_nombre" value="{{ old('segundo_nombre', $p?->segundo_nombre) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Primer apellido <span class="text-red-500">*</span></label>
-                            <input type="text" name="primer_apellido" value="{{ old('primer_apellido', $p?->primer_apellido) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('primer_apellido') border-red-400 @enderror">
-                            @error('primer_apellido') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Segundo apellido</label>
-                            <input type="text" name="segundo_apellido" value="{{ old('segundo_apellido', $p?->segundo_apellido) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
-                            <select name="tipo_documento" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('tipo_documento') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                @foreach(['cedula ciudadana','documento identidad','pasaporte','cedula extrangera'] as $tipo)
-                                    <option value="{{ $tipo }}" {{ old('tipo_documento', $ap->tipo_documento?->value) == $tipo ? 'selected' : '' }}>{{ ucfirst(str_replace('cedula','cédula',$tipo)) }}</option>
-                                @endforeach
-                            </select>
-                            @error('tipo_documento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Número de documento <span class="text-red-500">*</span></label>
-                            <input type="number" name="numero_documento" value="{{ old('numero_documento', $ap->numero_documento) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('numero_documento') border-red-400 @enderror">
-                            @error('numero_documento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Género <span class="text-red-500">*</span></label>
-                            <select name="genero" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('genero') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                <option value="masculino" {{ old('genero', $p?->genero) == 'masculino' ? 'selected' : '' }}>Masculino</option>
-                                <option value="femenino" {{ old('genero', $p?->genero) == 'femenino' ? 'selected' : '' }}>Femenino</option>
-                                <option value="prefiero no decirlo" {{ old('genero', $p?->genero) == 'prefiero no decirlo' ? 'selected' : '' }}>Prefiero no decirlo</option>
-                            </select>
-                            @error('genero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">EPS <span class="text-red-500">*</span></label>
-                            <input type="text" name="eps" value="{{ old('eps', $p?->eps) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('eps') border-red-400 @enderror">
-                            @error('eps') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Celular <span class="text-red-500">*</span></label>
-                            <input type="number" name="celular" value="{{ old('celular', $p?->celular) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('celular') border-red-400 @enderror">
-                            @error('celular') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Teléfono fijo</label>
-                            <input type="number" name="telefono" value="{{ old('telefono', $p?->telefono) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">Datos académicos e institucionales</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Correo institucional <span class="text-red-500">*</span></label>
-                            <input type="email" name="email_institucional" value="{{ old('email_institucional', $p?->email_institucional) }}" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('email_institucional') border-red-400 @enderror">
-                            @error('email_institucional') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Cargo / Rol <span class="text-red-500">*</span></label>
-                            <select name="entity_position_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('entity_position_id') border-red-400 @enderror">
-                                <option value="">Seleccionar cargo...</option>
-                                @foreach($cargos as $grupo => $lista)
-                                    <optgroup label="{{ $grupo }}">
-                                        @foreach($lista as $cargo)
-                                            <option value="{{ $cargo->id }}" {{ old('entity_position_id', $p?->entity_position_id) == $cargo->id ? 'selected' : '' }}>{{ $cargo->nombre }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                            @error('entity_position_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de vinculación <span class="text-red-500">*</span></label>
-                            <select name="linkage_type_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('linkage_type_id') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                @foreach($tiposVinculacion as $tv)
-                                    <option value="{{ $tv->id }}" {{ old('linkage_type_id', $p?->linkage_type_id) == $tv->id ? 'selected' : '' }}>{{ $tv->nombre }}</option>
-                                @endforeach
-                            </select>
-                            @error('linkage_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Programa de formación <span class="text-red-500">*</span></label>
-                            <select name="training_program_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('training_program_id') border-red-400 @enderror">
-                                <option value="">Seleccionar programa...</option>
-                                @foreach($programasFormacion as $pf)
-                                    <option value="{{ $pf->id }}" {{ old('training_program_id', $p?->training_program_id) == $pf->id ? 'selected' : '' }}>{{ $pf->nombre }} @if($pf->trainingProgramType)({{ $pf->trainingProgramType->nombre }})@endif</option>
-                                @endforeach
-                            </select>
-                            @error('training_program_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-                    <button type="button" @click="editId = null" class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">Cancelar</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90" style="background:#39A900">Guardar cambios</button>
-                </div>
-            </form>
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
-
-{{-- Modal confirmar eliminación --}}
-<div x-show="confirmDeleteId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true">
-    <div class="relative bg-slate-900 text-white rounded-2xl shadow-2xl max-w-sm w-full px-6 py-5">
-        <div class="flex items-start gap-3">
-            <div class="mt-0.5">
-                <div class="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4.5M12 15.75h.007v.008H12v-.008z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 9.75l1.5 9A1.5 1.5 0 007.49 21h9.02a1.5 1.5 0 001.49-1.25l1.5-9M10.5 5.25h3M9 5.25A1.5 1.5 0 0110.5 3.75h3A1.5 1.5 0 0115 5.25M4.5 9.75h15" />
-                    </svg>
-                </div>
-            </div>
-            <div class="flex-1">
-                <p class="text-sm font-semibold mb-1.5">
-                    ¿Seguro que deseas eliminar este aprendiz del semillero?
-                </p>
-                <p class="text-xs text-slate-300">
-                    Esta acción no se puede deshacer.
-                </p>
-            </div>
-        </div>
-
-        <div class="mt-5 flex justify-end gap-2">
-            <button type="button"
-                    @click="confirmDeleteId = null"
-                    class="px-4 py-2.5 rounded-lg text-xs font-medium border border-slate-600 text-slate-200 hover:bg-slate-800 transition-all">
-                Cancelar
-            </button>
-            <button type="button"
-                    @click="
-                        const f = document.getElementById('delete-form-' + confirmDeleteId);
-                        if (f) { f.submit(); }
-                        confirmDeleteId = null;
-                    "
-                    class="px-4 py-2.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 shadow-sm transition-all">
-                Aceptar
-            </button>
-        </div>
-    </div>
-</div>
-
-
-{{-- Modal Registrar Aprendiz (misma línea visual que otros modales) --}}
-@can('aprendices.registrar')
-<div x-show="openCreate" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
-    <div class="flex min-h-full items-center justify-center p-4">
-        <div x-show="openCreate" @click.self="openCreate = false" class="fixed inset-0 bg-black/40" x-transition></div>
-        <div x-show="openCreate" class="relative bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-200" x-transition>
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <div>
-                <h2 class="text-sm font-semibold text-slate-900">Registrar aprendiz</h2>
-                <p class="text-xs text-slate-500 mt-1">
-                    El aprendiz quedará registrado con <span class="font-semibold">estado inactivo</span>.
-                </p>
-            </div>
-            <button type="button"
-                    @click="openCreate = false"
-                    class="p-1.5 rounded-full hover:bg-slate-100 text-slate-500">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-            </div>
-
-            <div class="px-6 py-5">
-            <form method="POST" action="{{ route('asesor.aprendices.store') }}" novalidate>
-                @csrf
-                <input type="hidden" name="_from_modal" value="1">
-
-                {{-- Datos personales --}}
-                <div class="mb-5">
-                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">
-                        Datos personales
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Primer nombre <span class="text-red-500">*</span></label>
-                            <input type="text" name="primer_nombre" value="{{ old('primer_nombre') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('primer_nombre') border-red-400 @enderror">
-                            @error('primer_nombre') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Segundo nombre</label>
-                            <input type="text" name="segundo_nombre" value="{{ old('segundo_nombre') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Primer apellido <span class="text-red-500">*</span></label>
-                            <input type="text" name="primer_apellido" value="{{ old('primer_apellido') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('primer_apellido') border-red-400 @enderror">
-                            @error('primer_apellido') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Segundo apellido</label>
-                            <input type="text" name="segundo_apellido" value="{{ old('segundo_apellido') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
-                            <select name="tipo_documento" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('tipo_documento') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                <option value="cedula ciudadana" {{ old('tipo_documento') == 'cedula ciudadana' ? 'selected' : '' }}>Cédula de Ciudadanía</option>
-                                <option value="documento identidad" {{ old('tipo_documento') == 'documento identidad' ? 'selected' : '' }}>Documento de Identidad</option>
-                                <option value="pasaporte" {{ old('tipo_documento') == 'pasaporte' ? 'selected' : '' }}>Pasaporte</option>
-                                <option value="cedula extrangera" {{ old('tipo_documento') == 'cedula extrangera' ? 'selected' : '' }}>Cédula Extranjera</option>
-                            </select>
-                            @error('tipo_documento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Número de documento <span class="text-red-500">*</span></label>
-                            <input type="number" name="numero_documento" value="{{ old('numero_documento') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('numero_documento') border-red-400 @enderror">
-                            @error('numero_documento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Género <span class="text-red-500">*</span></label>
-                            <select name="genero" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('genero') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                <option value="masculino" {{ old('genero') == 'masculino' ? 'selected' : '' }}>Masculino</option>
-                                <option value="femenino" {{ old('genero') == 'femenino' ? 'selected' : '' }}>Femenino</option>
-                                <option value="prefiero no decirlo" {{ old('genero') == 'prefiero no decirlo' ? 'selected' : '' }}>Prefiero no decirlo</option>
-                            </select>
-                            @error('genero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">EPS <span class="text-red-500">*</span></label>
-                            <input type="text" name="eps" value="{{ old('eps') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('eps') border-red-400 @enderror">
-                            @error('eps') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Celular <span class="text-red-500">*</span></label>
-                            <input type="number" name="celular" value="{{ old('celular') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('celular') border-red-400 @enderror">
-                            @error('celular') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Teléfono fijo</label>
-                            <input type="number" name="telefono" value="{{ old('telefono') }}"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Datos académicos --}}
-                <div class="mb-2">
-                    <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">
-                        Datos académicos e institucionales
-                    </h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Correo institucional <span class="text-red-500">*</span></label>
-                            <input type="email" name="email_institucional" value="{{ old('email_institucional') }}" placeholder="aprendiz@sena.edu.co"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('email_institucional') border-red-400 @enderror">
-                            @error('email_institucional') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Cargo / Rol <span class="text-red-500">*</span></label>
-                            <select name="entity_position_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('entity_position_id') border-red-400 @enderror">
-                                <option value="">Seleccionar cargo...</option>
-                                @foreach($cargos as $grupo => $lista)
-                                    <optgroup label="{{ $grupo }}">
-                                        @foreach($lista as $cargo)
-                                            <option value="{{ $cargo->id }}" {{ old('entity_position_id') == $cargo->id ? 'selected' : '' }}>{{ $cargo->nombre }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                            @error('entity_position_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de vinculación <span class="text-red-500">*</span></label>
-                            <select name="linkage_type_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('linkage_type_id') border-red-400 @enderror">
-                                <option value="">Seleccionar...</option>
-                                @foreach($tiposVinculacion as $tv)
-                                    <option value="{{ $tv->id }}" {{ old('linkage_type_id') == $tv->id ? 'selected' : '' }}>{{ $tv->nombre }}</option>
-                                @endforeach
-                            </select>
-                            @error('linkage_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Programa de formación <span class="text-red-500">*</span></label>
-                            <select name="training_program_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_id') border-red-400 @enderror">
-                                <option value="">Seleccionar programa...</option>
-                                @foreach($programasFormacion as $pf)
-                                    <option value="{{ $pf->id }}" {{ old('training_program_id') == $pf->id ? 'selected' : '' }}>
-                                        {{ $pf->nombre }} @if($pf->trainingProgramType)({{ $pf->trainingProgramType->nombre }})@endif
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('training_program_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
-                    <button type="button"
-                            @click="openCreate = false"
-                            class="px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-all">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                            style="background:#39A900">
-                        Registrar Aprendiz
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endcan
-</div>
-
 </x-app-layout>

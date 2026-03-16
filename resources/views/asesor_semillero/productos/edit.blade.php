@@ -1,4 +1,6 @@
 <x-app-layout>
+<x-slot name="header">Editar Producto</x-slot>
+
 <div class="max-w-2xl" x-data="{
     fileName: null,
     handleFile(e) {

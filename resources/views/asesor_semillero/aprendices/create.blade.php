@@ -1,4 +1,6 @@
 <x-app-layout>
+<x-slot name="header">Registrar Nuevo Aprendiz</x-slot>
+
 <div class="max-w-3xl">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <p class="text-sm text-slate-500 mb-6">

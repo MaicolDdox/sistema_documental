@@ -1,4 +1,6 @@
 <x-app-layout>
+<x-slot name="header">Registrar Nuevo Producto</x-slot>
+
 <div class="max-w-2xl" x-data="{
     semilleroId: '{{ old('semillero_id', $semilleroSeleccionado ?? '') }}',
     proyectoId: '{{ old('project_id', $proyecto_id ?? '') }}',

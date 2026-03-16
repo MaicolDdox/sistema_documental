@@ -70,7 +70,7 @@ class ProyectoController extends Controller
                 $query->where('nombre', 'like', '%' . $request->buscar . '%');
             }
 
-            $proyectos = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+            $proyectos = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
         }
 
         return view('asesor_semillero.proyectos.index', compact('semillero', 'proyectos'));

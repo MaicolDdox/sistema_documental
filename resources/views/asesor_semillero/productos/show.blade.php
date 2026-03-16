@@ -1,4 +1,7 @@
 <x-app-layout>
+<x-slot name="header">Detalle del Producto</x-slot>
+
+
 {{-- Modal de vista previa --}}
 <div x-data="{
     previewOpen: false,

@@ -131,7 +131,7 @@ class ProductoController extends Controller
                 $query->where('project_id', request('proyecto'));
             }
 
-            $productos  = $query->paginate(15)->withQueryString();
+            $productos  = $query->paginate(10)->withQueryString();
 
             // Todos los proyectos de todos los semilleros del asesor
             $proyectos = Project::whereIn('id', $projectIds)->orderBy('nombre')->get(['id', 'nombre']);

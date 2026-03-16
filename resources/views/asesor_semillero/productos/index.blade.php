@@ -1,14 +1,59 @@
 <x-app-layout>
-<div x-data="{ confirmDeleteId: null, showDetailId: null, editOpen: false, editUrl: null }">
-    {{-- Header acciones: botón registrar --}}
-    <div class="mb-4 flex justify-end">
+<x-slot name="header">Productos del Semillero</x-slot>
+
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
+<div x-data="{ openExport: false }" class="flex items-center gap-2">
+    <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Descargar Reportes
+    </button>
+
+    {{-- Modal de Exportación --}}
+    <div x-show="openExport" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+        <div @click.away="openExport = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-left" x-transition>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Descargar Reporte de Productos</h3>
+                <button @click="openExport = false" class="text-slate-400 hover:text-red-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="GET" action="{{ route('asesor.exportar.productos') }}">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                    <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                        <option value="">Todo el histórico</option>
+                        <option value="hoy">El día de hoy</option>
+                        <option value="semanal">Esta semana</option>
+                        <option value="mensual">Este mes</option>
+                        <option value="anual">Este año</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" @click="openExport = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        Generar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @can('productos.registrar')
         <a href="{{ route('asesor.productos.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
            style="background:#39A900">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
             Registrar Producto
         </a>
+    @endcan
+</div>
     </div>
+</div>
+
 {{-- Filtro por proyecto --}}
 <form method="GET" class="mb-4 flex gap-3 flex-wrap">
     <select name="proyecto" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
@@ -188,170 +233,4 @@
 <div class="mt-4">{{ $productos->links() }}</div>
 @endif
 @endif
-
-{{-- Modal detalle producto --}}
-<div x-show="showDetailId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true">
-    <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-slate-200"
-         @click.self="showDetailId = null">
-        <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 rounded-t-2xl z-10">
-            <h2 class="text-base font-semibold text-slate-900">Detalle del producto</h2>
-            <button type="button" @click="showDetailId = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div class="p-6 space-y-5">
-            @foreach($productos as $product)
-            @php
-                $sem = \Illuminate\Support\Facades\DB::table('project_seedlings')
-                    ->join('seedlings','seedlings.id','=','project_seedlings.seedling_id')
-                    ->where('project_seedlings.project_id', $product->project_id)
-                    ->value('seedlings.nombre');
-            @endphp
-            <div x-show="showDetailId === {{ $product->id }}" x-cloak class="space-y-5">
-                <div>
-                    <h3 class="font-outfit font-bold text-xl text-slate-900 mb-1">{{ $product->nombre }}</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Semillero</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $sem ?? '—' }}</p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Proyecto</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $product->project?->nombre ?? '—' }}</p>
-                        </div>
-                        @php
-                            // Mismo cálculo de estado que en la tabla principal
-                            $detalleEstadoBase = $product->estado_revision;
-                            if (!$detalleEstadoBase && $product->groupProducts && $product->groupProducts->isNotEmpty()) {
-                                $gpDetalleEstado = $product->groupProducts->first()->estado_revision;
-                                $detalleEstadoBase = $gpDetalleEstado instanceof \App\Enums\EstadoRevisionEnum ? $gpDetalleEstado->value : $gpDetalleEstado;
-                            }
-                            $detalleEr = $detalleEstadoBase ?: 'pendiente';
-                            $detalleLabel = match($detalleEr) {
-                                'aprobado'  => 'Aprobado',
-                                'rechazado' => 'Rechazado',
-                                'en_revision' => 'En revisión',
-                                default     => 'Pendiente',
-                            };
-                        @endphp
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Estado de revisión</p>
-                            <p class="text-sm font-medium text-slate-700">
-                                {{ $detalleLabel }}
-                            </p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Archivo / enlace</p>
-                            <div class="flex flex-col gap-1 text-sm">
-                                @if($product->archivo)
-                                    <a href="{{ asset('storage/' . $product->archivo) }}" target="_blank"
-                                       class="inline-flex items-center gap-1 text-blue-600 hover:underline whitespace-nowrap">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                                        Archivo
-                                    </a>
-                                @endif
-                                @if($product->url_repositorio)
-                                    <a href="{{ $product->url_repositorio }}" target="_blank"
-                                       class="inline-flex items-center gap-1 text-purple-600 hover:underline whitespace-nowrap">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
-                                        Enlace
-                                    </a>
-                                @endif
-                                @if(!$product->archivo && !$product->url_repositorio)
-                                    <span class="text-slate-400">Sin archivo ni enlace registrado.</span>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-4">
-                    <h4 class="text-sm font-semibold text-slate-900 mb-3">Autores</h4>
-                    @if($product->productAuthors->isNotEmpty())
-                        <ul class="space-y-1 text-sm text-slate-700">
-                            @foreach($product->productAuthors as $pa)
-                                @php
-                                    $p = $pa->projectAuthor?->user?->person;
-                                    $nombreCompleto = $p ? trim($p->primer_nombre.' '.$p->segundo_nombre.' '.$p->primer_apellido.' '.$p->segundo_apellido) : 'Autor';
-                                @endphp
-                                <li class="flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white text-xs font-semibold">
-                                        {{ strtoupper(substr($nombreCompleto,0,1)) }}
-                                    </span>
-                                    <span>{{ $nombreCompleto }}</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p class="text-xs text-slate-400">Este producto aún no tiene autores asociados.</p>
-                    @endif
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-
-{{-- Modal confirmar eliminación --}}
-<div x-show="confirmDeleteId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true">
-    <div class="relative bg-slate-900 text-white rounded-2xl shadow-2xl max-w-sm w-full px-6 py-5">
-        <div class="flex items-start gap-3">
-            <div class="mt-0.5">
-                <div class="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center">
-                    <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4.5M12 15.75h.007v.008H12v-.008z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 9.75l1.5 9A1.5 1.5 0 007.49 21h9.02a1.5 1.5 0 001.49-1.25l1.5-9M10.5 5.25h3M9 5.25A1.5 1.5 0 0110.5 3.75h3A1.5 1.5 0 0115 5.25M4.5 9.75h15" />
-                    </svg>
-                </div>
-            </div>
-            <div class="flex-1">
-                <p class="text-sm font-semibold mb-1.5">
-                    ¿Seguro que deseas eliminar este producto?
-                </p>
-                <p class="text-xs text-slate-300">
-                    Esta acción no se puede deshacer.
-                </p>
-            </div>
-        </div>
-
-        <div class="mt-5 flex justify-end gap-2">
-            <button type="button"
-                    @click="confirmDeleteId = null"
-                    class="px-4 py-2.5 rounded-lg text-xs font-medium border border-slate-600 text-slate-200 hover:bg-slate-800 transition-all">
-                Cancelar
-            </button>
-            <button type="button"
-                    @click="
-                        const f = document.getElementById('delete-product-' + confirmDeleteId);
-                        if (f) { f.submit(); }
-                        confirmDeleteId = null;
-                    "
-                    class="px-4 py-2.5 rounded-lg text-xs font-semibold text-white bg-red-500 hover:bg-red-600 shadow-sm transition-all">
-                Aceptar
-            </button>
-        </div>
-    </div>
-</div>
-
-{{-- Modal edición producto (iframe con formulario completo) --}}
-<div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
-    <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
-        <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
-            <h2 class="text-sm font-semibold text-slate-900">Editar producto</h2>
-            <button type="button" @click="editOpen = false; editUrl = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div class="w-full h-[80vh]">
-            {{-- Usamos un iframe para reutilizar el formulario de edición existente --}}
-            <iframe
-                :src="editUrl"
-                class="w-full h-full border-0"
-                loading="lazy">
-            </iframe>
-        </div>
-    </div>
-</div>
-
-</div>
-
 </x-app-layout>

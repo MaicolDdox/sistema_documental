@@ -6,6 +6,7 @@ use App\Http\Controllers\AsesorSemillero\ProyectoController;
 use App\Http\Controllers\AsesorSemillero\ProductoController;
 use App\Http\Controllers\AsesorSemillero\EvidenciaController;
 use App\Http\Controllers\AsesorSemillero\MisSemillerosController;
+use App\Http\Controllers\AsesorSemillero\ExportarReporteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,4 +98,16 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         Route::middleware('can:evidencias.eliminar_propia')->group(function () {
             Route::delete('/evidencias/{id}', [EvidenciaController::class, 'destroy'])->name('evidencias.destroy');
         });
+
+        // ─── REPORTES (EXPORTACIÓN) ──────────────────────────────────────────────
+        // Pendiente agregar middleware específico si se requiere en el futuro.
+        // Por ahora lo dejaremos accesible a todos los asesores (quienes ya tienen acceso a listar estos módulos)
+        Route::name('exportar.')->prefix('exportar')->group(function () {
+            Route::get('/dashboard',  [ExportarReporteController::class, 'dashboard'])->name('dashboard');
+            Route::get('/semilleros', [ExportarReporteController::class, 'semilleros'])->name('semilleros');
+            Route::get('/proyectos',  [ExportarReporteController::class, 'proyectos'])->name('proyectos');
+            Route::get('/productos',  [ExportarReporteController::class, 'productos'])->name('productos');
+            Route::get('/aprendices', [ExportarReporteController::class, 'aprendices'])->name('aprendices');
+        });
     });
+

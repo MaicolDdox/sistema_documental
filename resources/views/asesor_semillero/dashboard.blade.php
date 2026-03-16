@@ -1,7 +1,13 @@
+@php
+use Illuminate\Support\Facades\DB;
+use App\Models\Seedling;
+use App\Models\Project;
+use App\Models\Product;
+use App\Models\ProjectAuthor;
+@endphp
+
 <x-app-layout>
-    <x-slot name="header">
-        Dashboard — Asesor Semillero
-    </x-slot>
+<x-slot name="header">Dashboard</x-slot>
 
 @php
 // Todos los semilleros del asesor (puede tener varios)
@@ -48,6 +54,50 @@ $proyectosSinIntegrantes = \App\Models\Project::whereIn('id', $allProjectIds)
 // Semillero principal (el primero)
 $semillero = $semilleros->first();
 @endphp
+
+
+{{-- ─── Bienvenida ────────────────────────────────────── --}}
+<div class="mb-6 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div class="flex items-center gap-5 p-5">
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-sm" style="background:#0a1628">
+            {{ strtoupper(substr(auth()->user()->name ?? 'A', 0, 2)) }}
+        </div>
+        <div class="flex-1">
+            <p class="text-xs text-slate-400 mb-0.5">Bienvenido de vuelta</p>
+            <h2 class="font-outfit font-bold text-slate-900 text-lg leading-tight">
+                {{ auth()->user()->person?->primer_nombre ?? auth()->user()->name ?? 'Asesor' }}
+                {{ auth()->user()->person?->primer_apellido ?? '' }}
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+                @if($totalSemilleros > 0)
+                    Asesor en <strong>{{ $totalSemilleros }}</strong> {{ $totalSemilleros === 1 ? 'semillero' : 'semilleros' }}
+                    @if($semillero) · <span style="color:#39A900">{{ $semillero->nombre }}</span>@if($totalSemilleros > 1) y {{ $totalSemilleros - 1 }} más @endif
+                    @endif
+                @else
+                    Sin semillero asignado aún
+                @endif
+            </p>
+        </div>
+        <div class="hidden sm:block">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-50 text-[#39A900] border border-green-200">
+                <div class="w-1.5 h-1.5 rounded-full bg-[#39A900]"></div>
+                Activo
+            </span>
+        </div>
+    </div>
+    @if($semilleros->isNotEmpty())
+    <div class="border-t border-slate-100 px-5 py-2.5 flex items-center gap-4 overflow-x-auto bg-slate-50/50">
+        @foreach($semilleros as $sem)
+        <a href="{{ route('asesor.mis_semilleros.index') }}" class="flex items-center gap-2 text-xs text-slate-600 hover:text-[#39A900] transition-colors whitespace-nowrap">
+            <div class="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:#39A900">
+                {{ strtoupper(substr($sem->nombre, 0, 1)) }}
+            </div>
+            {{ $sem->nombre }}
+        </a>
+        @endforeach
+    </div>
+    @endif
+</div>
 
 @if($totalSemilleros === 0)
 <div class="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-center gap-3">
@@ -297,6 +347,76 @@ $semillero = $semilleros->first();
         @endif
     </div>
 
+</div>
+
+{{-- ─── Acciones rápidas ──────────────────────────────── --}}
+<div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h3 class="text-sm font-semibold text-slate-900 mb-4">Acciones rápidas</h3>
+    <div class="flex flex-wrap gap-3" x-data="{ openExportModal: false }">
+        <button @click="openExportModal = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Descargar Reporte General
+        </button>
+
+        {{-- Modal de Reporte --}}
+        <div x-show="openExportModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+            <div @click.away="openExportModal = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100" x-transition>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Descargar Reporte</h3>
+                    <button @click="openExportModal = false" class="text-slate-400 hover:text-red-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <form method="GET" action="{{ route('asesor.exportar.dashboard') }}">
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                        <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                            <option value="">Todo el histórico</option>
+                            <option value="hoy">El día de hoy</option>
+                            <option value="semanal">Esta semana</option>
+                            <option value="mensual">Este mes</option>
+                            <option value="anual">Este año</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="openExportModal = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Generar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @can('aprendices.registrar')
+        <a href="{{ route('asesor.aprendices.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-sm"
+           style="background:#39A900">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Registrar Aprendiz
+        </a>
+        @endcan
+        @can('proyectos.crear_semillero')
+        <a href="{{ route('asesor.proyectos.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all bg-blue-600 hover:bg-blue-700 hover:shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Nuevo Proyecto
+        </a>
+        @endcan
+        @can('productos.registrar')
+        <a href="{{ route('asesor.productos.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all bg-purple-600 hover:bg-purple-700 hover:shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Registrar Producto
+        </a>
+        @endcan
+        <a href="{{ route('asesor.mis_semilleros.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 transition-all hover:shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Ver mis semilleros
+        </a>
+    </div>
 </div>
 
 {{-- ─── Chart.js Donut ────────────────────────────────── --}}

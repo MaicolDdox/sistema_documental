@@ -1,4 +1,6 @@
 <x-app-layout>
+<x-slot name="header">Crear Nuevo Proyecto</x-slot>
+
 <div class="max-w-3xl" x-data="{ tienesMacro: {{ old('tiene_macroproyecto', '0') }} == 1 }">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <form method="POST" action="{{ route('asesor.proyectos.store') }}" novalidate>

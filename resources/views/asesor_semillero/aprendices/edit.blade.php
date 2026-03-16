@@ -1,6 +1,8 @@
 <x-app-layout>
-<div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+<x-slot name="header">Editar Aprendiz</x-slot>
+
+<div class="max-w-3xl">
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
         <div class="mb-5 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
             ℹ️ El correo institucional se usa como identificador de inicio de sesión. Solo modifícalo si es un error tipográfico.
         </div>
@@ -141,4 +143,3 @@
     </div>
 </div>
 </x-app-layout>
-

@@ -69,18 +69,7 @@ class AprendizController extends Controller
                 });
             }
 
-            $aprendices = $query->paginate(15)->withQueryString();
-
-            // Catálogos necesarios para el formulario del modal
-            $cargos = EntityPosition::all()->groupBy('descripccion');
-            $tiposVinculacion = LinkageType::orderBy('nombre')->get();
-            $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
-
-            if ($request->filled('edit')) {
-                $editId = (int) $request->input('edit');
-                $editAprendiz = $this->findAprendizEnSemillero($editId, $semillero);
-                $editAprendiz?->load('person');
-            }
+            $aprendices = $query->paginate(10)->withQueryString();
         }
 
         return view('asesor_semillero.aprendices.index', compact(

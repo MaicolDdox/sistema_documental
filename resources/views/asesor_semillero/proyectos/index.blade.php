@@ -1,20 +1,57 @@
 <x-app-layout>
-<div x-data="{ showDetailId: null }">
+<x-slot name="header">Proyectos del Semillero</x-slot>
 
-{{-- Mensaje local de éxito --}}
-@if(session('success'))
-    <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
-        {{ session('success') }}
+{{-- Acciones de página --}}
+<div class="flex items-center justify-between mb-6">
+    <div></div>
+    <div>
+<div x-data="{ openExport: false }" class="flex items-center gap-2">
+    <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Descargar Reportes
+    </button>
+
+    {{-- Modal de Exportación --}}
+    <div x-show="openExport" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+        <div @click.away="openExport = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-left" x-transition>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-800">Descargar Reporte de Proyectos</h3>
+                <button @click="openExport = false" class="text-slate-400 hover:text-red-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="GET" action="{{ route('asesor.exportar.proyectos') }}">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                    <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                        <option value="">Todo el histórico</option>
+                        <option value="hoy">El día de hoy</option>
+                        <option value="semanal">Esta semana</option>
+                        <option value="mensual">Este mes</option>
+                        <option value="anual">Este año</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" @click="openExport = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        Generar PDF
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-@endif
 
-<div class="mb-4 flex justify-end">
-    <a href="{{ route('asesor.proyectos.create') }}"
-       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-       style="background:#39A900">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-        Nuevo Proyecto
-    </a>
+    @can('proyectos.crear_semillero')
+        <a href="{{ route('asesor.proyectos.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+           style="background:#39A900">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Nuevo Proyecto
+        </a>
+    @endcan
+</div>
+    </div>
 </div>
 
 <form method="GET" class="mb-4 flex gap-3">
@@ -137,88 +174,4 @@
 <div class="mt-4">{{ $proyectos->links() }}</div>
 @endif
 @endif
-
-{{-- Modal detalle proyecto --}}
-<div x-show="showDetailId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true" x-transition>
-    <div class="relative bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-slate-200"
-         @click.self="showDetailId = null">
-        <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-slate-100 rounded-t-2xl z-10">
-            <h2 class="text-base font-semibold text-slate-900">Detalle del proyecto</h2>
-            <button type="button" @click="showDetailId = null" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div class="p-6 space-y-5">
-            @foreach($proyectos as $proyecto)
-            @php
-                $macro = $proyecto->vinculacion_macro_proyecto ? $proyecto->macroProjectLinkages?->first() : null;
-            @endphp
-            <div x-show="showDetailId === {{ $proyecto->id }}" x-cloak class="space-y-5">
-                <div>
-                    <h3 class="font-outfit font-bold text-xl text-slate-900 mb-1">{{ $proyecto->nombre }}</h3>
-                    @if($proyecto->descripccion)
-                        <p class="text-sm text-slate-600 mb-4">{{ $proyecto->descripccion }}</p>
-                    @endif
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Línea de investigación</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $proyecto->researchLine?->nombre ?? '—' }}</p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Modalidad</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $proyecto->projectModality?->nombre ?? '—' }}</p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Tipo de investigación</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $proyecto->investigationType?->nombre ?? '—' }}</p>
-                        </div>
-                        @if($proyecto->technologicalLine)
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Línea tecnológica</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $proyecto->technologicalLine->nombre }}</p>
-                        </div>
-                        @endif
-                        @if($proyecto->thematicArea)
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Área temática</p>
-                            <p class="text-sm font-medium text-slate-700">{{ $proyecto->thematicArea->nombre }}</p>
-                        </div>
-                        @endif
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Fechas</p>
-                            <p class="text-sm font-medium text-slate-700">
-                                {{ $proyecto->fecha_inicio ? \Carbon\Carbon::parse($proyecto->fecha_inicio)->format('d/m/Y') : '—' }}
-                                @if($proyecto->fecha_fin)
-                                    → {{ \Carbon\Carbon::parse($proyecto->fecha_fin)->format('d/m/Y') }}
-                                @endif
-                            </p>
-                        </div>
-                    </div>
-                    @if($macro)
-                    <div class="mt-4 bg-blue-50 border border-blue-100 rounded-lg p-3">
-                        <p class="text-xs font-semibold text-blue-700 mb-1">Macroproyecto vinculado</p>
-                        <p class="text-sm text-blue-800">{{ $macro->nombre }}</p>
-                        <p class="text-xs text-blue-600">Código: {{ $macro->codigo }}</p>
-                    </div>
-                    @endif
-                </div>
-                <div class="bg-white border border-slate-200 rounded-xl p-4">
-                    <h4 class="text-sm font-semibold text-slate-900 mb-3">Autores y productos</h4>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">
-                            {{ $proyecto->projectAuthors->count() }} autor(es)
-                        </span>
-                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-medium">
-                            {{ $proyecto->products->count() }} producto(s)
-                        </span>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</div>
-
-</div>
-
 </x-app-layout>
