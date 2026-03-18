@@ -1,72 +1,67 @@
 <x-app-layout>
 <x-slot name="header">Aprendices del Semillero</x-slot>
 
-{{-- Acciones de página --}}
-<div class="flex items-center justify-between mb-6">
-    <div></div>
-    <div>
-<div x-data="{ openExport: false }" class="flex items-center gap-2">
-    <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-        Descargar Reportes
-    </button>
+{{-- Acciones de página y Buscador --}}
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
+    <form method="GET" class="flex gap-3 w-full xl:max-w-md">
+        <div class="relative flex-1">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
+            <input type="text" name="buscar" value="{{ request('buscar') }}" placeholder="Buscar por nombre o documento..."
+                   class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+        </div>
+        <button type="submit" class="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all">Filtrar</button>
+        @if(request('buscar'))
+            <a href="{{ route('asesor.aprendices.index') }}" class="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all flex-shrink-0">Limpiar</a>
+        @endif
+    </form>
 
-    {{-- Modal de Exportación --}}
-    <div x-show="openExport" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
-        <div @click.away="openExport = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-left" x-transition>
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-800">Descargar Reporte de Aprendices</h3>
-                <button @click="openExport = false" class="text-slate-400 hover:text-red-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <form method="GET" action="{{ route('asesor.exportar.aprendices') }}">
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
-                    <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
-                        <option value="">Todo el histórico</option>
-                        <option value="hoy">El día de hoy</option>
-                        <option value="semanal">Esta semana</option>
-                        <option value="mensual">Este mes</option>
-                        <option value="anual">Este año</option>
-                    </select>
-                </div>
-                <div class="flex justify-end gap-2">
-                    <button type="button" @click="openExport = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                        Generar PDF
+    <div x-data="{ openExport: false }" class="flex flex-wrap items-center gap-2">
+        <button @click="openExport = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+            Descargar Reportes
+        </button>
+
+        {{-- Modal de Exportación --}}
+        <div x-show="openExport" style="display: none;" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
+            <div @click.away="openExport = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-left" x-transition>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Descargar Reporte de Aprendices</h3>
+                    <button type="button" @click="openExport = false" class="text-slate-400 hover:text-red-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
-            </form>
+                <form method="GET" action="{{ route('asesor.exportar.aprendices') }}">
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
+                        <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+                            <option value="">Todo el histórico</option>
+                            <option value="hoy">El día de hoy</option>
+                            <option value="semanal">Esta semana</option>
+                            <option value="mensual">Este mes</option>
+                            <option value="anual">Este año</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" @click="openExport = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Generar PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    @can('aprendices.registrar')
-        <a href="{{ route('asesor.aprendices.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-           style="background:#39A900">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            Registrar Aprendiz
-        </a>
-    @endcan
-</div>
+        @can('aprendices.registrar')
+            <a href="{{ route('asesor.aprendices.create') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+               style="background:#39A900">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                Registrar Aprendiz
+            </a>
+        @endcan
     </div>
 </div>
-
-
-{{-- Buscador --}}
-<form method="GET" class="mb-4 flex gap-3">
-    <div class="relative flex-1 max-w-sm">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
-        <input type="text" name="buscar" value="{{ request('buscar') }}" placeholder="Buscar por nombre o documento..."
-               class="w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
-    </div>
-    <button type="submit" class="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all">Filtrar</button>
-    @if(request('buscar'))
-        <a href="{{ route('asesor.aprendices.index') }}" class="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 transition-all">Limpiar</a>
-    @endif
-</form>
 
 @if(!$semillero)
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
@@ -102,7 +97,7 @@
         <tbody>
             @foreach($aprendices as $ap)
             @php $p = $ap->person; @endphp
-            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors group">
                 {{-- Nombre --}}
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-2">
