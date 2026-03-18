@@ -50,7 +50,6 @@
                     <th class="text-left">Documento</th>
                     <th class="text-left">Proyecto vinculado</th>
                     <th class="text-left">Estado vínculo</th>
-                    <th class="text-left">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -76,15 +75,7 @@
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">▲ Sin proyecto</span>
                         @endif
                     </td>
-                    <td class="px-5 py-3">
-                        @if(!($ap->tiene_vinculo ?? false) && $proyectosDelSemillero->isNotEmpty())
-                        <button type="button"
-                                @click="showVincularId = {{ $ap->id }}"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition">
-                            Vincular a proyecto
-                        </button>
-                        @endif
-                    </td>
+                    {{-- Columna de acciones eliminada (no usada) --}}
                 </tr>
                 @empty
                 <tr>

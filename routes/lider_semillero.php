@@ -48,7 +48,12 @@ Route::middleware(['auth', 'ensure.active', 'role:lider_semillero'])
         // Usamos {producto} para que el binding coincida con Product $producto en el controlador
         Route::patch('productos/{producto}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
         Route::patch('productos/{producto}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
+        Route::post('productos/{producto}/subir-grupo', [ProductosController::class, 'subirAGrupo'])->name('productos.subir-grupo');
         Route::get('api/proyecto/{project_id}/autores', [ProductosController::class, 'apiAutoresPorProyecto'])->name('productos.autores');
+
+        // Productos para grupo de investigación (registrados directamente por el líder)
+        Route::get('productos-grupo', [ProductosController::class, 'createGrupo'])->name('productos.grupo.create');
+        Route::post('productos-grupo', [ProductosController::class, 'storeGrupo'])->name('productos.grupo.store');
 
         // Aprendices: registro y vinculación
         Route::get('aprendices', [AprendicesController::class, 'index'])->name('aprendices');

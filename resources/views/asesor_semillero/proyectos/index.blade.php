@@ -139,29 +139,46 @@
                 </td>
                 {{-- Acciones --}}
                 <td class="px-3 py-3 align-middle text-right">
-                    <div class="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
-                        {{-- Detalle --}}
+                    <div class="relative inline-flex items-center justify-end whitespace-nowrap" x-data="{ open: false }">
                         <button type="button"
-                                @click="showDetailId = {{ $proyecto->id }}"
-                                class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-all"
-                                title="Ver detalles">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
-                                <circle cx="12" cy="12" r="3.25" />
+                                @click.stop="open = !open"
+                                @keydown.escape.window="open = false"
+                                class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                aria-haspopup="true"
+                                :aria-expanded="open ? 'true' : 'false'">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                         </button>
-                        {{-- Eliminar inmediato --}}
-                        <form method="POST" action="{{ route('asesor.proyectos.destroy', $proyecto->id) }}" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-red-200 text-red-500 bg-red-50/60 hover:bg-red-100 transition-all"
-                                    title="Eliminar proyecto">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        <div x-show="open"
+                             x-cloak
+                             @click.away="open = false"
+                             class="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                            <button type="button"
+                                    @click="open = false; showDetailId = {{ $proyecto->id }}"
+                                    class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
+                                <span>Ver detalles</span>
                             </button>
-                        </form>
+                            <form method="POST"
+                                  action="{{ route('asesor.proyectos.destroy', $proyecto->id) }}"
+                                  class="m-0"
+                                  onsubmit="return confirm('¿Eliminar este proyecto?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        @click="open = false"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                    <span>Eliminar proyecto</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </td>
             </tr>

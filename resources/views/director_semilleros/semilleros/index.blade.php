@@ -126,33 +126,50 @@
                         @endif
                     </td>
                     <td class="px-4 py-3">
-                        <div class="flex items-center justify-end gap-1.5">
-                            @can('semilleros.ver_detalle')
+                        <div class="relative flex items-center justify-end" x-data="{ open: false }">
                             <button type="button"
-                                    @click="detailUrl = '{{ route('dir-sem.semilleros.show', $semillero) }}?embedded=1'; detailOpen = true;"
-                                    class="p-2 rounded-lg {{ $semillero->estado === \App\Enums\EstadoEnum::Activo ? 'text-slate-500 hover:text-slate-700 hover:bg-slate-100' : 'text-red-400 hover:text-red-600 hover:bg-red-50' }}"
-                                    title="Ver detalle">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
-                            </button>
-                            @endcan
-                            @can('semilleros.editar')
-                            <button type="button"
-                                    @click="editUrl = '{{ route('dir-sem.semilleros.edit', $semillero) }}?embedded=1'; editOpen = true;"
-                                    class="p-2 text-slate-500 hover:text-[#39A900] hover:bg-[#39A900]/10 rounded-lg transition-all duration-200"
-                                    title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </button>
-                            <button type="button"
-                                    @click="deleteUrl = '{{ route('dir-sem.semilleros.destroy', $semillero) }}'; deleteName = '{{ addslashes($semillero->nombre) }}'; deleteOpen = true;"
-                                    class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" />
-                                </svg>
-                            </button>
-                            @endcan
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                @can('semilleros.ver_detalle')
+                                <button type="button"
+                                        @click="open = false; detailUrl = '{{ route('dir-sem.semilleros.show', $semillero) }}?embedded=1'; detailOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="4"/>
+                                    </svg>
+                                    <span>Ver detalle</span>
+                                </button>
+                                @endcan
+                                @can('semilleros.editar')
+                                <button type="button"
+                                        @click="open = false; editUrl = '{{ route('dir-sem.semilleros.edit', $semillero) }}?embedded=1'; editOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                                    </svg>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button"
+                                        @click="open = false; deleteUrl = '{{ route('dir-sem.semilleros.destroy', $semillero) }}'; deleteName = '{{ addslashes($semillero->nombre) }}'; deleteOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" />
+                                    </svg>
+                                    <span>Eliminar</span>
+                                </button>
+                                @endcan
+                            </div>
                         </div>
                     </td>
                 </tr>

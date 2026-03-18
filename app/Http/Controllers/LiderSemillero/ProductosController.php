@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
+use App\Services\Investigador\ProductoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,7 +39,7 @@ class ProductosController extends Controller
                 ->where('seedling_id', $semillero->id)
                 ->pluck('project_id');
 
-            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person'])
+            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'groupProducts'])
                 ->whereIn('project_id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()
@@ -46,6 +47,7 @@ class ProductosController extends Controller
                     $autorPrincipal = $prod->productAuthors->first()?->projectAuthor?->user;
                     $prod->es_mio = $autorPrincipal && $autorPrincipal->id === Auth::id();
                     $prod->autor = $autorPrincipal;
+                    $prod->ya_en_grupo = $prod->groupProducts->isNotEmpty();
                     return $prod;
                 });
 
@@ -174,6 +176,147 @@ class ProductosController extends Controller
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto registrado correctamente. Estado de revisión: pendiente.');
+    }
+
+    /**
+     * Formulario para registrar un producto directamente para el grupo de investigación
+     * asociado al semillero del líder.
+     */
+    public function createGrupo(): View
+    {
+        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
+        if (!$semillero || !$semillero->researchGroup) {
+            abort(403, 'Tu semillero no tiene un grupo de investigación asociado.');
+        }
+
+        $proyectos = $semillero->projects()
+            ->orderBy('nombre')
+            ->get();
+
+        $tipologias        = MincienciasTypology::orderBy('nombre')->get();
+        $subcategorias     = MincienciasSubcategory::orderBy('nombre')->get();
+        $grandesAreas      = KnowledgeGrandArea::orderBy('nombre')->get();
+        $areasConocimiento = KnowledgeArea::orderBy('nombre')->get();
+
+        return view('lider_semillero.productos.create_grupo', [
+            'proyectos'          => $proyectos,
+            'tipologias'         => $tipologias,
+            'subcategorias'      => $subcategorias,
+            'grandesAreas'       => $grandesAreas,
+            'areasConocimiento'  => $areasConocimiento,
+            'semillero'          => $semillero,
+            'grupo'              => $semillero->researchGroup,
+        ]);
+    }
+
+    /**
+     * Registra el producto en el grupo de investigación usando el mismo servicio
+     * que emplean los investigadores.
+     */
+    public function storeGrupo(Request $request, ProductoService $service): RedirectResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
+        if (!$semillero || !$semillero->researchGroup) {
+            abort(403, 'Tu semillero no tiene un grupo de investigación asociado.');
+        }
+
+        $grupoId = $semillero->researchGroup->id;
+
+        $validated = $request->validate([
+            'project_id'                       => ['required', 'exists:projects,id'],
+            'titulo'                           => ['required', 'string', 'max:500'],
+            'descripccion'                     => ['nullable', 'string'],
+            'tipo_proyecto_origen'             => ['required', 'string'],
+            'campo_otro'                       => ['nullable', 'string', 'max:255'],
+            'codigo_proyecto_origen'           => ['nullable', 'string', 'max:100'],
+            'anio_publicacion'                 => ['required', 'integer', 'min:2000', 'max:' . (now()->year + 2)],
+            'nombre_programa_formacion_impacto'=> ['nullable', 'string', 'max:300'],
+            'minciencias_typology_id'          => ['nullable', 'exists:minciencias_typologies,id'],
+            'minciencias_subcategory_id'       => ['nullable', 'exists:minciencias_subcategories,id'],
+            'knowledge_grand_area_id'          => ['nullable', 'exists:knowledge_grand_areas,id'],
+            'knowledge_area_id'                => ['nullable', 'exists:knowledge_areas,id'],
+            'tiene_repositorio'                => ['boolean'],
+            'url_repositorio'                  => ['nullable', 'url', 'max:500'],
+            'autoriza_datos'                   => ['boolean'],
+        ]);
+
+        // Campos que el servicio espera pero aquí no usamos
+        $validated['product_base_id'] = null;
+        $validated['autores'] = [];
+
+        try {
+            $service->registrar($validated, Auth::id(), (int) $grupoId);
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('lider-sem.productos')
+            ->with('success', 'Producto registrado en el grupo de investigación. Estado pendiente para revisión del Director.');
+    }
+
+    /**
+     * Toma un producto ya registrado por el asesor y aprobado,
+     * y lo sube al grupo de investigación asociado al semillero del líder.
+     */
+    public function subirAGrupo(Product $producto, ProductoService $service): RedirectResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
+        if (!$semillero || !$semillero->researchGroup) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', 'Tu semillero no tiene un grupo de investigación asociado.');
+        }
+
+        // Verificar que el producto pertenece al semillero del líder
+        if (!$this->perteneceAlSemillero($producto, $semillero->id)) {
+            abort(403, 'El producto no pertenece a tu semillero.');
+        }
+
+        // Si ya tiene un registro en el grupo, no duplicar
+        if ($producto->groupProducts()->exists()) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', 'Este producto ya está vinculado al grupo de investigación.');
+        }
+
+        // Solo productos aprobados pasan al grupo
+        if ($producto->estado_revision !== EstadoRevisionEnum::Aprobado) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', 'Solo puedes subir al grupo productos aprobados.');
+        }
+
+        $grupoId = $semillero->researchGroup->id;
+
+        // Construimos datos mínimos para el servicio a partir del producto existente
+        $validated = [
+            'project_id'                       => $producto->project_id,
+            'product_base_id'                  => $producto->id,
+            'titulo'                           => $producto->nombre,
+            'descripccion'                     => null,
+            'tipo_proyecto_origen'             => TipoProyectoOrigenEnum::Semilleros->value,
+            'campo_otro'                       => null,
+            'codigo_proyecto_origen'           => null,
+            'anio_publicacion'                 => (int) now()->year,
+            'nombre_programa_formacion_impacto'=> null,
+            'minciencias_typology_id'          => null,
+            'minciencias_subcategory_id'       => null,
+            'knowledge_grand_area_id'          => null,
+            'knowledge_area_id'                => null,
+            'tiene_repositorio'                => (bool) $producto->url_repositorio,
+            'url_repositorio'                  => $producto->url_repositorio,
+            'autoriza_datos'                   => false,
+            'autores'                          => [],
+        ];
+
+        try {
+            $service->registrar($validated, Auth::id(), (int) $grupoId);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('lider-sem.productos')
+            ->with('success', 'Producto enviado al grupo de investigación para revisión del Director.');
     }
 
     /**

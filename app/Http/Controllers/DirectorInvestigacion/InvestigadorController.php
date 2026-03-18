@@ -68,8 +68,14 @@ class InvestigadorController extends Controller
 
         $this->service->crearInvestigador($validated, $grupoId);
 
+        $embedded = $request->boolean('embedded');
+
+        $route = $embedded
+            ? route('director.investigadores.index', ['embedded' => 1])
+            : route('director.investigadores.index');
+
         return redirect()
-            ->route('director.investigadores.index')
+            ->to($route)
             ->with('success', 'Investigador creado y notificado por correo exitosamente.');
     }
 

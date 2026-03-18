@@ -18,6 +18,9 @@
             </div>
             <form method="POST" action="{{ route('director.investigadores.store') }}" class="p-6 space-y-5">
                 @csrf
+                @if(request()->boolean('embedded'))
+                    <input type="hidden" name="embedded" value="1">
+                @endif
 
                 @if($errors->any())
                 <div class="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -101,4 +104,12 @@
             </form>
         </div>
     </div>
+@if(request()->boolean('embedded') && session('success'))
+    <script>
+        if (window.parent && window.parent !== window) {
+            window.parent.location.reload();
+        }
+    </script>
+@endif
+
 </x-app-layout>

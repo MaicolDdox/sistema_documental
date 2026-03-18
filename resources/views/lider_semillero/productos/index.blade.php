@@ -38,10 +38,19 @@
         <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
         <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
     </div>
-    <button type="button" @click="modalRegistrar = true" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        + Registrar Producto
-    </button>
+    <div class="flex items-center gap-2">
+        <a href="{{ route('lider-sem.productos.grupo.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            Producto grupo investigación
+        </a>
+        <button type="button" @click="modalRegistrar = true" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            + Registrar Producto
+        </button>
+    </div>
 </div>
 @if(session('success'))
 <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
@@ -147,6 +156,26 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                 </button>
+                            @endif
+
+                            {{-- Subir al grupo de investigación (solo aprobados) --}}
+                            @if($estadoRev === 'aprobado')
+                                @if(!$prod->ya_en_grupo)
+                                    <form action="{{ route('lider-sem.productos.subir-grupo', $prod) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition"
+                                                title="Subir al grupo de investigación">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 9.75 12 5.25m0 0-4.5 4.5M12 5.25V18" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
+                                        En grupo
+                                    </span>
+                                @endif
                             @endif
                         </div>
                     </td>

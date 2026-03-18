@@ -30,24 +30,48 @@
                     @forelse($entityPositions as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Cargo en entidad')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditCargoFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.entity-positions.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Cargo en entidad')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditCargoFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.entity-positions.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty
@@ -73,24 +97,48 @@
                     @forelse($linkageTypes as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Tipo de vinculación')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditVinculacionFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.linkage-types.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Tipo de vinculación')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditVinculacionFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.linkage-types.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty
@@ -116,24 +164,48 @@
                     @forelse($projectModalities as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Modalidad de proyecto')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditModalidadFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.project-modalities.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Modalidad de proyecto')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditModalidadFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.project-modalities.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty
@@ -159,24 +231,48 @@
                     @forelse($investigationTypes as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Tipo de investigación')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditInvestigacionFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.investigation-types.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Tipo de investigación')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditInvestigacionFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.investigation-types.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty
@@ -202,24 +298,48 @@
                     @forelse($technologicalLines as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Línea tecnológica')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditLineaFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.technological-lines.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Línea tecnológica')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditLineaFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.technological-lines.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty
@@ -245,24 +365,48 @@
                     @forelse($thematicAreas as $item)
                     <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
-                        <div class="flex items-center gap-0.5 shrink-0">
-                            <button type="button" @click="openDetalle($event.target.closest('li'), 'Área temática')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @can('catalogos.editar')
-                            <button type="button" @click="openEditTematicaFromEl($event.target.closest('li'))" class="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
-                            </button>
-                            @endcan
-                            @can('catalogos.eliminar')
-                            <form method="POST" action="{{ route('admin.thematic-areas.destroy', $item) }}" class="inline" onsubmit="return window.confirm('¿Eliminar este registro?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <button type="button"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Área temática')"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @can('catalogos.editar')
+                                <button type="button"
+                                        @click="open = false; openEditTematicaFromEl($event.target.closest('li'))"
+                                        class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                                    <span>Editar</span>
+                                </button>
+                                @endcan
+                                @can('catalogos.eliminar')
+                                <form method="POST" action="{{ route('admin.thematic-areas.destroy', $item) }}" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="open = false; if (window.confirm('¿Eliminar este registro?')) { $el.closest('form').submit(); }"
+                                            class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
                         </div>
                     </li>
                     @empty

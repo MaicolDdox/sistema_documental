@@ -66,39 +66,59 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                {{-- Activar / desactivar --}}
-                                <form method="POST" action="{{ route('director.investigadores.toggle-estado', $inv) }}">
-                                    @csrf @method('PATCH')
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all"
-                                            title="{{ ($inv?->estado?->value ?? '') === 'activo' ? 'Desactivar investigador' : 'Activar investigador' }}">
-                                        @if(($inv?->estado?->value ?? '') === 'activo')
-                                            {{-- Icono apagar --}}
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <div class="relative flex items-center justify-start" x-data="{ open: false }">
+                                <button type="button"
+                                        @click.stop="open = !open"
+                                        @keydown.escape.window="open = false"
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                        aria-haspopup="true"
+                                        :aria-expanded="open ? 'true' : 'false'">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </button>
+                                <div x-show="open"
+                                     x-cloak
+                                     @click.away="open = false"
+                                     class="absolute left-0 mt-2 w-52 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                    {{-- Activar / desactivar --}}
+                                    <form method="POST" action="{{ route('director.investigadores.toggle-estado', $inv) }}" class="m-0">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                @click="open = false"
+                                                class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                            @if(($inv?->estado?->value ?? '') === 'activo')
+                                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v9m6.364-6.364A9 9 0 1112 4.5"/>
                                             </svg>
-                                        @else
-                                            {{-- Icono encender --}}
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <span>Desactivar investigador</span>
+                                            @else
+                                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 5.25v13.5m6.364-9.75A9 9 0 115.636 9"/>
                                             </svg>
-                                        @endif
-                                    </button>
-                                </form>
+                                            <span>Activar investigador</span>
+                                            @endif
+                                        </button>
+                                    </form>
 
-                                {{-- Desvincular --}}
-                                <form method="POST" action="{{ route('director.investigadores.desvincular', $inv) }}"
-                                      onsubmit="return confirm('¿Desvincular este investigador del grupo?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-all"
-                                            title="Desvincular investigador">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                    {{-- Desvincular --}}
+                                    <form method="POST"
+                                          action="{{ route('director.investigadores.desvincular', $inv) }}"
+                                          class="m-0"
+                                          onsubmit="return confirm('¿Desvincular este investigador del grupo?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                @click="open = false"
+                                                class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+                                            </svg>
+                                            <span>Desvincular investigador</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -140,4 +160,12 @@
             </div>
         </div>
     </div>
+@if(request()->boolean('embedded') && session('success'))
+    <script>
+        if (window.parent && window.parent !== window) {
+            window.parent.location.reload();
+        }
+    </script>
+@endif
+
 </x-app-layout>

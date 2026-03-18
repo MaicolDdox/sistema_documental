@@ -168,7 +168,7 @@
                     Catálogos
                 </p>
 
-                <div x-data="{ openCatalogs: {{ request()->routeIs('admin.training-centers.*', 'admin.training-programs.*', 'admin.minciencias-typologies.*', 'admin.knowledge-areas.*', 'admin.catalogos.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openCatalogs: {{ request()->routeIs('admin.training-centers.*', 'admin.training-programs.*', 'admin.minciencias-typologies.*', 'admin.knowledge-areas.*', 'admin.research-groups.*', 'admin.catalogos.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openCatalogs = !openCatalogs"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -203,6 +203,13 @@
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
                             Áreas del Conocimiento
+                        </a>
+                        <a href="{{ route('admin.research-groups.index') }}"
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-groups.*') ? 'bg-slate-50 text-slate-900' : '' }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3a2.25 2.25 0 012.25 2.25v1.5A2.25 2.25 0 019 9.75H6A2.25 2.25 0 013.75 7.5v-1.5zM3.75 15A2.25 2.25 0 016 12.75h3a2.25 2.25 0 012.25 2.25v1.5A2.25 2.25 0 019 18.75H6A2.25 2.25 0 013.75 16.5v-1.5zM13.5 9.75h3.75M13.5 18.75h3.75M13.5 6.75h3.75M13.5 15.75h3.75" />
+                            </svg>
+                            Grupos de Investigación
                         </a>
                         <a href="{{ route('admin.catalogos.simples') }}"
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.catalogos.simples') ? 'bg-slate-50 text-slate-900' : '' }}">
@@ -531,6 +538,7 @@
                         <a href="{{ route('admin.minciencias-typologies.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.minciencias-typologies.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipologías Mincien.</a>
                         <a href="{{ route('admin.knowledge-grand-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-grand-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">G. Áreas Conoc.</a>
                         <a href="{{ route('admin.knowledge-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">Áreas Conoc.</a>
+                        <a href="{{ route('admin.research-groups.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-groups.*') ? 'bg-slate-50 text-slate-900' : '' }}">Grupos Inv.</a>
                     </div>
                 </div>
                 @endhasrole
@@ -675,3 +683,7 @@
     @livewireScripts
 </body>
 </html>
+
+<script>
+    console.log('%cSGD - AQUI ESTOYYYYY', 'color: #39A900; font-size: 16px; font-weight: bold;');
+</script>

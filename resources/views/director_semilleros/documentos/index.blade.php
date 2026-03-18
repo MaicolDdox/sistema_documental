@@ -72,21 +72,41 @@
                         {{ $doc->created_at->format('d/m/Y') }}
                     </td>
                     <td class="px-4 py-3 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <a href="{{ Storage::url($doc->url_archivo) }}" target="_blank" class="p-1.5 text-slate-400 hover:text-[#39A900] hover:bg-green-50 rounded-lg transition-colors" title="Descargar">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                            </a>
-                            
-                            @can('documentos.eliminar_propio')
-                            @if($doc->user_id === Auth::id())
+                        <div class="relative flex items-center justify-end" x-data="{ open: false }">
                             <button type="button"
-                                    @click="deleteUrl = '{{ route('dir-sem.documentos.destroy', $doc->id) }}'; deleteName = '{{ addslashes($doc->archivo) }}'; deleteOpen = true;"
-                                    class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" /></svg>
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </button>
-                            @endif
-                            @endcan
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-2 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                <a href="{{ Storage::url($doc->url_archivo) }}"
+                                   target="_blank"
+                                   @click="open = false"
+                                   class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                    <span>Descargar</span>
+                                </a>
+                                @can('documentos.eliminar_propio')
+                                @if($doc->user_id === Auth::id())
+                                <button type="button"
+                                        @click="open = false; deleteUrl = '{{ route('dir-sem.documentos.destroy', $doc->id) }}'; deleteName = '{{ addslashes($doc->archivo) }}'; deleteOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" />
+                                    </svg>
+                                    <span>Eliminar</span>
+                                </button>
+                                @endif
+                                @endcan
+                            </div>
                         </div>
                     </td>
                 </tr>
