@@ -295,40 +295,186 @@ $semillero = $semilleros->first();
 {{-- ─── Acciones rápidas ──────────────────────────────── --}}
 <div class="bg-white rounded-xl border border-slate-200 p-5">
     <h3 class="text-sm font-semibold text-slate-900 mb-4">Acciones rápidas</h3>
-    <div class="flex flex-wrap gap-3" x-data="{ openExportModal: false }">
+    <div class="flex flex-wrap gap-3" x-data="{
+        openExportModal: false,
+        reporte: 'dashboard',
+        rango: '',
+        anio: {{ date('Y') }},
+        mes: {{ date('n') }},
+        semana: {{ date('W') }},
+        fecha_desde: '',
+        fecha_hasta: '',
+        maxAnio: {{ date('Y') }},
+        maxMes: {{ date('n') }},
+        maxSemana: {{ date('W') }},
+        hoy: '{{ date('Y-m-d') }}',
+        semanas: Array.from({length: {{ date('W') }}}, (_, i) => i + 1),
+        meses: [
+            {v:1,l:'Enero'},{v:2,l:'Febrero'},{v:3,l:'Marzo'},{v:4,l:'Abril'},
+            {v:5,l:'Mayo'},{v:6,l:'Junio'},{v:7,l:'Julio'},{v:8,l:'Agosto'},
+            {v:9,l:'Septiembre'},{v:10,l:'Octubre'},{v:11,l:'Noviembre'},{v:12,l:'Diciembre'}
+        ],
+        mesesDisponibles() {
+            if (this.anio < this.maxAnio) return this.meses;
+            return this.meses.filter(m => m.v <= this.maxMes);
+        },
+        semanasDisponibles() {
+            if (this.anio < this.maxAnio) return Array.from({length: 52}, (_, i) => i + 1);
+            return this.semanas;
+        },
+        anioChanged() {
+            if (this.anio == this.maxAnio) {
+                if (this.mes > this.maxMes) this.mes = this.maxMes;
+                if (this.semana > this.maxSemana) this.semana = this.maxSemana;
+            }
+        },
+        buildUrl() {
+            const routes = {
+                'dashboard':  '{{ route('asesor.exportar.dashboard') }}',
+                'semilleros': '{{ route('asesor.exportar.semilleros') }}',
+                'proyectos':  '{{ route('asesor.exportar.proyectos') }}',
+                'productos':  '{{ route('asesor.exportar.productos') }}',
+                'aprendices': '{{ route('asesor.exportar.aprendices') }}',
+            };
+            let url = new URL(routes[this.reporte], window.location.origin);
+            if (this.rango) {
+                url.searchParams.set('rango', this.rango);
+                if (this.rango === 'anual') url.searchParams.set('anio', this.anio);
+                if (this.rango === 'mensual') { url.searchParams.set('anio', this.anio); url.searchParams.set('mes', this.mes); }
+                if (this.rango === 'semanal') { url.searchParams.set('anio', this.anio); url.searchParams.set('semana', this.semana); }
+                if (this.rango === 'personalizado') { if (this.fecha_desde) url.searchParams.set('fecha_desde', this.fecha_desde); if (this.fecha_hasta) url.searchParams.set('fecha_hasta', this.fecha_hasta); }
+            }
+            return url.toString();
+        }
+    }">
         <button @click="openExportModal = true" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-            Descargar Reporte General
+            Descargar Reportes
         </button>
 
-        {{-- Modal de Reporte --}}
-        <div x-show="openExportModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
-            <div @click.away="openExportModal = false" class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100" x-transition>
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Descargar Reporte</h3>
-                    <button @click="openExportModal = false" class="text-slate-400 hover:text-red-500">
+        {{-- MODAL --}}
+        <div x-show="openExportModal" style="display: none;"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+             x-cloak
+             @keydown.escape.window="openExportModal = false">
+            <div @click.away="openExportModal = false"
+                 class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100">
+
+                {{-- Header del modal --}}
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100" style="background:#0a1628">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-[#39A900] flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Descargar Reportes</h3>
+                            <p class="text-xs" style="color:#64748b">Selecciona el módulo y el período</p>
+                        </div>
+                    </div>
+                    <button @click="openExportModal = false" class="text-slate-400 hover:text-red-400 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
-                <form method="GET" action="{{ route('asesor.exportar.dashboard') }}">
-                    <div class="mb-5">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Rango de tiempo (Opcional)</label>
-                        <select name="rango" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none pr-8">
+
+                <div class="px-6 py-5 space-y-5">
+                    {{-- 1. Tipo de reporte --}}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">📄 Módulo del reporte</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach([
+                                ['val'=>'dashboard',  'label'=>'General',    'icon'=>'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
+                                ['val'=>'semilleros', 'label'=>'Semilleros',  'icon'=>'M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.798-1.318 2.552l-13.98-2.796c-1.348-.245-1.745-1.9-.79-2.855L5 14.5'],
+                                ['val'=>'proyectos',  'label'=>'Proyectos',   'icon'=>'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z'],
+                                ['val'=>'aprendices', 'label'=>'Aprendices',  'icon'=>'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z'],
+                                ['val'=>'productos',  'label'=>'Productos',   'icon'=>'M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776'],
+                            ] as $btn)
+                            <button type="button"
+                                @click="reporte = '{{ $btn['val'] }}'"
+                                :class="reporte === '{{ $btn['val'] }}' ? 'bg-[#39A900] text-white border-[#39A900] shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'"
+                                class="flex flex-col items-center gap-1.5 py-2.5 px-2 rounded-xl border text-xs font-medium transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="{{ $btn['icon'] }}"/>
+                                </svg>
+                                {{ $btn['label'] }}
+                            </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- 2. Tipo de período --}}
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🗓 Período del reporte</label>
+                        <select x-model="rango"
+                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 outline-none transition-all">
                             <option value="">Todo el histórico</option>
-                            <option value="hoy">El día de hoy</option>
-                            <option value="semanal">Esta semana</option>
-                            <option value="mensual">Este mes</option>
-                            <option value="anual">Este año</option>
+                            <option value="hoy">Hoy</option>
+                            <option value="semanal">Semanal – elegir semana</option>
+                            <option value="mensual">Mensual – elegir mes y año</option>
+                            <option value="anual">Anual – elegir año</option>
+                            <option value="personalizado">Personalizado – rango de fechas</option>
                         </select>
                     </div>
-                    <div class="flex justify-end gap-2">
-                        <button type="button" @click="openExportModal = false" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                            Generar PDF
-                        </button>
+
+                    {{-- Inputs dinámicos según el rango --}}
+                    <div x-show="['semanal', 'mensual', 'anual'].includes(rango)" x-cloak class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        {{-- Año (aplica para todos los anteriores) --}}
+                        <div x-show="['semanal', 'mensual', 'anual'].includes(rango)">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Año</label>
+                            <input type="number" x-model="anio" @change="anioChanged()" min="2020" :max="maxAnio"
+                                   class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] outline-none">
+                        </div>
+
+                        {{-- Mes --}}
+                        <div x-show="rango === 'mensual'">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Mes</label>
+                            <select x-model="mes" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] outline-none">
+                                <template x-for="m in mesesDisponibles()" :key="m.v">
+                                    <option :value="m.v" x-text="m.l"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        {{-- Semana --}}
+                        <div x-show="rango === 'semanal'">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Semana</label>
+                            <select x-model="semana" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] outline-none">
+                                <template x-for="s in semanasDisponibles()" :key="s">
+                                    <option :value="s" x-text="'Semana ' + s"></option>
+                                </template>
+                            </select>
+                        </div>
                     </div>
-                </form>
+
+                    {{-- Rango personalizado --}}
+                    <div x-show="rango === 'personalizado'" x-cloak class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Desde</label>
+                            <input type="date" x-model="fecha_desde" :max="fecha_hasta || hoy"
+                                   class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Hasta</label>
+                            <input type="date" x-model="fecha_hasta" :min="fecha_desde" :max="hoy"
+                                   class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm focus:border-[#39A900] focus:ring-1 focus:ring-[#39A900] outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer del modal --}}
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" @click="openExportModal = false"
+                            class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <a :href="buildUrl()" target="_blank" @click="openExportModal = false"
+                       class="px-5 py-2 text-sm font-semibold text-white rounded-lg bg-[#39A900] hover:bg-[#2b8000] flex items-center gap-1.5 transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-[#39A900]">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        Generar PDF
+                    </a>
+                </div>
             </div>
         </div>
 

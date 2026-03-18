@@ -2,49 +2,93 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte - Asesor Semillero</title>
+    <title>@yield('title', 'Reporte') - Sistema Documental</title>
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; color: #333; margin: 0; padding: 20px; line-height: 1.4; }
-        .header { text-align: center; border-bottom: 2px solid #39A900; padding-bottom: 10px; margin-bottom: 20px; }
-        .header h1 { font-size: 20px; color: #0a1628; margin: 0; text-transform: uppercase; }
-        .header p { color: #555; font-size: 12px; margin: 5px 0 0 0; }
-        .filters { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 4px; margin-bottom: 20px; font-size: 11px; }
-        .table-wrap { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .table-wrap th { background-color: #0a1628; color: #fff; text-align: left; padding: 8px; font-size: 11px; text-transform: uppercase; }
-        .table-wrap td { border-bottom: 1px solid #e2e8f0; padding: 8px; font-size: 11px; vertical-align: top; }
-        .table-wrap tr:nth-child(even) td { background-color: #f8fafc; }
-        .badge { display: inline-block; padding: 3px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; }
-        .badge-green { background-color: #dcfce7; color: #166534; }
-        .badge-amber { background-color: #fef3c7; color: #92400e; }
-        .badge-red { background-color: #fee2e2; color: #991b1b; }
-        .badge-blue { background-color: #dbeafe; color: #1e40af; }
-        .badge-purple { background-color: #f3e8ff; color: #6b21a8; }
-        .metric-card { width: 30%; display: inline-block; border: 1px solid #e2e8f0; border-radius: 5px; padding: 15px; margin-right: 2%; text-align: center; background-color: #f8fafc; }
-        .metric-value { font-size: 24px; font-weight: bold; color: #0a1628; margin-top: 5px; }
-        .footer { text-align: center; font-size: 10px; color: #888; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 30px; }
+        @page { margin: 1.5cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; line-height: 1.4; color: #334155; margin: 0; padding: 0; background-color: #fff; }
+        
+        /* HEADER */
+        .header { background-color: #0a1628; color: #fff; padding: 20px; border-bottom: 4px solid #39A900; margin-bottom: 25px; border-radius: 4px; position: relative; }
+        .header-content { display: table; width: 100%; }
+        .header-left { display: table-cell; width: 70%; vertical-align: middle; }
+        .header-right { display: table-cell; width: 30%; text-align: right; vertical-align: middle; }
+        .header h1 { margin: 0 0 5px 0; font-size: 24px; font-weight: bold; color: #fff; }
+        .header p { margin: 0; font-size: 13px; color: #94a3b8; }
+        
+        /* BADGE RANGO */
+        .badge-rango { background-color: #39A900; color: #fff; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; margin-top: 10px; }
+        
+        /* METRICS ROW */
+        .metrics-row { display: table; width: 100%; margin-bottom: 25px; table-layout: fixed; border-spacing: 12px 0; }
+        .metric-card { display: table-cell; background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; text-align: left; }
+        .metric-card.metric-green { border-left: 4px solid #39A900; }
+        .metric-card.metric-blue { border-left: 4px solid #2563eb; }
+        .metric-card.metric-amber { border-left: 4px solid #d97706; }
+        .metric-card.metric-red { border-left: 4px solid #dc2626; }
+        .metric-card.metric-purple { border-left: 4px solid #9333ea; }
+        
+        .metric-label { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #0f172a; display: block; margin-bottom: 3px; }
+        .metric-sub { font-size: 10px; color: #94a3b8; }
+        
+        /* SECCIONES & TABLAS */
+        .section-title { font-size: 16px; font-weight: bold; color: #0f172a; margin: 0 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0; }
+        .table-wrap { margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        thead th { background-color: #f1f5f9; color: #475569; font-size: 10px; font-weight: bold; text-transform: uppercase; padding: 8px 10px; text-align: left; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; }
+        tbody td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; vertical-align: middle; }
+        tbody tr:nth-child(even) { background-color: #f8fafc; }
+        
+        /* BADGES INLINE */
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-amber { background: #fef3c7; color: #92400e; }
+        .badge-blue { background: #dbeafe; color: #1e40af; }
+        .badge-gray { background: #f1f5f9; color: #475569; }
+        .badge-purple { background: #f3e8ff; color: #6b21a8; }
+        
+        /* GRÁFICOS CSS */
+        .chart-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px; }
+        .chart-title { font-size: 12px; font-weight: bold; color: #0a1628; margin-bottom: 15px; text-transform: uppercase; }
+        .chart-bar-container { margin-bottom: 15px; }
+        .chart-label { font-size: 10px; color: #64748b; margin-bottom: 5px; display: block; font-weight: bold; }
+        .bar-track { width: 100%; background-color: #e2e8f0; border-radius: 10px; height: 12px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; border-radius: 10px; position: absolute; left: 0; top: 0; }
+        .chart-legend { display: table; width: 100%; margin-top: 5px; }
+        .chart-legend-item { display: table-cell; font-size: 10px; color: #475569; width: 50%; }
+        .chart-legend-right { text-align: right; font-weight: bold; color: #0f172a; }
+
+        /* UTILES */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-muted { color: #64748b; }
+        font-semibold { font-weight: bold; color: #1e293b; }
+        .empty-state { padding: 20px; text-align: center; border: 1px dashed #cbd5e1; border-radius: 6px; color: #94a3b8; font-style: italic; }
+        
+        /* FOOTER */
+        .footer { padding-top: 15px; margin-top: 30px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #64748b; text-align: center; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>@yield('title', 'Reporte')</h1>
-        <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
-    </div>
-
-    @if(isset($request) && $request->filled('rango'))
-        <div class="filters">
-            <strong>Filtro aplicado:</strong>
-            @if($request->rango == 'hoy') Hoy 
-            @elseif($request->rango == 'semanal') Esta semana 
-            @elseif($request->rango == 'mensual') Este mes 
-            @elseif($request->rango == 'anual') Este año 
-            @endif
+        <div class="header-content">
+            <div class="header-left">
+                <h1>Reporte: @yield('title')</h1>
+                <p>Generado por: {{ auth()->user()->person ? auth()->user()->person->primer_nombre . ' ' . auth()->user()->person->primer_apellido : auth()->user()->email }} - Rol: Asesor Semillero</p>
+                <div class="badge-rango">Período: {{ $etiqueta_rango ?? 'Histórico Completo' }}</div>
+            </div>
+            <div class="header-right">
+                <p style="color: #cbd5e1; font-weight: bold; font-size: 18px;">SENA</p>
+                <p>Fecha de emisión: <br>{{ date('d/m/Y H:i A') }}</p>
+            </div>
         </div>
-    @endif
+    </div>
 
     @yield('content')
 
     <div class="footer">
-        Sistema de Gestión Documental SENA - Módulo Asesor Semillero
+        Este documento es generado automáticamente por el Sistema de Gestión Documental del SENA. Página <span class="pagenum"></span>
     </div>
 </body>
 </html>
