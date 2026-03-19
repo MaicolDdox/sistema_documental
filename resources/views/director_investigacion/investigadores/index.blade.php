@@ -64,14 +64,21 @@
                             @endif
                         </td>
                         <td class="px-4 py-3" x-data="{ open: false }">
-                            <div class="relative">
-                                <button @click="open = !open" @click.away="open = false"
+                            <div class="relative" @click.outside="open = false">
+                                <button @click.stop="open = !open"
                                         class="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"/>
                                     </svg>
                                 </button>
-                                <div x-show="open" x-cloak
+                                <div x-show="open"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="opacity-100 scale-100"
+                                     x-transition:leave-end="opacity-0 scale-95"
+                                     style="display:none;"
                                      class="absolute right-0 z-10 mt-1 w-44 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
                                     {{-- Cambiar estado --}}
                                     <form method="POST" action="{{ route('director.investigadores.toggle-estado', $inv) }}">

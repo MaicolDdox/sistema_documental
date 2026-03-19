@@ -34,7 +34,7 @@ class ProyectoService
 
             // Vincular al grupo de investigación
             $proyecto->researchGroups()->attach($grupoId, [
-                'tipo_participacion' => 'principal',
+                'tipo_participacion' => 'origen',
             ]);
 
             return $proyecto;

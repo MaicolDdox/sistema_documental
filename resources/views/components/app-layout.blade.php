@@ -46,6 +46,16 @@
         .sgd-btn-primary:active { transform: translateY(0) scale(0.98); }
         .sgd-card { transition: box-shadow 0.25s ease, transform 0.2s ease; }
         .sgd-card:hover { box-shadow: 0 8px 24px rgba(57,169,0,0.06); transform: translateY(-2px); }
+
+        /* ═══ PRINT / PDF ═══ */
+        @media print {
+            aside, header, .no-print { display: none !important; }
+            body { background: white !important; margin: 0 !important; }
+            .flex-1.lg\:ml-64 { margin-left: 0 !important; }
+            main { padding: 1rem !important; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .shadow-sm, .shadow, .shadow-lg, .shadow-md { box-shadow: none !important; }
+        }
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen flex" x-data="{ sidebarOpen: false }" @keydown.escape.window="sidebarOpen = false">

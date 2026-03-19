@@ -48,7 +48,7 @@
                                    class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Fecha de fin</label>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Fecha fin estimada</label>
                             <input type="date" name="fecha_fin" value="{{ old('fecha_fin', $proyecto?->fecha_fin?->format('Y-m-d')) }}"
                                    class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                         </div>

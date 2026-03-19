@@ -16,11 +16,29 @@
             ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Pendiente)->count();
         $productosAprobados  = \App\Models\GroupProduct::whereIn('author_id', $userIds)
             ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)->count();
+        $productosEnRevision = \App\Models\GroupProduct::whereIn('author_id', $userIds)
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::EnRevision)->count();
+        $productosRechazados = \App\Models\GroupProduct::whereIn('author_id', $userIds)
+            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Rechazado)->count();
         $productosTotal      = \App\Models\GroupProduct::whereIn('author_id', $userIds)->count();
 
         $ultimosProductos = \App\Models\GroupProduct::with(['author.person', 'product'])
             ->whereIn('author_id', $userIds)
             ->latest()->take(6)->get();
+
+        // Producción por mes (últimos 12 meses)
+        $produccionMensual = \App\Models\GroupProduct::whereIn('author_id', $userIds)
+            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as mes, COUNT(*) as total")
+            ->groupBy('mes')
+            ->orderBy('mes')
+            ->pluck('total', 'mes');
+
+        $meses = collect();
+        for ($i = 11; $i >= 0; $i--) {
+            $key = now()->subMonths($i)->format('Y-m');
+            $meses[$key] = $produccionMensual[$key] ?? 0;
+        }
     @endphp
 
     {{-- Encabezado --}}
@@ -32,27 +50,110 @@
     </div>
 
     {{-- 4 tarjetas de resumen --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 mb-1">Investigadores</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $totalInvestigadores }}</p>
-            <p class="text-xs text-slate-500 mt-1 border-b-2 border-[#39A900] pb-0.5 w-fit">en mi grupo</p>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Investigadores</p>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">{{ $totalInvestigadores }}</p>
+            <p class="text-xs text-slate-400 mt-1">en mi grupo</p>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-xs font-medium text-slate-500 mb-1">Productos totales</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $productosTotal }}</p>
-            <p class="text-xs text-slate-500 mt-1">registrados</p>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total productos</p>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">{{ $productosTotal }}</p>
+            <p class="text-xs text-slate-400 mt-1">registrados</p>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-amber-100 p-5 shadow-sm bg-amber-50/40">
-            <p class="text-xs font-medium text-amber-600 mb-1">Pendientes de revisión</p>
-            <p class="text-2xl font-bold text-amber-700">{{ $productosPendientes }}</p>
+
+        <div class="bg-amber-50 rounded-xl border border-amber-100 p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-semibold text-amber-600 uppercase tracking-wide">Pendientes</p>
+            </div>
+            <p class="text-3xl font-bold text-amber-700">{{ $productosPendientes }}</p>
             <a href="{{ route('director.productos.index', ['estado_revision' => 'pendiente']) }}"
                class="text-xs text-amber-600 mt-1 hover:underline block">Ver pendientes →</a>
         </div>
-        <div class="sgd-card bg-white rounded-xl border border-green-100 p-5 shadow-sm bg-green-50/40">
-            <p class="text-xs font-medium text-green-600 mb-1">Aprobados</p>
-            <p class="text-2xl font-bold text-green-700">{{ $productosAprobados }}</p>
+
+        <div class="bg-green-50 rounded-xl border border-green-100 p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-xs font-semibold text-green-700 uppercase tracking-wide">Aprobados</p>
+            </div>
+            <p class="text-3xl font-bold text-green-700">{{ $productosAprobados }}</p>
             <p class="text-xs text-green-600 mt-1">productos validados</p>
+        </div>
+    </div>
+
+    {{-- Gráficas --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        {{-- Gráfica dona: estados de productos --}}
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
+                <h2 class="text-sm font-semibold text-slate-900">Distribución de Productos</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Por estado de revisión</p>
+            </div>
+            <div class="p-5 flex items-center justify-center">
+                @if($productosTotal > 0)
+                    <div class="relative" style="width:220px;height:220px;">
+                        <canvas id="chartEstados"></canvas>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-2xl font-bold text-slate-900">{{ $productosTotal }}</span>
+                            <span class="text-xs text-slate-400">productos</span>
+                        </div>
+                    </div>
+                @else
+                    <div class="py-10 text-center text-slate-400 text-sm">Sin productos registrados aún.</div>
+                @endif
+            </div>
+            @if($productosTotal > 0)
+            <div class="px-5 pb-5 grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <span class="w-3 h-3 rounded-full bg-green-500 shrink-0"></span> Aprobados <strong class="ml-auto">{{ $productosAprobados }}</strong>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <span class="w-3 h-3 rounded-full bg-amber-400 shrink-0"></span> Pendientes <strong class="ml-auto">{{ $productosPendientes }}</strong>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <span class="w-3 h-3 rounded-full bg-blue-400 shrink-0"></span> En revisión <strong class="ml-auto">{{ $productosEnRevision }}</strong>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <span class="w-3 h-3 rounded-full bg-red-400 shrink-0"></span> Rechazados <strong class="ml-auto">{{ $productosRechazados }}</strong>
+                </div>
+            </div>
+            @endif
+        </div>
+
+        {{-- Gráfica barras: producción mensual --}}
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
+                <h2 class="text-sm font-semibold text-slate-900">Producción Mensual</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Últimos 12 meses</p>
+            </div>
+            <div class="p-5">
+                <canvas id="chartMensual" height="200"></canvas>
+            </div>
         </div>
     </div>
 
@@ -128,9 +229,9 @@
             </div>
         </div>
 
-        {{-- Acciones rápidas --}}
+        {{-- Acciones rápidas + info grupo --}}
         <div class="space-y-4">
-            <div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
                     <h2 class="text-base font-semibold text-slate-900">Acciones Rápidas</h2>
                 </div>
@@ -169,7 +270,6 @@
                 </div>
             </div>
 
-            {{-- Info del grupo --}}
             @if($grupo)
             <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                 <h3 class="text-sm font-semibold text-slate-900 mb-3">Mi Grupo</h3>
@@ -194,4 +294,99 @@
             @endif
         </div>
     </div>
+
+    {{-- Chart.js --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script>
+    (function () {
+        // Paleta
+        const verde    = '#39A900';
+        const verdeClr = '#39A90033';
+        const amber    = '#f59e0b';
+        const blue     = '#60a5fa';
+        const red      = '#f87171';
+        const slate    = '#94a3b8';
+
+        // --- Gráfica Dona: estados ---
+        @if($productosTotal > 0)
+        const ctxDona = document.getElementById('chartEstados');
+        if (ctxDona) {
+            new Chart(ctxDona, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprobados', 'Pendientes', 'En revisión', 'Rechazados'],
+                    datasets: [{
+                        data: [
+                            {{ $productosAprobados }},
+                            {{ $productosPendientes }},
+                            {{ $productosEnRevision }},
+                            {{ $productosRechazados }},
+                        ],
+                        backgroundColor: [verde, amber, blue, red],
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        hoverOffset: 6,
+                    }]
+                },
+                options: {
+                    cutout: '72%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.label}: ${ctx.raw} productos`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        @endif
+
+        // --- Gráfica Barras: producción mensual ---
+        const ctxBar = document.getElementById('chartMensual');
+        if (ctxBar) {
+            const labels = @json($meses->keys()->map(fn($m) => \Carbon\Carbon::createFromFormat('Y-m', $m)->translatedFormat('M y')));
+            const values = @json($meses->values());
+
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Productos',
+                        data: values,
+                        backgroundColor: verdeClr,
+                        borderColor: verde,
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.raw} producto(s)`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8', font: { size: 10 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+    })();
+    </script>
 </x-app-layout>

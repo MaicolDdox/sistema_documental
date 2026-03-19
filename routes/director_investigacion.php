@@ -57,8 +57,9 @@ Route::middleware(['auth', 'ensure.active', 'role:director_investigacion'])
 
         // ── Reportes ─────────────────────────────────────────────────
         Route::prefix('reportes')->name('reportes.')->group(function () {
-            Route::get('/',          [ReporteGrupoController::class, 'index'])->name('index');
-            Route::post('/exportar', [ReporteGrupoController::class, 'exportar'])->name('exportar');
+            Route::get('/',             [ReporteGrupoController::class, 'index'])->name('index');
+            Route::get('/exportar-csv', [ReporteGrupoController::class, 'exportarCsv'])->name('exportar.csv');
+            Route::get('/exportar-pdf', [ReporteGrupoController::class, 'exportarPdf'])->name('exportar.pdf');
         });
 
         // ── Catálogo de Macroproyectos ───────────────────────────────

@@ -87,6 +87,25 @@
                     <p class="text-xs text-slate-400 mt-1">Se enviará una contraseña temporal a este correo.</p>
                 </div>
 
+                {{-- Link CvLAC --}}
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                        Link CvLAC
+                        <span class="text-xs font-normal text-slate-400 ml-1">(opcional)</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+                            </svg>
+                        </div>
+                        <input type="url" name="cvlac_link" value="{{ old('cvlac_link') }}"
+                               placeholder="https://scienti.minciencias.gov.co/cvlac/..."
+                               class="w-full border border-slate-200 rounded-lg pl-10 pr-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('cvlac_link') border-red-400 @enderror">
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Enlace al perfil CvLAC del investigador en Minciencias.</p>
+                </div>
+
                 {{-- Botones --}}
                 <div class="flex items-center gap-3 pt-2">
                     <button type="submit"
