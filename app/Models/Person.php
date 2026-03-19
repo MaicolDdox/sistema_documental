@@ -26,6 +26,7 @@ class Person extends Model
         'telefono',
         'celular',
         'eps',
+        'cvlac_link',
         'email_institucional',
     ];
 
