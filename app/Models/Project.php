@@ -29,6 +29,7 @@ class Project extends Model
         'estado',
         'vinculacion_macro_proyecto',
         'macro_project_id',
+        'tipo_financiacion',
     ];
 
     protected $casts = [

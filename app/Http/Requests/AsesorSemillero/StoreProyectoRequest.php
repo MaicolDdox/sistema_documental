@@ -25,6 +25,7 @@ class StoreProyectoRequest extends FormRequest
             'fecha_fin'              => 'nullable|date|after_or_equal:fecha_inicio',
             'tiene_macroproyecto'    => 'required|boolean',
             'macro_project_id'       => 'required_if:tiene_macroproyecto,1|nullable|integer',
+            'tipo_financiacion'      => 'nullable|in:capacidad_instalada,financiado,con_alianza',
         ];
     }
 

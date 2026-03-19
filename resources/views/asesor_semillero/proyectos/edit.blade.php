@@ -76,6 +76,15 @@
                                class="w-full border border-slate-100 rounded-lg px-3 py-2.5 text-sm text-slate-400 bg-slate-50">
                         <input type="hidden" name="investigation_type_id" value="{{ $proyecto->investigation_type_id }}">
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de financiación</label>
+                        <select name="tipo_financiacion" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                            <option value="">Ninguna / No aplica</option>
+                            <option value="capacidad_instalada" {{ old('tipo_financiacion', $proyecto->tipo_financiacion) === 'capacidad_instalada' ? 'selected' : '' }}>Capacidad instalada</option>
+                            <option value="financiado" {{ old('tipo_financiacion', $proyecto->tipo_financiacion) === 'financiado' ? 'selected' : '' }}>Financiado</option>
+                            <option value="con_alianza" {{ old('tipo_financiacion', $proyecto->tipo_financiacion) === 'con_alianza' ? 'selected' : '' }}>Con alianza</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

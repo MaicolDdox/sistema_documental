@@ -138,6 +138,8 @@ class ProyectoController extends Controller
                 'fecha_fin'             => $validated['fecha_fin'] ?? null,
                 'estado'                => EstadoEnum::Activo,
                 'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
+                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
+                'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
             ]);
 
             // 2. Vincular proyecto al semillero
@@ -230,6 +232,8 @@ class ProyectoController extends Controller
                 'fecha_inicio'          => $validated['fecha_inicio'],
                 'fecha_fin'             => $validated['fecha_fin'] ?? null,
                 'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
+                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
+                'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
             ]);
 
             // Actualizar macroproyecto
