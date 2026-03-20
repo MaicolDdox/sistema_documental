@@ -187,9 +187,14 @@ class ExportarReporteController extends Controller
             'totalSemilleros'         => $semilleros->count(),
         ];
 
-        $pdf = Pdf::loadView('asesor_semillero.pdf.dashboard', compact(
-            'proyectos', 'productos', 'aprendices', 'semillerosConDatos', 'stats', 'rangoLabel'
-        ))->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('asesor_semillero.pdf.dashboard', [
+            'proyectos' => $proyectos,
+            'productos' => $productos,
+            'aprendices' => $aprendices,
+            'semilleros' => $semillerosConDatos,
+            'stats' => $stats,
+            'rangoLabel' => $rangoLabel
+        ])->setPaper('a4', 'landscape');
 
         $filename = 'reporte_general_' . now()->format('Ymd_Hi') . '.pdf';
         return $pdf->download($filename);
