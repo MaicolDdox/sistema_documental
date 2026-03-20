@@ -3,14 +3,21 @@
 namespace App\Http\Controllers\AsesorSemillero;
 
 use App\Enums\EstadoEnum;
+use App\Enums\EstadoRevisionEnum;
+use App\Enums\TipoProyectoOrigenEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AsesorSemillero\StoreProductoRequest;
 use App\Models\ExternalAdvisor;
 use App\Models\Product;
+use App\Models\GroupProduct;
 use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
 use App\Models\Seedling;
+use App\Models\MincienciasTypology;
+use App\Models\MincienciasSubcategory;
+use App\Models\KnowledgeArea;
+use App\Models\KnowledgeGrandArea;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -116,7 +123,7 @@ class ProductoController extends Controller
                 ->whereIn('seedling_id', $semilleroIds)
                 ->pluck('project_id');
 
-            $query = Product::with(['project', 'productAuthors.projectAuthor.user.person'])
+            $query = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'groupProducts'])
                 ->whereIn('project_id', $projectIds)
                 ->orderByDesc('updated_at');
 
@@ -178,7 +185,31 @@ class ProductoController extends Controller
             abort(403, 'El proyecto no pertenece a tus semilleros.');
         }
 
-        DB::transaction(function () use ($validated, $request) {
+        // Preparar catálogos para GroupProduct (flujo de aprobación del líder)
+        $typology = null;
+        $subcategory = null;
+        $knowledgeArea = null;
+        $knowledgeGrand = KnowledgeGrandArea::first();
+
+        if (!empty($validated['minciencias_typology_id'])) {
+            $typology = MincienciasTypology::find($validated['minciencias_typology_id']);
+        } else {
+            $typology = MincienciasTypology::first();
+        }
+
+        if (!empty($validated['minciencias_subcategory_id'])) {
+            $subcategory = MincienciasSubcategory::find($validated['minciencias_subcategory_id']);
+        } elseif ($typology) {
+            $subcategory = MincienciasSubcategory::where('minciencias_typology_id', $typology->id)->first();
+        }
+
+        if (!empty($validated['knowledge_area_id'])) {
+            $knowledgeArea = KnowledgeArea::find($validated['knowledge_area_id']);
+        } else {
+            $knowledgeArea = KnowledgeArea::first();
+        }
+
+        DB::transaction(function () use ($validated, $request, $typology, $subcategory, $knowledgeArea, $knowledgeGrand) {
             $archivoPath    = null;
             $urlRepositorio = null;
 
@@ -193,12 +224,16 @@ class ProductoController extends Controller
             }
 
             $product = Product::create([
-                'project_id'      => $validated['project_id'],
-                'nombre'          => $validated['nombre'],
-                'archivo'         => $archivoPath,
-                'archivo_nombre'  => $archivoNombre,
-                'url_repositorio' => $urlRepositorio,
-                'estado'          => EstadoEnum::Activo,
+                'project_id'        => $validated['project_id'],
+                'nombre'            => $validated['nombre'],
+                'archivo'           => $archivoPath,
+                'archivo_nombre'    => $archivoNombre,
+                'url_repositorio'   => $urlRepositorio,
+                'estado'            => EstadoEnum::Activo,
+                // Estado de revisión base para la vista del asesor;
+                // se sincroniza luego con las acciones del líder.
+                'estado_revision'   => EstadoRevisionEnum::Pendiente->value,
+                'observacion_revision' => null,
             ]);
 
             // Autores seleccionados manualmente en el form
@@ -209,6 +244,30 @@ class ProductoController extends Controller
                     'project_author_id' => (int) $projectAuthorId,
                 ]);
             }
+
+            // Crear registro en group_products para que el líder pueda aprobar/rechazar
+            $anioPublicacion = $validated['anio_publicacion'] ?? (int) now()->format('Y');
+
+            GroupProduct::create([
+                'author_id'                 => Auth::id(),
+                'product_id'                => $product->id,
+                'tipo_proyecto_origen'      => TipoProyectoOrigenEnum::Semilleros,
+                'codigo_proyecto_origen'    => '0',
+                'titulo'                    => $validated['nombre'],
+                'descripccion'              => $validated['descripccion'] ?? null,
+                'anio_publicacion'          => $anioPublicacion,
+                'nombre_programa_formacion_impacto' => 'N/A',
+                'minciencias_typology_id'   => $typology?->id,
+                'minciencias_subcategory_id'=> $subcategory?->id,
+                'knowledge_grand_area_id'   => $knowledgeGrand?->id,
+                'knowledge_area_id'         => $knowledgeArea?->id,
+                'tiene_repositorio'         => (bool) $urlRepositorio,
+                'url_repositorio'           => $urlRepositorio,
+                'evidencia'                 => $urlRepositorio ? null : $archivoPath,
+                'autoriza_datos'            => false,
+                'estado_revision'           => EstadoRevisionEnum::Pendiente,
+                'observaciones_revision'    => null,
+            ]);
         });
 
         return redirect()->route('asesor.productos.index')
@@ -334,6 +393,37 @@ class ProductoController extends Controller
 
         $downloadName = $product->archivo_nombre ?? basename($product->archivo);
         return Storage::disk('public')->download($product->archivo, $downloadName);
+    }
+
+    // ──────────────────────────────────────────────────
+    // DESTROY
+    // ──────────────────────────────────────────────────
+
+    /** Elimina completamente el producto y sus relaciones asociadas. */
+    public function destroy(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        DB::transaction(function () use ($product) {
+            // Eliminar evidencias asociadas (si la relación existe)
+            if (method_exists($product, 'productEvidences')) {
+                $product->productEvidences()->delete();
+            }
+
+            // Eliminar autores del producto
+            ProductAuthor::where('product_id', $product->id)->delete();
+
+            // Eliminar archivo físico si existe
+            if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
+                Storage::disk('public')->delete($product->archivo);
+            }
+
+            // Finalmente eliminar el producto
+            $product->delete();
+        });
+
+        return redirect()->route('asesor.productos.index')
+            ->with('success', 'Producto eliminado correctamente.');
     }
 
     // ──────────────────────────────────────────────────

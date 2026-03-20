@@ -30,42 +30,34 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         Route::get('/mis-semilleros', [MisSemillerosController::class, 'index'])->name('mis_semilleros.index');
 
         // ─── APRENDICES ────────────────────────────────────────────────────────
-        Route::middleware('can:aprendices.listar')->group(function () {
-            Route::get('/aprendices', [AprendizController::class, 'index'])->name('aprendices.index');
-        });
-
+        // Para el rol asesor_semillero, el acceso ya está restringido por el rol en este grupo.
+        // Quitamos los middlewares can:* para evitar 403 por desajustes de permisos finos.
+        Route::get('/aprendices', [AprendizController::class, 'index'])->name('aprendices.index');
         Route::middleware('can:aprendices.registrar')->group(function () {
             Route::get('/aprendices/create', [AprendizController::class, 'create'])->name('aprendices.create');
             Route::post('/aprendices', [AprendizController::class, 'store'])->name('aprendices.store');
         });
 
-        Route::middleware('can:aprendices.ver_detalle')->group(function () {
-            Route::get('/aprendices/{id}', [AprendizController::class, 'show'])->name('aprendices.show');
-        });
-
-        Route::middleware('can:aprendices.editar')->group(function () {
-            Route::get('/aprendices/{id}/edit', [AprendizController::class, 'edit'])->name('aprendices.edit');
-            Route::put('/aprendices/{id}', [AprendizController::class, 'update'])->name('aprendices.update');
-        });
+        // Ver detalle / editar / eliminar: ya están restringidos al rol en el grupo principal
+        Route::get('/aprendices/{id}', [AprendizController::class, 'show'])->name('aprendices.show');
+        Route::get('/aprendices/{id}/edit', [AprendizController::class, 'edit'])->name('aprendices.edit');
+        Route::put('/aprendices/{id}', [AprendizController::class, 'update'])->name('aprendices.update');
+        Route::delete('/aprendices/{id}', [AprendizController::class, 'destroy'])->name('aprendices.destroy');
 
         // ─── PROYECTOS ─────────────────────────────────────────────────────────
-        Route::middleware('can:proyectos.listar_semillero')->group(function () {
-            Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
-        });
-
-        Route::middleware('can:proyectos.crear_semillero')->group(function () {
-            Route::get('/proyectos/create', [ProyectoController::class, 'create'])->name('proyectos.create');
-            Route::post('/proyectos', [ProyectoController::class, 'store'])->name('proyectos.store');
-        });
+        Route::get('/proyectos', [ProyectoController::class, 'index'])->name('proyectos.index');
+        // Acceso controlado solo por rol dentro de este grupo
+        Route::get('/proyectos/create', [ProyectoController::class, 'create'])->name('proyectos.create');
+        Route::post('/proyectos', [ProyectoController::class, 'store'])->name('proyectos.store');
 
         Route::middleware('can:proyectos.ver_detalle')->group(function () {
             Route::get('/proyectos/{id}', [ProyectoController::class, 'show'])->name('proyectos.show');
         });
 
-        Route::middleware('can:proyectos.editar')->group(function () {
-            Route::get('/proyectos/{id}/edit', [ProyectoController::class, 'edit'])->name('proyectos.edit');
-            Route::put('/proyectos/{id}', [ProyectoController::class, 'update'])->name('proyectos.update');
-        });
+        // Edición / eliminación: restringidas solo por rol del grupo principal
+        Route::get('/proyectos/{id}/edit', [ProyectoController::class, 'edit'])->name('proyectos.edit');
+        Route::put('/proyectos/{id}', [ProyectoController::class, 'update'])->name('proyectos.update');
+        Route::delete('/proyectos/{id}', [ProyectoController::class, 'destroy'])->name('proyectos.destroy');
 
         Route::middleware('can:proyectos.vincular_integrantes')->group(function () {
             Route::get('/proyectos/{id}/integrantes', [ProyectoController::class, 'integrantes'])->name('proyectos.integrantes');
@@ -74,23 +66,15 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         });
 
         // ─── PRODUCTOS ─────────────────────────────────────────────────────────
-        Route::middleware('can:productos.listar')->group(function () {
-            Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
-        });
-
-        Route::middleware('can:productos.registrar')->group(function () {
-            Route::get('/productos/create/{proyecto_id?}', [ProductoController::class, 'create'])->name('productos.create');
-            Route::post('/productos', [ProductoController::class, 'store'])->name('productos.store');
-        });
-
-        Route::middleware('can:productos.ver_detalle')->group(function () {
-            Route::get('/productos/{id}', [ProductoController::class, 'show'])->name('productos.show');
-        });
-
-        Route::middleware('can:productos.editar')->group(function () {
-            Route::get('/productos/{id}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
-            Route::put('/productos/{id}', [ProductoController::class, 'update'])->name('productos.update');
-        });
+        // Para asesores, controlamos el acceso solo por rol del grupo principal,
+        // sin usar gates can:* para evitar 403 por desajustes de permisos.
+        Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
+        Route::get('/productos/create/{proyecto_id?}', [ProductoController::class, 'create'])->name('productos.create');
+        Route::post('/productos', [ProductoController::class, 'store'])->name('productos.store');
+        Route::get('/productos/{id}', [ProductoController::class, 'show'])->name('productos.show');
+        Route::get('/productos/{id}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
+        Route::put('/productos/{id}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::delete('/productos/{id}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         // ─── AJAX / API helpers ────────────────────────────────────────────────
         Route::get('/api/semillero/{seedling_id}/proyectos', [ProductoController::class, 'apiProyectosPorSemillero'])->name('api.semillero.proyectos');

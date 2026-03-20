@@ -62,14 +62,21 @@ class InvestigadorController extends Controller
             'segundo_nombre'   => ['nullable', 'string', 'max:100'],
             'primer_apellido'  => ['required', 'string', 'max:100'],
             'segundo_apellido' => ['nullable', 'string', 'max:100'],
+            'cvlac_link'       => ['nullable', 'string', 'max:500'],
         ]);
 
         $validated['training_center_id'] = Auth::user()->training_center_id;
 
         $this->service->crearInvestigador($validated, $grupoId);
 
+        $embedded = $request->boolean('embedded');
+
+        $route = $embedded
+            ? route('director.investigadores.index', ['embedded' => 1])
+            : route('director.investigadores.index');
+
         return redirect()
-            ->route('director.investigadores.index')
+            ->to($route)
             ->with('success', 'Investigador creado y notificado por correo exitosamente.');
     }
 

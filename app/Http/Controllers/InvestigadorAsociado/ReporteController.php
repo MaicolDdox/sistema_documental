@@ -5,10 +5,10 @@ namespace App\Http\Controllers\InvestigadorAsociado;
 use App\Http\Controllers\Controller;
 use App\Models\GroupProduct;
 use App\Models\Project;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class ReporteController extends Controller
@@ -20,16 +20,30 @@ class ReporteController extends Controller
      */
     public function index(): View
     {
-        $userId = Auth::id();
+        $userId = auth()->id();
 
         $metricas = [
-            'total_proyectos'     => Project::where('project_creator_id', $userId)->count(),
-            'total_productos'     => GroupProduct::where('author_id', $userId)->count(),
-            'productos_aprobados' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'aprobado')->count(),
-            'productos_rechazados'=> GroupProduct::where('author_id', $userId)->where('estado_revision', 'rechazado')->count(),
+            'total_proyectos'      => Project::where('project_creator_id', $userId)->count(),
+            'total_productos'      => GroupProduct::where('author_id', $userId)->count(),
+            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', 'aprobado')->count(),
+            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'rechazado')->count(),
+            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'pendiente')->count(),
+            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', 'en_revision')->count(),
         ];
 
-        return view('investigador.reportes.index', compact('metricas'));
+        $porAnio = GroupProduct::where('author_id', $userId)
+            ->whereNotNull('anio_publicacion')
+            ->selectRaw('anio_publicacion as anio, count(*) as total')
+            ->groupBy('anio_publicacion')
+            ->orderBy('anio_publicacion', 'desc')
+            ->get();
+
+        $productos = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
+            ->where('author_id', $userId)
+            ->orderBy('anio_publicacion', 'desc')
+            ->get();
+
+        return view('investigador.reportes.index', compact('metricas', 'porAnio', 'productos'));
     }
 
     /**
@@ -37,7 +51,7 @@ class ReporteController extends Controller
      */
     public function productosPorEstado(): View
     {
-        $userId   = Auth::id();
+        $userId   = auth()->id();
         $productos = GroupProduct::with(['product.project'])
             ->where('author_id', $userId)
             ->get();
@@ -57,18 +71,19 @@ class ReporteController extends Controller
      * ?tipo=aprobados|todos
      * ?periodo=semanal|mensual|anual  (opcional)
      */
-    public function exportar(Request $request): Response
+    public function exportarCsv(Request $request): Response
     {
         $request->validate([
             'tipo'    => ['nullable', 'in:aprobados,todos'],
             'periodo' => ['nullable', 'in:semanal,mensual,anual'],
         ]);
 
-        $userId  = Auth::id();
+        $userId  = auth()->id();
         $tipo    = $request->input('tipo', 'aprobados');
-        $periodo = $request->input('periodo', '');
+        $periodo = $request->input('periodo') ?? '';
 
         [$desde, $hasta] = $this->rangoFechas($periodo);
+        $etiqueta        = $this->etiquetaPeriodo($periodo);
 
         $query = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
             ->where('author_id', $userId)
@@ -78,45 +93,89 @@ class ReporteController extends Controller
 
         $productos = $query->get();
 
-        $etiqueta = $this->etiquetaPeriodo($periodo);
-
-        $rows = [['Título del Producto', 'Proyecto', 'Año Publicación', 'Estado', 'Tipología Minciencias', 'Área del Conocimiento', 'Periodo']];
+        // Cabeceras CSV
+        $rows = [
+            ['Título del Producto', 'Proyecto', 'Año Publicación', 'Estado', 'Tipología Minciencias', 'Área del Conocimiento', 'Periodo'],
+        ];
 
         foreach ($productos as $p) {
             $rows[] = [
                 $p->titulo,
                 $p->product?->project?->nombre ?? 'N/A',
                 $p->anio_publicacion ?? '',
-                $p->estado_revision?->value ?? '',
+                $p->estado_revision?->value ?? $p->estado_revision ?? '',
                 $p->mincienciasTypology?->nombre ?? 'N/A',
                 $p->knowledgeArea?->nombre ?? 'N/A',
                 $etiqueta,
             ];
         }
 
-        // CSV con BOM para Excel
-        $output = fopen('php://temp', 'r+');
-        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+        // Generar CSV con BOM (UTF-8) para Excel
+        $bom = "\xEF\xBB\xBF";
+        $buffer = fopen('php://memory', 'r+');
+        fwrite($buffer, $bom);
         foreach ($rows as $row) {
-            fputcsv($output, $row, ';');
+            fputcsv($buffer, $row, ';');
         }
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
+        rewind($buffer);
+        $csv = stream_get_contents($buffer);
+        fclose($buffer);
 
-        $sufijoPeriodo = $periodo ? "_{$periodo}" : '';
-        $filename = "mis_productos_{$tipo}{$sufijoPeriodo}_" . now()->format('Ymd_His') . '.csv';
+        $sufix    = $periodo ? "_{$periodo}" : '';
+        $filename = "mis_productos_{$tipo}{$sufix}_" . now()->format('Ymd_His') . '.csv';
 
         return response($csv, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'no-cache, no-store',
         ]);
     }
 
-    private function rangoFechas(string $periodo): array
+    /**
+     * Descarga PDF real del reporte del investigador.
+     */
+    public function exportarPdf(Request $request)
     {
-        return match ($periodo) {
+        $request->validate([
+            'tipo'    => ['nullable', 'in:aprobados,todos'],
+            'periodo' => ['nullable', 'in:semanal,mensual,anual'],
+        ]);
+
+        $userId  = auth()->id();
+        $tipo    = $request->input('tipo', 'todos');
+        $periodo = $request->input('periodo') ?? '';
+
+        [$desde, $hasta] = $this->rangoFechas($periodo);
+        $etiqueta        = $this->etiquetaPeriodo($periodo);
+
+        $metricas = [
+            'total_proyectos'      => Project::where('project_creator_id', $userId)->count(),
+            'total_productos'      => GroupProduct::where('author_id', $userId)->count(),
+            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', 'aprobado')->count(),
+            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'rechazado')->count(),
+            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'pendiente')->count(),
+            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', 'en_revision')->count(),
+        ];
+
+        $productos = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
+            ->where('author_id', $userId)
+            ->orderBy('anio_publicacion', 'desc')
+            ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', 'aprobado'))
+            ->when($desde, fn($q) => $q->whereBetween('created_at', [$desde, $hasta]))
+            ->get();
+
+        $pdf = Pdf::loadView('investigador.reportes.pdf', compact('metricas', 'productos', 'tipo', 'etiqueta'))
+            ->setPaper('A4', 'portrait');
+
+        $filename = 'mis_productos_' . $tipo . '_' . now()->format('Ymd_His') . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private function rangoFechas(?string $periodo): array
+    {
+        return match ($periodo ?? '') {
             'semanal' => [Carbon::now()->startOfWeek(),  Carbon::now()->endOfWeek()],
             'mensual' => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
             'anual'   => [Carbon::now()->startOfYear(),  Carbon::now()->endOfYear()],
@@ -124,9 +183,9 @@ class ReporteController extends Controller
         };
     }
 
-    private function etiquetaPeriodo(string $periodo): string
+    private function etiquetaPeriodo(?string $periodo): string
     {
-        return match ($periodo) {
+        return match ($periodo ?? '') {
             'semanal' => 'Semana ' . now()->weekOfYear . ' (' . now()->startOfWeek()->format('d/m') . ' - ' . now()->endOfWeek()->format('d/m/Y') . ')',
             'mensual' => ucfirst(now()->translatedFormat('F Y')),
             'anual'   => (string) now()->year,

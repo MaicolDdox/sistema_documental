@@ -24,15 +24,19 @@ class ProductoService
      */
     public function registrar(array $data, int $userId, int $grupoId): GroupProduct
     {
-        // 1. Validar que el proyecto existe y el usuario es autor
+        // 1. Validar que el proyecto existe y el usuario está vinculado
         $proyecto = Project::where('id', $data['project_id'])->firstOrFail();
 
+        // Se permite registrar productos si el usuario:
+        //  - es autor del proyecto (project_authors), O
+        //  - es el creador del proyecto (project_creator_id)
         $esAutor = ProjectAuthor::where('project_id', $proyecto->id)
             ->where('user_id', $userId)
             ->exists();
+        $esCreador = $proyecto->project_creator_id === $userId;
 
-        if (!$esAutor) {
-            throw new RuntimeException('No puedes registrar productos en este proyecto porque no eres autor del mismo.');
+        if (!($esAutor || $esCreador)) {
+            throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor.');
         }
 
         // 2. Validar que los autores propuestos existan entre los autores del proyecto

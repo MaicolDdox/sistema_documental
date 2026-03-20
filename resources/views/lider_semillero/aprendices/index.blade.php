@@ -20,9 +20,10 @@
     </div>
 </div>
 @else
+<div x-data="{ showVincularId: null }">
 <div class="mb-6">
     <h1 class="text-2xl font-bold text-slate-900">Aprendices</h1>
-    <p class="text-sm text-slate-500 mt-0.5">Aprendices del semillero (solo visualización). El registro lo realiza el asesor.</p>
+    <p class="text-sm text-slate-500 mt-0.5">Aprendices del semillero. Puedes vincularlos a proyectos del semillero.</p>
 </div>
 @if(session('success'))
 <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
@@ -74,6 +75,7 @@
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">▲ Sin proyecto</span>
                         @endif
                     </td>
+                    {{-- Columna de acciones eliminada (no usada) --}}
                 </tr>
                 @empty
                 <tr>
@@ -91,5 +93,47 @@
     </div>
 </div>
 
+{{-- Modal vincular aprendiz a proyecto --}}
+<div x-show="showVincularId" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" aria-modal="true">
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-slate-200"
+         @click.self="showVincularId = null">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h2 class="text-base font-semibold text-slate-900">Vincular aprendiz a proyecto</h2>
+            <button type="button" @click="showVincularId = null" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <form action="{{ route('lider-sem.aprendices.vincular') }}" method="post" class="px-6 py-5 space-y-4">
+            @csrf
+            <input type="hidden" name="user_id" :value="showVincularId">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto del semillero *</label>
+                <select name="project_id" required
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+                    <option value="">Seleccione...</option>
+                    @foreach($proyectosDelSemillero as $p)
+                        <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-xs text-sky-800">
+                El aprendiz quedará como integrante activo de este proyecto (tabla proyecto_autores).
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" @click="showVincularId = null" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">
+                    Cancelar
+                </button>
+                <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">
+                    Vincular
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endif
+{{-- cierre x-data --}}
+</div>
 @endsection

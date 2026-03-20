@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\AsesorSemillero;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
 class StoreAprendizRequest extends FormRequest
@@ -32,8 +34,8 @@ class StoreAprendizRequest extends FormRequest
                 Rule::unique('users', 'numero_documento')->ignore($userId),
             ],
             'genero'               => 'required|in:masculino,femenino,prefiero no decirlo',
-            'celular'              => 'required|numeric|digits_between:7,10',
-            'telefono'             => 'nullable|numeric|digits_between:7,10',
+            'celular'              => 'required|string|max:20',
+            'telefono'             => 'nullable|string|max:20',
             'eps'                  => 'required|string|max:100',
             'email_institucional'  => [
                 'required',
@@ -67,5 +69,22 @@ class StoreAprendizRequest extends FormRequest
             'training_program_id.required' => 'El programa de formación es obligatorio.',
             'training_program_id.exists'   => 'El programa de formación seleccionado no es válido.',
         ];
+    }
+
+    /**
+     * Si la validación falla en una actualización (edición), redirigir al listado
+     * con el parámetro edit para reabrir el modal de edición con los errores.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        $id = $this->route('id');
+        if ($id) {
+            throw new HttpResponseException(
+                redirect()->route('asesor.aprendices.index', ['edit' => $id])
+                    ->withErrors($validator)
+                    ->withInput()
+            );
+        }
+        parent::failedValidation($validator);
     }
 }

@@ -49,11 +49,12 @@ class InvestigadorService
 
             // 3. Crear perfil Person
             Person::create([
-                'user_id'         => $user->id,
-                'primer_nombre'   => $data['primer_nombre'],
-                'segundo_nombre'  => $data['segundo_nombre'] ?? null,
-                'primer_apellido' => $data['primer_apellido'],
-                'segundo_apellido'=> $data['segundo_apellido'] ?? null,
+                'user_id'          => $user->id,
+                'primer_nombre'    => $data['primer_nombre'],
+                'segundo_nombre'   => $data['segundo_nombre'] ?? null,
+                'primer_apellido'  => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'] ?? null,
+                'cvlac_link'       => $data['cvlac_link'] ?? null,
             ]);
 
             // 4. Vincular al grupo en research_group_users

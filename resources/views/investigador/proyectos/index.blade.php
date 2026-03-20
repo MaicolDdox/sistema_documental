@@ -1,18 +1,27 @@
 <x-app-layout>
     <x-slot name="header">Mis Proyectos</x-slot>
 
-    <div class="space-y-4">
+    <div class="space-y-4"
+         x-data="{
+            createOpen: false,
+            createUrl: '{{ route('investigador.proyectos.create') }}?embedded=1',
+            detailOpen: false,
+            detailUrl: '',
+            editOpen: false,
+            editUrl: ''
+         }">
 
         {{-- Toolbar --}}
         <div class="flex items-center justify-between">
             <p class="text-sm text-slate-500">{{ $proyectos->total() }} proyecto(s) registrado(s)</p>
-            <a href="{{ route('investigador.proyectos.create') }}"
+            <button type="button"
+               @click="createOpen = true"
                class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Nuevo proyecto
-            </a>
+            </button>
         </div>
 
         @if(session('success'))
@@ -60,19 +69,21 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2 justify-end">
-                                <a href="{{ route('investigador.proyectos.show', $proyecto) }}"
+                                <button type="button"
+                                   @click="detailUrl = '{{ route('investigador.proyectos.show', $proyecto) }}?embedded=1'; detailOpen = true;"
                                    class="text-slate-400 hover:text-[#39A900] transition-colors" title="Ver detalle">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.641 0-8.574-3.007-9.964-7.178Z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                     </svg>
-                                </a>
-                                <a href="{{ route('investigador.proyectos.edit', $proyecto) }}"
+                                </button>
+                                <button type="button"
+                                   @click="editUrl = '{{ route('investigador.proyectos.edit', $proyecto) }}?embedded=1'; editOpen = true;"
                                    class="text-slate-400 hover:text-[#39A900] transition-colors" title="Editar">
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
                                     </svg>
-                                </a>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -80,7 +91,7 @@
                     <tr>
                         <td colspan="6" class="px-4 py-10 text-center text-slate-400 text-sm">
                             No tienes proyectos creados aún.
-                            <a href="{{ route('investigador.proyectos.create') }}" class="text-[#39A900] font-medium">Crea tu primer proyecto</a>.
+                            <button type="button" @click="createOpen = true" class="text-[#39A900] font-medium">Crea tu primer proyecto</button>.
                         </td>
                     </tr>
                     @endforelse
@@ -89,5 +100,62 @@
         </div>
 
         {{ $proyectos->links() }}
+
+        {{-- Modal creación proyecto (iframe con formulario completo) --}}
+        <div x-show="createOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Nuevo proyecto</h2>
+                    <button type="button" @click="createOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="createUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal detalle proyecto (iframe con vista completa) --}}
+        <div x-show="detailOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Detalle del proyecto</h2>
+                    <button type="button" @click="detailOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="detailUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal editar proyecto (iframe con formulario completo) --}}
+        <div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Editar proyecto</h2>
+                    <button type="button" @click="editOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="editUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>

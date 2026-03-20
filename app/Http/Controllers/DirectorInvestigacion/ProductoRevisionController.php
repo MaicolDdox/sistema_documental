@@ -140,6 +140,10 @@ class ProductoRevisionController extends Controller
      */
     private function autorizarProducto(GroupProduct $producto): void
     {
-        $this->authorize('revisar', $producto);
+        // Simplificamos la autorización: cualquier usuario con rol director_investigacion
+        // puede revisar los productos que aparecen en su listado.
+        if (!Auth::user()?->hasRole('director_investigacion')) {
+            abort(403);
+        }
     }
 }

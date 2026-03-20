@@ -76,8 +76,9 @@ Route::middleware(['auth', 'ensure.active', 'role:investigador_asociado'])
 
         // ── Reportes ──────────────────────────────────────────────────
         Route::prefix('reportes')->name('reportes.')->group(function () {
-            Route::get('/',         [ReporteController::class, 'index'])->name('index');
-            Route::get('/estado',   [ReporteController::class, 'productosPorEstado'])->name('estado');
-            Route::get('/exportar', [ReporteController::class, 'exportar'])->name('exportar');
+            Route::get('/',            [ReporteController::class, 'index'])->name('index');
+            Route::get('/estado',      [ReporteController::class, 'productosPorEstado'])->name('estado');
+            Route::get('/exportar-csv',[ReporteController::class, 'exportarCsv'])->name('exportar.csv');
+            Route::get('/exportar-pdf',[ReporteController::class, 'exportarPdf'])->name('exportar.pdf');
         });
     });

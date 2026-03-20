@@ -109,12 +109,23 @@
                             </td>
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-2">
-                                    <form method="POST" action="#" class="inline" onsubmit="return confirm('¿Aprobar este producto?');">
+                                    {{-- Aprobar directamente desde el panel --}}
+                                    <form method="POST"
+                                          action="{{ route('lider-sem.productos.aprobar', $gp->product_id) }}"
+                                          class="inline"
+                                          onsubmit="return confirm('¿Aprobar este producto?');">
                                         @csrf
+                                        @method('PATCH')
                                         <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors">✓ Aprobar</button>
                                     </form>
-                                    <form method="POST" action="#" class="inline" onsubmit="return confirm('¿Rechazar este producto?');">
+                                    {{-- Rechazar rápido con observación genérica --}}
+                                    <form method="POST"
+                                          action="{{ route('lider-sem.productos.rechazar', $gp->product_id) }}"
+                                          class="inline"
+                                          onsubmit="return confirm('¿Rechazar este producto? Se usará una observación automática.');">
                                         @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="observaciones" value="Rechazado desde el panel del líder de semillero.">
                                         <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors">✕ Rechazar</button>
                                     </form>
                                 </div>
@@ -166,7 +177,11 @@
                                 @else — @endif
                             </td>
                             <td class="px-5 py-3">
-                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Sin proyecto</span>
+                                @if($integrante->tiene_proyecto_activo ?? false)
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Con proyecto activo</span>
+                                @else
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Sin proyecto activo</span>
+                                @endif
                             </td>
                         </tr>
                         @empty

@@ -32,6 +32,11 @@ class EnsureUserIsActive
             ]);
         }
 
+        // Los administradores del sistema no se bloquean por estado del centro de formación
+        if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+            return $next($request);
+        }
+
         // Si el usuario tiene centro asignado y ese centro está desactivado, no puede acceder
         if ($user->training_center_id) {
             $center = $user->trainingCenter;

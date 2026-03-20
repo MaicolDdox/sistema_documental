@@ -11,7 +11,7 @@ use App\Models\ProjectAuthor;
 
 @php
 // Todos los semilleros del asesor (puede tener varios)
-$semilleros = Seedling::whereHas('advisors', function ($q) {
+$semilleros = \App\Models\Seedling::whereHas('advisors', function ($q) {
     $q->where('external_advisors.user_id', auth()->id())
       ->where('seedling_advisors.activo', true);
 })->get();
@@ -19,34 +19,34 @@ $semilleros = Seedling::whereHas('advisors', function ($q) {
 $totalSemilleros = $semilleros->count();
 
 // Proyectos de todos los semilleros
-$allProjectIds = DB::table('project_seedlings')
+$allProjectIds = \Illuminate\Support\Facades\DB::table('project_seedlings')
     ->whereIn('seedling_id', $semilleros->pluck('id'))
     ->pluck('project_id');
 
 $totalProyectos = $allProjectIds->count();
 
 // Aprendices (autores activos en esos proyectos, excluyendo al asesor)
-$totalAprendices = ProjectAuthor::whereIn('project_id', $allProjectIds)
+$totalAprendices = \App\Models\ProjectAuthor::whereIn('project_id', $allProjectIds)
     ->where('activo', true)
     ->where('user_id', '!=', auth()->id())
     ->distinct('user_id')
     ->count('user_id');
 
 // Productos
-$productos = Product::whereIn('project_id', $allProjectIds)->get();
+$productos = \App\Models\Product::whereIn('project_id', $allProjectIds)->get();
 $totalProductos     = $productos->count();
 $pendienteCount     = $productos->where('estado_revision', 'pendiente')->count();
 $aprobadoCount      = $productos->where('estado_revision', 'aprobado')->count();
 $rechazadoCount     = $productos->where('estado_revision', 'rechazado')->count();
 
 // Productos rechazados recientes
-$productosRechazados = Product::whereIn('project_id', $allProjectIds)
+$productosRechazados = \App\Models\Product::whereIn('project_id', $allProjectIds)
     ->where('estado_revision', 'rechazado')
     ->with('project')
     ->latest()->limit(5)->get();
 
 // Proyectos sin aprendices autores
-$proyectosSinIntegrantes = Project::whereIn('id', $allProjectIds)
+$proyectosSinIntegrantes = \App\Models\Project::whereIn('id', $allProjectIds)
     ->whereDoesntHave('projectAuthors', function ($q) {
         $q->where('activo', true)->where('user_id', '!=', auth()->id());
     })->get(['id','nombre']);
@@ -102,7 +102,7 @@ $semillero = $semilleros->first();
 @if($totalSemilleros === 0)
 <div class="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-center gap-3">
     <svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
-    <p class="text-amber-800 text-sm font-medium">No tienes un semillero asignado. Contacta al administrador o director de semilleros.</p>
+    <p class="text-amber-800 text-sm font-medium">Aún no tienes un semillero asignado.</p>
 </div>
 @endif
 
@@ -161,6 +161,63 @@ $semillero = $semilleros->first();
         </div>
     </div>
 
+</div>
+
+{{-- ─── Siguientes pasos sugeridos ───────────────────── --}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+        </div>
+        <div class="space-y-1">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">1. Registra aprendices</p>
+            <p class="text-sm text-slate-600">Crea las fichas de los aprendices que harán parte de tus proyectos.</p>
+            <a href="{{ route('asesor.aprendices.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                Ir a Aprendices
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25C3.75 19.496 4.254 20 4.875 20H15"/>
+            </svg>
+        </div>
+        <div class="space-y-1">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">2. Crea proyectos</p>
+            <p class="text-sm text-slate-600">Registra los proyectos activos de tu semillero y vincula a sus autores.</p>
+            <a href="{{ route('asesor.proyectos.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-800">
+                Ir a Proyectos
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6A2.25 2.25 0 007.39 20.25h9.22a2.25 2.25 0 002.227-1.932l.857-6A2.25 2.25 0 0019.906 9.75M9 13.5h6"/>
+            </svg>
+        </div>
+        <div class="space-y-1">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">3. Registra productos</p>
+            <p class="text-sm text-slate-600">Carga artículos, ponencias u otros productos para enviarlos a revisión.</p>
+            <a href="{{ route('asesor.productos.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800">
+                Ir a Productos
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+    </div>
 </div>
 
 {{-- ─── Gráficas + Alertas ─────────────────────────────── --}}

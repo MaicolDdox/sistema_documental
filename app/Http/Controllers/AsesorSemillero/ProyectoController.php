@@ -6,7 +6,7 @@ use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AsesorSemillero\StoreProyectoRequest;
 use App\Models\InvestigationType;
-use App\Models\MacroProject;
+use App\Models\MacroProjectLinkage;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
 use App\Models\ProjectModality;
@@ -63,7 +63,7 @@ class ProyectoController extends Controller
                 'investigationType',
                 'projectAuthors',
                 'products',
-                'macroProject',
+                'macroProjectLinkages',
             ])->whereIn('id', $projectIds);
 
             if ($request->filled('buscar')) {
@@ -88,13 +88,9 @@ class ProyectoController extends Controller
         $areasTematicas   = ThematicArea::orderBy('nombre')->get();
         $modalidades      = ProjectModality::orderBy('nombre')->get();
         $tiposInves       = InvestigationType::orderBy('nombre')->get();
-        $macroProyectos   = MacroProject::where('research_group_id', $semillero->research_group_id)
-            ->where('estado', 'activo')
-            ->orderBy('nombre')
-            ->get();
 
         return view('asesor_semillero.proyectos.create', compact(
-            'semillero', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves', 'macroProyectos'
+            'semillero', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves'
         ));
     }
 
@@ -111,23 +107,23 @@ class ProyectoController extends Controller
 
         $validated = $request->validated();
 
+        // Validar macroproyecto si aplica
         if ($validated['tiene_macroproyecto']) {
-            $request->validate([
-                'macro_project_id' => [
-                    'required',
-                    function ($attribute, $value, $fail) use ($semillero) {
-                        $exists = MacroProject::where('id', $value)
-                            ->where('research_group_id', $semillero->research_group_id)
-                            ->exists();
-                        if (!$exists) {
-                            $fail('El macroproyecto seleccionado no es válido para el grupo de investigación de este semillero.');
-                        }
-                    },
-                ],
-            ]);
+            $researchGroupId = $semillero->research_group_id;
+            $macroExiste = DB::table('project_groups')
+                ->join('projects', 'projects.id', '=', 'project_groups.project_id')
+                ->where('project_groups.research_group_id', $researchGroupId)
+                ->where('projects.nombre', 'like', '%' . $validated['codigo_macro'] . '%')
+                ->exists();
+
+            if (!$macroExiste) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['codigo_macro' => 'El macroproyecto ingresado no está registrado en el grupo de investigación asociado a este semillero.']);
+            }
         }
 
-        DB::transaction(function () use ($validated, $semillero, $request) {
+        DB::transaction(function () use ($validated, $semillero) {
             // 1. Crear el proyecto
             $proyecto = Project::create([
                 'project_creator_id'    => Auth::id(),
@@ -160,6 +156,16 @@ class ProyectoController extends Controller
                 'user_id'    => Auth::id(),
                 'activo'     => true,
             ]);
+
+            // 4. Si tiene macroproyecto, insertar en macro_project_linkages
+            if ($validated['tiene_macroproyecto']) {
+                MacroProjectLinkage::create([
+                    'project_id'       => $proyecto->id,
+                    'research_group_id' => $semillero->research_group_id,
+                    'codigo'           => $validated['codigo_macro'],
+                    'nombre'           => $validated['nombre_macro'],
+                ]);
+            }
         });
 
         return redirect()->route('asesor.proyectos.index')
@@ -178,7 +184,7 @@ class ProyectoController extends Controller
         $autores   = ProjectAuthor::with('user.person')->where('project_id', $id)->where('activo', true)->get();
         $productos = $proyecto->products()->with('groupProducts.mincienciasTypology')->get();
         $evidencias = $proyecto->projectEvidences()->latest()->get();
-        $macro     = $proyecto->macroProject;
+        $macro     = $proyecto->macroProjectLinkages()->first();
 
         return view('asesor_semillero.proyectos.show', compact(
             'proyecto', 'autores', 'productos', 'evidencias', 'macro', 'semillero'
@@ -197,13 +203,10 @@ class ProyectoController extends Controller
         $lineasTec      = TechnologicalLine::orderBy('nombre')->get();
         $areasTematicas = ThematicArea::orderBy('nombre')->get();
         $modalidades    = ProjectModality::orderBy('nombre')->get();
-        $macroProyectos = MacroProject::where('research_group_id', $semillero->research_group_id)
-            ->where('estado', 'activo')
-            ->orderBy('nombre')
-            ->get();
+        $macro          = $proyecto->macroProjectLinkages()->first();
 
         return view('asesor_semillero.proyectos.edit', compact(
-            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macroProyectos'
+            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macro'
         ));
     }
 
@@ -217,7 +220,7 @@ class ProyectoController extends Controller
         $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
         $validated = $request->validated();
 
-        DB::transaction(function () use ($proyecto, $validated, $semillero, $request) {
+        DB::transaction(function () use ($proyecto, $validated, $semillero) {
             // Actualizar proyecto — SE IGNORA investigation_type_id (bloqueado post-creación)
             $proyecto->update([
                 'research_line_id'      => $validated['research_line_id'],
@@ -232,10 +235,53 @@ class ProyectoController extends Controller
                 'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
                 'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
             ]);
+
+            // Actualizar macroproyecto
+            if ($validated['tiene_macroproyecto']) {
+                MacroProjectLinkage::updateOrCreate(
+                    ['project_id' => $proyecto->id],
+                    [
+                        'research_group_id' => $semillero->research_group_id,
+                        'codigo'            => $validated['codigo_macro'],
+                        'nombre'            => $validated['nombre_macro'],
+                    ]
+                );
+            } else {
+                MacroProjectLinkage::where('project_id', $proyecto->id)->delete();
+            }
         });
 
         return redirect()->route('asesor.proyectos.show', $proyecto->id)
             ->with('success', 'Proyecto actualizado correctamente.');
+    }
+
+    /**
+     * Permiso: proyectos.editar
+     * Elimina completamente el proyecto y sus vinculaciones al semillero del asesor.
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        $semillero = $this->getSemilleroDelAsesor();
+        $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
+
+        DB::transaction(function () use ($proyecto) {
+            DB::table('project_seedlings')
+                ->where('project_id', $proyecto->id)
+                ->delete();
+
+            ProjectAuthor::where('project_id', $proyecto->id)->delete();
+            MacroProjectLinkage::where('project_id', $proyecto->id)->delete();
+
+            // Si existen relaciones definidas en el modelo Project (productos, evidencias, etc.)
+            // y tienen claves foráneas, conviene borrarlas también para evitar errores de integridad.
+            $proyecto->products()->delete();
+            $proyecto->projectEvidences()->delete();
+
+            $proyecto->delete();
+        });
+
+        return redirect()->route('asesor.proyectos.index')
+            ->with('success', 'Proyecto eliminado correctamente.');
     }
 
     /**

@@ -7,6 +7,9 @@ use App\Models\User;
 use App\Models\TrainingCenter;
 use App\Models\ResearchGroup;
 use App\Models\ResearchGroupUser;
+use App\Models\Seedling;
+use App\Models\ExternalAdvisor;
+use App\Models\SeedlingAdvisor;
 use App\Enums\RolGrupoEnum;
 use Illuminate\Support\Facades\Hash;
 
@@ -144,6 +147,32 @@ class UserSeeder extends Seeder
             ResearchGroupUser::firstOrCreate(
                 ['research_group_id' => $grupos->first()->id, 'user_id' => $investigador->id],
                 ['rol' => RolGrupoEnum::InvestigadorAsociado]
+            );
+        }
+
+        // Vincular asesor de semillero al único semillero existente
+        $asesorSem = User::where('email', 'asesorsem@sena.edu.co')->first();
+        $semilleroUnico = Seedling::first();
+        if ($asesorSem && $semilleroUnico) {
+            // Crear (o reutilizar) registro de asesor externo ligado a este usuario
+            $external = ExternalAdvisor::firstOrCreate(
+                ['user_id' => $asesorSem->id],
+                [
+                    'nombre_completo' => $asesorSem->person?->primer_nombre
+                        ? trim($asesorSem->person->primer_nombre . ' ' . $asesorSem->person->primer_apellido)
+                        : $asesorSem->email,
+                    'email'           => $asesorSem->email,
+                    'telefono'        => '',
+                    'institucion'     => 'SENA',
+                ]
+            );
+
+            SeedlingAdvisor::firstOrCreate(
+                [
+                    'seedling_id'        => $semilleroUnico->id,
+                    'external_advisor_id'=> $external->id,
+                ],
+                ['activo' => true]
             );
         }
 

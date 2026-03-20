@@ -1,6 +1,16 @@
 <x-app-layout>
     <x-slot name="header">{{ $groupProduct ? 'Corregir Producto' : 'Registrar Producto' }}</x-slot>
 
+    {{-- Si el formulario está embebido en un modal (iframe) y la operación fue exitosa,
+         recargamos la ventana padre para cerrar el modal y actualizar la lista. --}}
+    @if(request()->boolean('embedded') && session('success'))
+        <script>
+            if (window.parent && window.parent !== window) {
+                window.parent.location.reload();
+            }
+        </script>
+    @endif
+
     <div class="max-w-3xl">
 
         @if(session('success'))

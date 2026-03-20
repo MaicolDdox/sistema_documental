@@ -1,19 +1,26 @@
 <x-app-layout>
     <x-slot name="header">Catálogo de Macroproyectos</x-slot>
 
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Macroproyectos</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Gestiona los macroproyectos asociados al grupo de investigación.</p>
+    <div x-data="{
+            createOpen: false,
+            createUrl: '{{ route('director.macroproyectos.create') }}?embedded=1',
+            detailOpen: false,
+            detailUrl: ''
+        }">
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Macroproyectos</h1>
+                <p class="text-sm text-slate-500 mt-0.5">Gestiona los macroproyectos asociados al grupo de investigación.</p>
+            </div>
+            <button type="button"
+               @click="createOpen = true"
+               class="sgd-btn-primary px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 w-max">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                </svg>
+                Nuevo Macroproyecto
+            </button>
         </div>
-        <a href="{{ route('director.macroproyectos.create') }}"
-           class="sgd-btn-primary px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 w-max">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-            </svg>
-            Nuevo Macroproyecto
-        </a>
-    </div>
 
     @if(session('success'))
         <div class="mb-6 bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm flex items-start gap-3">
@@ -79,18 +86,63 @@
                         </td>
                         <td class="px-5 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('director.macroproyectos.edit', $mp) }}"
-                                   class="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-md transition-colors" title="Editar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                </a>
+                                {{-- Detalles (modal) --}}
+                                <button type="button"
+                                   @click="detailUrl = '{{ route('director.macroproyectos.edit', $mp) }}?embedded=1'; detailOpen = true;"
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition"
+                                   title="Detalles">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.651-1.651a1.875 1.875 0 112.653 2.653L10.582 16.072a4.5 4.5 0 01-1.897 1.13L6 18l.798-2.685a4.5 4.5 0 011.13-1.897l8.934-8.931z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5h15" />
+                                    </svg>
+                                </button>
+
+                                {{-- Activar / Desactivar --}}
+                                @if($mp->estado->value === 'activo')
+                                    <form method="POST"
+                                          action="{{ route('director.macroproyectos.desactivar', $mp) }}"
+                                          class="inline-block"
+                                          onsubmit="return confirm('¿Desactivar este macroproyecto?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-900 transition"
+                                                title="Desactivar">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5v9m10.5-9v9" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form method="POST"
+                                          action="{{ route('director.macroproyectos.activar', $mp) }}"
+                                          class="inline-block"
+                                          onsubmit="return confirm('¿Activar este macroproyecto?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 transition"
+                                                title="Activar">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15.75l7.5-7.5m0 0H9.75m6 0v6" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @endif
+
+                                {{-- Eliminar (solo sin proyectos vinculados) --}}
                                 @if($mp->projects_count === 0)
-                                <form method="POST" action="{{ route('director.macroproyectos.destroy', $mp) }}" class="inline-block"
-                                      onsubmit="return confirm('¿Seguro que deseas eliminar este macroproyecto de forma permanente?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-1.5 rounded-md transition-colors" title="Eliminar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                    </button>
-                                </form>
+                                    <form method="POST" action="{{ route('director.macroproyectos.destroy', $mp) }}" class="inline-block"
+                                          onsubmit="return confirm('¿Seguro que deseas eliminar este macroproyecto de forma permanente?');">
+                                        @csrf @method('DELETE')
+                                        <button type="submit"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition"
+                                                title="Eliminar">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </form>
                                 @endif
                             </div>
                         </td>
@@ -119,5 +171,44 @@
             {{ $macroproyectos->links() }}
         </div>
         @endif
+    </div>
+
+        {{-- Modal creación de macroproyecto (iframe con formulario completo) --}}
+        <div x-show="createOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Nuevo Macroproyecto</h2>
+                    <button type="button" @click="createOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="createUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal detalles / edición de macroproyecto --}}
+        <div x-show="detailOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">Detalles del Macroproyecto</h2>
+                    <button type="button" @click="detailOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="w-full h-[80vh]">
+                    <iframe
+                        :src="detailUrl"
+                        class="w-full h-full border-0"
+                        loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>
