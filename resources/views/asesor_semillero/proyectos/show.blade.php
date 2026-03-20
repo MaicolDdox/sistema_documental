@@ -130,17 +130,7 @@
                             @if($gp->estado_revision?->value === 'aprobado') bg-green-100 text-green-700
                             @elseif($gp->estado_revision?->value === 'rechazado') bg-red-100 text-red-700
                             @else bg-slate-100 text-slate-600 @endif">
-                            @php
-                                $estadoValor = $gp->estado_revision?->value;
-                                $estadoLabel = match($estadoValor) {
-                                    'aprobado' => 'Aprobado',
-                                    'rechazado' => 'Rechazado',
-                                    'en_revision' => 'En revisión',
-                                    'pendiente' => 'Pendiente',
-                                    default => 'Pendiente',
-                                };
-                            @endphp
-                            {{ $estadoLabel }}
+                            {{ $gp->estado_revision?->label() ?? 'Pendiente' }}
                         </span>
                         @endif
                     </div>

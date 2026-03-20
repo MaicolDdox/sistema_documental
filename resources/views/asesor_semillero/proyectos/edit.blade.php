@@ -121,18 +121,18 @@
                     </label>
                     <span class="text-sm text-slate-700">¿Vinculado a macroproyecto?</span>
                 </div>
-                <div x-show="tienesMacro" class="grid grid-cols-1 sm:grid-cols-2 gap-4" style="{{ $proyecto->vinculacion_macro_proyecto ? '' : 'display:none' }}">
+                <div x-show="tienesMacro" class="grid grid-cols-1 gap-4" style="{{ $proyecto->vinculacion_macro_proyecto ? '' : 'display:none' }}">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Código del macroproyecto <span class="text-red-500">*</span></label>
-                        <input type="text" name="codigo_macro" value="{{ old('codigo_macro', $macro?->codigo) }}"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('codigo_macro') border-red-400 @enderror">
-                        @error('codigo_macro') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del macroproyecto <span class="text-red-500">*</span></label>
-                        <input type="text" name="nombre_macro" value="{{ old('nombre_macro', $macro?->nombre) }}"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('nombre_macro') border-red-400 @enderror">
-                        @error('nombre_macro') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Seleccionar Macroproyecto <span class="text-red-500">*</span></label>
+                        <select name="macro_project_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('macro_project_id') border-red-400 @enderror">
+                            <option value="">Seleccione un macroproyecto...</option>
+                            @foreach($macroProyectos as $mp)
+                                <option value="{{ $mp->id }}" {{ old('macro_project_id', $proyecto->macro_project_id) == $mp->id ? 'selected' : '' }}>
+                                    [{{ $mp->codigo }}] {{ $mp->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('macro_project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
             </div>
