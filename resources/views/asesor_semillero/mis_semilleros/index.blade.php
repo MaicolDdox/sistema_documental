@@ -120,7 +120,7 @@
                     @if($sem->leader)
                     <span class="text-xs text-slate-500 flex items-center gap-1">
                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                        Líder: {{ $sem->leader->person?->primer_nombre }} {{ $sem->leader->person?->primer_apellido }}
+                        Líder: {{ $sem->leader->person ? trim($sem->leader->person->primer_nombre . ' ' . $sem->leader->person->primer_apellido) : ($sem->leader->name ?? $sem->leader->email ?? 'Desconocido') }}
                     </span>
                     @endif
                     <span class="text-xs text-slate-500">

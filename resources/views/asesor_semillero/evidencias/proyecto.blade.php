@@ -66,8 +66,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-shrink-0">
-                    @if($ev->url_archivo || $ev->archivo)
-                    <a href="{{ $ev->url_archivo ?? Storage::url($ev->archivo) }}" target="_blank"
+                    @if($ev->archivo)
+                    <a href="{{ asset('storage/' . $ev->archivo) }}" target="_blank"
                        class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
                         Ver
                     </a>

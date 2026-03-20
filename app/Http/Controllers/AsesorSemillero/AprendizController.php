@@ -43,10 +43,6 @@ class AprendizController extends Controller
     {
         $semillero = $this->getSemilleroDelAsesor();
         $aprendices = collect();
-        $editAprendiz = null;
-        $cargos = collect();
-        $tiposVinculacion = collect();
-        $programasFormacion = collect();
 
         if ($semillero) {
             $query = $semillero->members()
@@ -72,23 +68,20 @@ class AprendizController extends Controller
             $aprendices = $query->paginate(10)->withQueryString();
         }
 
-        return view('asesor_semillero.aprendices.index', compact(
-            'semillero',
-            'aprendices',
-            'cargos',
-            'tiposVinculacion',
-            'programasFormacion',
-            'editAprendiz'
-        ));
+        return view('asesor_semillero.aprendices.index', compact('semillero', 'aprendices'));
     }
 
     /**
      * Permiso: aprendices.registrar
-     * Redirige al listado abriendo el modal de creación.
+     * Muestra el formulario de registro de aprendiz.
      */
-    public function create(): RedirectResponse
+    public function create(): View
     {
-        return redirect()->route('asesor.aprendices.index', ['registrar' => 1]);
+        $cargos        = EntityPosition::all()->groupBy('descripccion');
+        $tiposVinculacion = LinkageType::orderBy('nombre')->get();
+        $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
+
+        return view('asesor_semillero.aprendices.create', compact('cargos', 'tiposVinculacion', 'programasFormacion'));
     }
 
     /**
@@ -205,22 +198,6 @@ class AprendizController extends Controller
 
         return redirect()->route('asesor.aprendices.index')
             ->with('success', 'Aprendiz actualizado correctamente.');
-    }
-
-    /**
-     * Permiso: aprendices.editar
-     * Elimina al aprendiz del semillero (desvincula el usuario del seedling).
-     */
-    public function destroy(int $id): RedirectResponse
-    {
-        $semillero = $this->getSemilleroDelAsesor();
-        $aprendiz  = $this->findAprendizEnSemillero($id, $semillero);
-
-        // Solo se elimina la vinculación con el semillero, no el usuario del sistema.
-        $semillero->members()->detach($aprendiz->id);
-
-        return redirect()->route('asesor.aprendices.index')
-            ->with('success', 'Aprendiz eliminado del semillero correctamente.');
     }
 
     /**
