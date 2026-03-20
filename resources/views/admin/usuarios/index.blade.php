@@ -62,7 +62,9 @@
         <div class="space-y-4">
             @forelse($usuarios as $user)
             @php
-                $nombreCompleto = $user->person ? $user->person->nombre_completo : 'Sin nombre';
+                $nombreCompleto = $user->person && trim($user->person->nombre_completo) !== ''
+                    ? $user->person->nombre_completo
+                    : ($user->email ?? 'Sin nombre');
                 $docLabel = $user->tipo_documento?->value ?? '—';
                 $cargoLabel = $user->person?->entityPosition?->nombre ?? ($user->roles->first() ? ucfirst(str_replace('_', ' ', $user->roles->first()->name)) : '—');
                 $estadoActivo = $user->estado?->value === 'activo';

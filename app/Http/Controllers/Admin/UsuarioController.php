@@ -186,20 +186,27 @@ class UsuarioController extends Controller
             'rol'              => 'nullable|exists:roles,name',
         ]);
 
+        // Separar nombre y apellido en primer/segundo (para tabla people)
+        [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
+        [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
+
         $user = User::create([
             'training_center_id' => auth()->user()->training_center_id,
             'email'              => $validated['email'],
             'numero_documento'   => $validated['numero_documento'],
-            'tipo_documento'     => 'CC', // Default, assuming CC. Can be updated if form has it
+            // Usamos el valor del enum por defecto: cédula de ciudadanía
+            'tipo_documento'     => \App\Enums\TipoDocumentoEnum::CedulaCiudadana->value,
             'password'           => Hash::make($validated['password']),
             'estado'             => EstadoEnum::Activo,
         ]);
 
-        // Guardar Persona
+        // Guardar Persona (perfil mínimo; otros campos podrán completarse luego)
         Person::create([
-            'user_id'         => $user->id,
-            'primer_nombre'   => $validated['nombre'],
-            'primer_apellido' => $validated['apellido'],
+            'user_id'             => $user->id,
+            'primer_nombre'       => $primerNombre,
+            'segundo_nombre'      => $segundoNombre,
+            'primer_apellido'     => $primerApellido,
+            'segundo_apellido'    => $segundoApellido,
             'email_institucional' => $validated['email'],
         ]);
 
@@ -250,6 +257,10 @@ class UsuarioController extends Controller
             'rol'              => 'required|exists:roles,name',
         ]);
 
+        // Separar nombre y apellido en primer/segundo
+        [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
+        [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
+
         $usuario->update([
             'email'            => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
@@ -258,21 +269,23 @@ class UsuarioController extends Controller
         // Actualizar Persona
         if ($usuario->person) {
             $usuario->person->update([
-                'primer_nombre'   => $validated['nombre'],
-                'primer_apellido' => $validated['apellido'],
+                'primer_nombre'       => $primerNombre,
+                'segundo_nombre'      => $segundoNombre,
+                'primer_apellido'     => $primerApellido,
+                'segundo_apellido'    => $segundoApellido,
                 'email_institucional' => $validated['email'],
             ]);
         } else {
             Person::create([
                 'user_id'              => $usuario->id,
-                'primer_nombre'        => $validated['nombre'],
-                'primer_apellido'      => $validated['apellido'],
+                'primer_nombre'        => $primerNombre,
+                'segundo_nombre'       => $segundoNombre,
+                'primer_apellido'      => $primerApellido,
+                'segundo_apellido'     => $segundoApellido,
                 'email_institucional'  => $validated['email'],
                 'entity_position_id'   => \App\Models\EntityPosition::first()?->id,
                 'linkage_type_id'      => \App\Models\LinkageType::first()?->id,
                 'training_program_id'  => \App\Models\TrainingProgram::first()?->id,
-                'segundo_nombre'       => null,
-                'segundo_apellido'     => '',
                 'genero'               => 'prefiero no decirlo',
                 'celular'              => 0,
                 'eps'                  => '',
@@ -284,6 +297,23 @@ class UsuarioController extends Controller
 
         return redirect()->route('admin.usuarios.index')
                          ->with('success', 'Usuario actualizado correctamente.');
+    }
+
+    /**
+     * Separa un nombre/apellido completo en primer y segundo componente.
+     * Ej: "Juan Carlos" => ["Juan", "Carlos"], "Pérez" => ["Pérez", null]
+     */
+    private function splitNombreCompleto(string $valor): array
+    {
+        $valor = trim(preg_replace('/\s+/', ' ', $valor));
+        if ($valor === '') {
+            // Devolvemos cadenas vacías para evitar problemas con columnas NOT NULL
+            return ['', ''];
+        }
+        $partes = explode(' ', $valor, 2);
+        $primer = $partes[0] ?? '';
+        $segundo = $partes[1] ?? '';
+        return [$primer, $segundo];
     }
 
     /**
