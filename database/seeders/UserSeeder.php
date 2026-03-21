@@ -46,7 +46,8 @@ class UserSeeder extends Seeder
                 'estado' => 'activo',
             ],
             [
-                'training_center_id' => $centroIndustria->id,
+                // Director semilleros del Centro de Formación Agroindustrial (Campoalegre / sede distinta a Industria-Neiva)
+                'training_center_id' => $centroAgroindustrial->id,
                 'email' => 'dirsemillero@sena.edu.co',
                 'tipo_documento' => 'cedula ciudadana',
                 'numero_documento' => 52345678,
@@ -71,7 +72,8 @@ class UserSeeder extends Seeder
             ],
             // Directores de Grupo de Investigación (datos de prueba)
             [
-                'training_center_id' => $centroAgroindustrial->id,
+                // Director de investigación del grupo GIDESTH Industria (centro Neiva / 9527)
+                'training_center_id' => $centroIndustria->id,
                 'email' => 'dirgrupo1@sena.edu.co',
                 'tipo_documento' => 'cedula ciudadana',
                 'numero_documento' => 11111111,
@@ -79,7 +81,8 @@ class UserSeeder extends Seeder
                 'estado' => 'activo',
             ],
             [
-                'training_center_id' => $centroIndustria->id,
+                // Director de investigación del grupo GIDESTH Agroindustrial (centro Campoalegre / 9116)
+                'training_center_id' => $centroAgroindustrial->id,
                 'email' => 'dirgrupo2@sena.edu.co',
                 'tipo_documento' => 'cedula ciudadana',
                 'numero_documento' => 22222222,
@@ -95,6 +98,15 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('Password123!'),
                 'estado' => 'activo',
             ],
+            // Super administrador (vista global / todos los permisos web)
+            [
+                'training_center_id' => $centroAgroindustrial->id,
+                'email' => 'superadmin@sena.edu.co',
+                'tipo_documento' => 'cedula ciudadana',
+                'numero_documento' => 900000001,
+                'password' => Hash::make('Password123!'),
+                'estado' => 'activo',
+            ],
         ];
 
         $rolesByEmail = [
@@ -107,6 +119,7 @@ class UserSeeder extends Seeder
             'dirgrupo1@sena.edu.co' => 'director_investigacion',
             'dirgrupo2@sena.edu.co' => 'director_investigacion',
             'investigador@sena.edu.co' => 'investigador_asociado',
+            'superadmin@sena.edu.co' => 'super_administrador',
         ];
 
         foreach ($users as $userData) {
@@ -116,36 +129,51 @@ class UserSeeder extends Seeder
             );
 
             if (isset($rolesByEmail[$user->email])) {
-                $user->assignRole($rolesByEmail[$user->email]);
+                $rol = $rolesByEmail[$user->email];
+                if ($rol === 'super_administrador') {
+                    $user->syncRoles(['super_administrador']);
+                } else {
+                    $user->assignRole($rol);
+                }
             }
         }
+
+        // firstOrCreate no actualiza sede si el usuario ya existía: alinear centros de prueba
+        User::where('email', 'dirsemillero@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
+        User::where('email', 'dirgrupo1@sena.edu.co')->update(['training_center_id' => $centroIndustria->id]);
+        User::where('email', 'dirgrupo2@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
 
         // Vincular directores de investigación a sus grupos en research_group_users
         $dirGrupo1 = User::where('email', 'dirgrupo1@sena.edu.co')->first();
         $dirGrupo2 = User::where('email', 'dirgrupo2@sena.edu.co')->first();
 
-        // Obtener los dos grupos de investigación (primero = Agroindustrial, segundo = Industria)
-        $grupos = ResearchGroup::orderBy('id')->take(2)->get();
+        // Grupos: típicamente id menor = Agroindustrial (9116), id mayor = Industria (9527)
+        $grupoAgro = ResearchGroup::where('codigo', 9116)->first()
+            ?? ResearchGroup::orderBy('id')->first();
+        $grupoIndustria = ResearchGroup::where('codigo', 9527)->first()
+            ?? ResearchGroup::orderByDesc('id')->first();
 
-        if ($dirGrupo1 && $grupos->isNotEmpty()) {
+        if ($dirGrupo1 && $grupoIndustria) {
+            ResearchGroupUser::where('user_id', $dirGrupo1->id)->delete();
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->first()->id, 'user_id' => $dirGrupo1->id],
+                ['research_group_id' => $grupoIndustria->id, 'user_id' => $dirGrupo1->id],
                 ['rol' => RolGrupoEnum::Director]
             );
         }
 
-        if ($dirGrupo2 && $grupos->count() >= 2) {
+        if ($dirGrupo2 && $grupoAgro) {
+            ResearchGroupUser::where('user_id', $dirGrupo2->id)->delete();
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->last()->id, 'user_id' => $dirGrupo2->id],
+                ['research_group_id' => $grupoAgro->id, 'user_id' => $dirGrupo2->id],
                 ['rol' => RolGrupoEnum::Director]
             );
         }
 
-        // Vincular investigador asociado de prueba al grupo 1
+        // Vincular investigador asociado de prueba al grupo Agroindustrial
         $investigador = User::where('email', 'investigador@sena.edu.co')->first();
-        if ($investigador && $grupos->isNotEmpty()) {
+        if ($investigador && $grupoAgro) {
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->first()->id, 'user_id' => $investigador->id],
+                ['research_group_id' => $grupoAgro->id, 'user_id' => $investigador->id],
                 ['rol' => RolGrupoEnum::InvestigadorAsociado]
             );
         }
@@ -183,8 +211,9 @@ class UserSeeder extends Seeder
         $this->command->info('   dirsemillero@sena.edu.co   → Password123! (director semilleros)');
         $this->command->info('   lidersem@sena.edu.co       → Password123! (líder de semillero)');
         $this->command->info('   asesorsem@sena.edu.co      → Password123! (asesor de semillero)');
-        $this->command->info('   dirgrupo1@sena.edu.co      → Password123! (director investigación - grupo 1)');
-        $this->command->info('   dirgrupo2@sena.edu.co      → Password123! (director investigación - grupo 2)');
+        $this->command->info('   dirgrupo1@sena.edu.co      → Password123! (director inv. — grupo Industria 9527)');
+        $this->command->info('   dirgrupo2@sena.edu.co      → Password123! (director inv. — grupo Agroindustrial 9116)');
         $this->command->info('   investigador@sena.edu.co   → Password123! (investigador asociado - grupo 1)');
+        $this->command->info('   superadmin@sena.edu.co     → Password123! (super administrador — CC 900000001)');
     }
 }

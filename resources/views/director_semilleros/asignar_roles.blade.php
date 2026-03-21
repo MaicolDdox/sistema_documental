@@ -11,7 +11,7 @@
 </nav>
 
 <h2 class="text-xl font-bold text-slate-900 mb-1">Asignación de Roles</h2>
-<p class="text-sm text-slate-500 mb-6">Vista reutilizada del administrador — opciones filtradas por @@can del rol actual.</p>
+<p class="text-sm text-slate-500 mb-6">Solo usuarios del centro <strong class="font-medium text-slate-600">sin rol</strong> y que no sean aprendices registrados por un asesor (integrantes inactivos del semillero). Los creados por administrador o por el director (p. ej. desde “Líderes”) sí pueden aparecer.</p>
 
 @if(session('success'))
 <div class="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">{{ session('success') }}</div>
@@ -27,6 +27,7 @@
                 <div class="space-y-4">
                     <div>
                         <label for="user_id" class="block text-sm font-medium text-slate-700 mb-1.5">Usuario sin rol asignado</label>
+                        <p class="text-xs text-slate-500 mb-2">No se listan aprendices dados de alta por el asesor en el semillero.</p>
                         <select name="user_id" id="user_id" required
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20 transition-all @error('user_id') border-red-300 @enderror">
                             <option value="">Seleccionar usuario...</option>

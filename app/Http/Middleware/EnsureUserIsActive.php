@@ -33,7 +33,7 @@ class EnsureUserIsActive
         }
 
         // Los administradores del sistema no se bloquean por estado del centro de formación
-        if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+        if ($user->hasAnyRole(['super_administrador', 'administrador_sistema', 'admin'])) {
             return $next($request);
         }
 

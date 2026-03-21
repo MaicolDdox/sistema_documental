@@ -39,13 +39,21 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Centro de formación</label>
-                <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm">
-                    <option value="">Sin centro</option>
-                    @foreach($trainingCenters as $center)
-                        <option value="{{ $center->id }}">{{ $center->nombre }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Centro de formación @if($centerSelectReadonly)<span class="text-slate-400 font-normal">(asignado)</span>@endif</label>
+                @if($centerSelectReadonly)
+                    <p class="text-sm text-slate-700 py-2 px-3 rounded-lg border border-slate-200 bg-slate-50">{{ $trainingCenters->first()?->nombre ?? '—' }}</p>
+                    <input type="hidden" wire:model="training_center_id" />
+                @else
+                    <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm">
+                        <option value="">Sin centro</option>
+                        @foreach($trainingCenters as $center)
+                            <option value="{{ $center->id }}">{{ $center->nombre }}</option>
+                        @endforeach
+                    </select>
+                    @if($role === 'administrador_sistema')
+                        <p class="text-xs text-amber-700 mt-1">Obligatorio mientras el usuario tenga rol administrador del sistema.</p>
+                    @endif
+                @endif
             </div>
         </fieldset>
 
@@ -74,14 +82,15 @@
             </div>
         </fieldset>
 
-        {{-- Rol --}}
+        {{-- Rol principal: no se eliminan otros roles; solo se asegura el elegido (ver UserEdit::update). --}}
         <fieldset class="space-y-4">
-            <legend class="text-lg font-semibold text-slate-800 mb-2">Rol del Sistema</legend>
+            <legend class="text-lg font-semibold text-slate-800 mb-2">Rol del sistema</legend>
             <select wire:model="role" required class="w-full rounded-lg border-slate-300 text-sm">
                 @foreach($roles as $r)
                     <option value="{{ $r->name }}">{{ ucfirst(str_replace('_', ' ', $r->name)) }}</option>
                 @endforeach
             </select>
+            <p class="text-xs text-slate-500">Los demás roles asignados se mantienen. Este es tu <span class="font-medium">rol principal</span> (menú e inicio de sesión). Solo se agrega el rol si aún no lo tenía.</p>
         </fieldset>
 
         <div class="flex items-center gap-4 pt-4">

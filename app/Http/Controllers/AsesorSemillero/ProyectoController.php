@@ -13,6 +13,7 @@ use App\Models\ProjectModality;
 use App\Models\ResearchLine;
 use App\Models\Seedling;
 use App\Models\TechnologicalLine;
+use App\Support\AsesorSemilleroContext;
 use App\Models\ThematicArea;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,7 +50,7 @@ class ProyectoController extends Controller
      */
     public function index(Request $request): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $semillero = $this->getSemilleroActivo();
         $proyectos = collect();
 
         if ($semillero) {
@@ -82,7 +83,10 @@ class ProyectoController extends Controller
      */
     public function create(): View
     {
-        $semillero        = $this->getSemilleroDelAsesor();
+        $semillero        = $this->getSemilleroActivo();
+        if (! $semillero) {
+            abort(403, 'No tienes un semillero asignado.');
+        }
         $lineasInves      = ResearchLine::orderBy('nombre')->get();
         $lineasTec        = TechnologicalLine::orderBy('nombre')->get();
         $areasTematicas   = ThematicArea::orderBy('nombre')->get();
@@ -104,7 +108,7 @@ class ProyectoController extends Controller
      */
     public function store(StoreProyectoRequest $request): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $semillero = $this->getSemilleroActivo();
         if (!$semillero) {
             return redirect()->back()->with('error', 'No tienes un semillero asignado.');
         }
@@ -172,8 +176,11 @@ class ProyectoController extends Controller
      */
     public function show(int $id): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $proyecto  = $this->findProyectoDelAsesor($id);
 
         $autores   = ProjectAuthor::with('user.person')->where('project_id', $id)->where('activo', true)->get();
         $productos = $proyecto->products()->with('groupProducts.mincienciasTypology')->get();
@@ -191,8 +198,11 @@ class ProyectoController extends Controller
      */
     public function edit(int $id): View
     {
-        $semillero      = $this->getSemilleroDelAsesor();
-        $proyecto       = $this->findProyectoDelSemillero($id, $semillero);
+        $semillero      = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $proyecto       = $this->findProyectoDelAsesor($id);
         $lineasInves    = ResearchLine::orderBy('nombre')->get();
         $lineasTec      = TechnologicalLine::orderBy('nombre')->get();
         $areasTematicas = ThematicArea::orderBy('nombre')->get();
@@ -213,8 +223,11 @@ class ProyectoController extends Controller
      */
     public function update(StoreProyectoRequest $request, int $id): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $proyecto  = $this->findProyectoDelAsesor($id);
         $validated = $request->validated();
 
         DB::transaction(function () use ($proyecto, $validated, $semillero, $request) {
@@ -244,8 +257,11 @@ class ProyectoController extends Controller
      */
     public function integrantes(int $id): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $proyecto  = $this->findProyectoDelAsesor($id);
 
         // Autores actuales del proyecto
         $autoresActuales = ProjectAuthor::with('user.person')
@@ -286,8 +302,11 @@ class ProyectoController extends Controller
     {
         $request->validate(['user_id' => 'required|exists:users,id']);
 
-        $semillero = $this->getSemilleroDelAsesor();
-        $proyecto  = $this->findProyectoDelSemillero($id, $semillero);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $proyecto  = $this->findProyectoDelAsesor($id);
 
         // Verificar que el usuario es miembro del semillero
         if (!$semillero->members()->where('users.id', $request->user_id)->exists()) {
@@ -309,8 +328,11 @@ class ProyectoController extends Controller
      */
     public function desvincularIntegrante(Request $request, int $id, int $user_id): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        $this->findProyectoDelSemillero($id, $semillero);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
+        if (! $semillero) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+        $this->findProyectoDelAsesor($id);
 
         if ($user_id === Auth::id()) {
             return redirect()->back()->with('error', 'No puedes desvincularte a ti mismo del proyecto.');
@@ -324,18 +346,12 @@ class ProyectoController extends Controller
     }
 
     /**
-     * Busca un proyecto verificando que pertenezca al semillero del asesor.
+     * Proyecto autorizado: vinculado a cualquiera de los semilleros del asesor.
      */
-    private function findProyectoDelSemillero(int $projectId, ?Seedling $semillero): Project
+    private function findProyectoDelAsesor(int $projectId): Project
     {
-        if (!$semillero) {
-            abort(403, 'No tienes un semillero asignado.');
-        }
-
-        $projectIds = $this->getProjectIdsDelSemillero($semillero->id);
-
-        if (!$projectIds->contains($projectId)) {
-            abort(403, 'Este proyecto no pertenece a tu semillero.');
+        if (! AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($projectId)) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
         }
 
         return Project::with([

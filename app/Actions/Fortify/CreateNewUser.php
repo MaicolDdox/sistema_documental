@@ -7,6 +7,8 @@ use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\Person;
 use App\Models\User;
+use App\Support\TrainingCenterAccess;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -24,9 +26,17 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
+        $auth = Auth::user();
+
+        $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
+        $roleName = $input['role'] ?? '';
+        if ($roleName === 'administrador_sistema' || TrainingCenterAccess::roleRequiresTrainingCenter($roleName)) {
+            $trainingCenterRules = ['required', Rule::exists('training_centers', 'id')->where('activo', true)];
+        }
+
         Validator::make($input, [
             // Datos de users
-            'training_center_id' => ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)],
+            'training_center_id' => $trainingCenterRules,
             'email' => ['nullable', 'email', 'max:255', Rule::unique(User::class)],
             'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
             'numero_documento' => ['required', 'integer', 'unique:users,numero_documento'],
@@ -44,7 +54,14 @@ class CreateNewUser implements CreatesNewUsers
             'email_institucional' => ['nullable', 'email', 'max:255', Rule::unique(Person::class)],
 
             // Rol (Spatie)
-            'role' => ['required', 'string', 'exists:roles,name'],
+            'role' => array_values(array_filter([
+                'required',
+                'string',
+                'exists:roles,name',
+                ($auth && ! TrainingCenterAccess::isSuperAdmin($auth))
+                    ? Rule::notIn(['super_administrador', 'administrador_sistema'])
+                    : null,
+            ])),
 
             // Relaciones opcionales
             'entity_position_id' => ['nullable', 'exists:entity_positions,id'],
@@ -52,7 +69,14 @@ class CreateNewUser implements CreatesNewUsers
             'training_program_id' => ['nullable', 'exists:training_programs,id'],
         ])->validate();
 
-        return DB::transaction(function () use ($input) {
+        if ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
+            $allowed = TrainingCenterAccess::allowedCenterIdsForSave($auth);
+            if ($allowed !== null) {
+                $input['training_center_id'] = $allowed[0];
+            }
+        }
+
+        return DB::transaction(function () use ($input, $auth) {
             // Crear usuario con estado inactivo por defecto
             $user = User::create([
                 'training_center_id' => $input['training_center_id'] ?? null,
@@ -81,7 +105,9 @@ class CreateNewUser implements CreatesNewUsers
             ]);
 
             // Asignar rol con Spatie
+            TrainingCenterAccess::validateCentroBoundRoleAssignment($user, $input['role'], $auth, 'training_center_id');
             $user->assignRole($input['role']);
+            $user->forceFill(['primary_role_name' => $input['role']])->saveQuietly();
 
             return $user;
         });

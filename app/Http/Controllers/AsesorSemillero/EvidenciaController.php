@@ -9,6 +9,7 @@ use App\Models\ProductEvidence;
 use App\Models\Project;
 use App\Models\ProjectEvidence;
 use App\Models\Seedling;
+use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,26 +19,12 @@ use Illuminate\View\View;
 class EvidenciaController extends Controller
 {
     /**
-     * Obtiene el semillero del asesor autenticado.
-     */
-    private function getSemilleroDelAsesor(): ?Seedling
-    {
-        $advisor = \App\Models\ExternalAdvisor::where('user_id', Auth::id())->first();
-        if (!$advisor) return null;
-
-        return Seedling::whereHas('seedlingAdvisors', function ($q) use ($advisor) {
-            $q->where('external_advisor_id', $advisor->id)
-              ->where('activo', true);
-        })->first();
-    }
-
-    /**
      * Permiso: evidencias.listar
      * Lista las evidencias de un proyecto.
      */
     public function listarEvidenciasProyecto(int $proyecto_id): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($proyecto_id);
         $proyecto  = $this->findProyecto($proyecto_id, $semillero);
 
         $evidencias = ProjectEvidence::where('project_id', $proyecto_id)
@@ -54,7 +41,8 @@ class EvidenciaController extends Controller
      */
     public function listarEvidenciasProducto(int $producto_id): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $producto = Product::findOrFail($producto_id);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($producto->project_id);
         $producto  = $this->findProducto($producto_id, $semillero);
 
         $evidencias = ProductEvidence::where('product_id', $producto_id)
@@ -71,7 +59,7 @@ class EvidenciaController extends Controller
      */
     public function subirEvidenciaProyecto(StoreEvidenciaRequest $request, int $proyecto_id): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($proyecto_id);
         $proyecto  = $this->findProyecto($proyecto_id, $semillero);
         $validated = $request->validated();
 
@@ -98,7 +86,8 @@ class EvidenciaController extends Controller
      */
     public function subirEvidenciaProducto(StoreEvidenciaRequest $request, int $producto_id): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
+        $productoPre = Product::findOrFail($producto_id);
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($productoPre->project_id);
         $this->findProducto($producto_id, $semillero);
         $validated = $request->validated();
 

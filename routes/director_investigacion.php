@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 | para resolver y filtrar por research_group_id del director.
 */
 
-Route::middleware(['auth', 'ensure.active', 'role:director_investigacion'])
+Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_investigacion'])
     ->prefix('director')
     ->name('director.')
     ->group(function () {

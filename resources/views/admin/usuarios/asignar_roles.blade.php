@@ -10,7 +10,7 @@
     <div class="mb-6">
         <h2 class="text-xl font-semibold text-slate-900">Asignación de Roles</h2>
         <p class="text-sm text-slate-500 mt-1">
-            Gestiona los roles del sistema.
+            Gestiona los roles del sistema. Con varios roles, el <strong>rol principal</strong> mostrado es el que tiene prioridad al iniciar sesión (mismo criterio que la redirección del login). Los demás permiten acceder a otros módulos desde <a href="{{ route('admin.usuarios.usuarios_con_rol') }}" class="text-[#39A900] hover:underline font-medium">Usuarios con rol</a> o desde el menú lateral.
         </p>
     </div>
 

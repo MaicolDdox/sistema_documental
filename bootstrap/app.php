@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/super_admin.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/asesor_semillero.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/director_investigacion.php'));
@@ -30,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'ensure.active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'training.center' => \App\Http\Middleware\RequireTrainingCenter::class,
             'redirect.director' => \App\Http\Middleware\RedirectDirectorToModule::class,
             'no.back' => \App\Http\Middleware\PreventBackHistory::class,
         ]);

@@ -7,6 +7,7 @@ use App\Http\Controllers\AsesorSemillero\ProductoController;
 use App\Http\Controllers\AsesorSemillero\EvidenciaController;
 use App\Http\Controllers\AsesorSemillero\MisSemillerosController;
 use App\Http\Controllers\AsesorSemillero\ExportarReporteController;
+use App\Http\Controllers\AsesorSemillero\SemilleroActivoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +17,7 @@ use App\Http\Controllers\AsesorSemillero\ExportarReporteController;
 | (el líder y director llevan el rol asesor por Spatie, sin cambio de cuenta)
 */
 
-Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semilleros'])
+Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semillero|lider_semillero|director_semilleros'])
     ->prefix('asesor-semillero')
     ->name('asesor.')
     ->group(function () {
@@ -28,6 +29,8 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
 
         // Mis Semilleros y Proyectos
         Route::get('/mis-semilleros', [MisSemillerosController::class, 'index'])->name('mis_semilleros.index');
+
+        Route::post('/semillero-activo', [SemilleroActivoController::class, 'store'])->name('semillero-activo.store');
 
         // ─── APRENDICES ────────────────────────────────────────────────────────
         Route::middleware('can:aprendices.listar')->group(function () {

@@ -155,6 +155,12 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
+        // ROL 0: super_administrador — todos los permisos web (instancia / soporte)
+        $rolSuperAdmin = Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
+        $rolSuperAdmin->syncPermissions(
+            Permission::where('guard_name', 'web')->pluck('name')->all()
+        );
+
         // Definición de Roles y sus permisos
         
         // ROL 1: administrador_sistema
@@ -333,7 +339,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->command->info('🔍 Verificación de integridad:');
 
         $rolesEsperados = [
-            'administrador_sistema', 'director_investigacion',
+            'super_administrador', 'administrador_sistema', 'director_investigacion',
             'investigador_asociado', 'director_semilleros',
             'lider_semillero', 'asesor_semillero',
         ];

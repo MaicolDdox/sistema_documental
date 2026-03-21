@@ -80,20 +80,60 @@
 
         @php
             $sidebarUser = Auth::user();
-            $dashboardUrl = $sidebarUser && ($sidebarUser->hasAnyRole('administrador_sistema', 'admin')) ? route('admin.dashboard')
-                : ($sidebarUser && $sidebarUser->hasRole('director_semilleros') ? route('dir-sem.dashboard')
-                : ($sidebarUser && $sidebarUser->hasRole('lider_semillero') ? route('lider-sem.dashboard')
-                : ($sidebarUser && $sidebarUser->hasRole('director_investigacion') ? route('director.dashboard')
-                : ($sidebarUser && $sidebarUser->hasRole('asesor_semillero') ? route('asesor.dashboard')
-                : route('dashboard')))));
-            $roleLabel = $sidebarUser && ($sidebarUser->hasAnyRole('administrador_sistema', 'admin')) ? 'Administrador'
-                : ($sidebarUser && $sidebarUser->hasRole('director_semilleros') ? 'Director de Semilleros'
-                : ($sidebarUser && $sidebarUser->hasRole('lider_semillero') ? 'Líder de Semillero'
-                : ($sidebarUser && $sidebarUser->hasRole('director_investigacion') ? 'Director de Investigación'
-                : ($sidebarUser && $sidebarUser->hasRole('investigador_asociado') ? 'Investigador Asociado'
-                : ($sidebarUser && $sidebarUser->hasRole('asesor_semillero') ? 'Asesor Semillero'
-                : 'Usuario')))));
-            $isDashboardActive = request()->routeIs('dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('dir-sem.dashboard') || request()->routeIs('lider-sem.dashboard') || request()->routeIs('director.dashboard') || request()->routeIs('investigador.dashboard') || request()->routeIs('asesor.dashboard');
+            $sidebarUser?->loadMissing('roles');
+            $sidebarPrimaryRole = $sidebarUser ? \App\Support\RoleModuleLinks::primaryRole($sidebarUser) : null;
+            $roleLabel = $sidebarPrimaryRole
+                ? \App\Support\RoleModuleLinks::labelForRoleName($sidebarPrimaryRole->name)
+                : 'Usuario';
+            $dashboardUrl = $sidebarUser
+                ? \App\Support\RoleModuleLinks::dashboardUrlForUser($sidebarUser)
+                : route('dashboard');
+
+            $sidebarRoleModuleLinks = ($sidebarUser && $sidebarUser->roles->count() > 1)
+                ? \App\Support\RoleModuleLinks::moduleLinksWithPrimary($sidebarUser)
+                : [];
+            $sidebarOtherModuleLinks = [];
+            foreach ($sidebarRoleModuleLinks as $_rl) {
+                if (! empty($_rl['url']) && empty($_rl['is_primary'])) {
+                    $sidebarOtherModuleLinks[] = $_rl;
+                }
+            }
+
+            $routeMenuContext = null;
+            if (request()->routeIs('super-admin.*')) {
+                $routeMenuContext = 'super_administrador';
+            } elseif (request()->routeIs('admin.*')) {
+                $routeMenuContext = 'administrador_sistema';
+            } elseif (request()->routeIs('director.*')) {
+                $routeMenuContext = 'director_investigacion';
+            } elseif (request()->routeIs('dir-sem.*')) {
+                $routeMenuContext = 'director_semilleros';
+            } elseif (request()->routeIs('lider-sem.*')) {
+                $routeMenuContext = 'lider_semillero';
+            } elseif (request()->routeIs('investigador.*')) {
+                $routeMenuContext = 'investigador_asociado';
+            } elseif (request()->routeIs('asesor.*')) {
+                $routeMenuContext = 'asesor_semillero';
+            }
+
+            $menuContext = $routeMenuContext ?: ($sidebarPrimaryRole?->name);
+            $showSuperAdmin = $sidebarUser && $sidebarUser->hasRole('super_administrador') && $menuContext === 'super_administrador';
+            $showAdmin = $sidebarUser && $sidebarUser->hasAnyRole('super_administrador', 'administrador_sistema', 'admin')
+                && in_array($menuContext, ['super_administrador', 'administrador_sistema', 'admin'], true);
+            $showDirectorInv = $sidebarUser && $sidebarUser->hasRole('director_investigacion') && $menuContext === 'director_investigacion';
+            $showDirectorSem = $sidebarUser && $sidebarUser->hasRole('director_semilleros') && $menuContext === 'director_semilleros';
+            $showLiderSem = $sidebarUser && $sidebarUser->hasRole('lider_semillero') && $menuContext === 'lider_semillero';
+            $showInvestigador = $sidebarUser && $sidebarUser->hasRole('investigador_asociado') && $menuContext === 'investigador_asociado';
+            $showAsesor = $sidebarUser && $sidebarUser->hasRole('asesor_semillero') && $menuContext === 'asesor_semillero';
+
+            $isDashboardActive = request()->routeIs('dashboard')
+                || request()->routeIs('super-admin.dashboard')
+                || request()->routeIs('admin.dashboard')
+                || request()->routeIs('dir-sem.dashboard')
+                || request()->routeIs('lider-sem.dashboard')
+                || request()->routeIs('director.dashboard')
+                || request()->routeIs('investigador.dashboard')
+                || request()->routeIs('asesor.dashboard');
         @endphp
         <!-- Logo -->
         <div class="h-16 flex items-center px-4 border-b border-slate-100">
@@ -126,7 +166,48 @@
                 Dashboard
             </a>
 
-            @if($sidebarUser && $sidebarUser->hasAnyRole('administrador_sistema', 'admin'))
+            @if(!empty($sidebarRoleModuleLinks))
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Roles y módulos</p>
+                <p class="px-3 text-[11px] text-slate-500 leading-snug mb-2">
+                    <span class="font-medium text-slate-700">Rol principal</span> (prioridad al iniciar sesión):
+                    <span class="text-slate-800">{{ $roleLabel }}</span>.
+                    Abre otro panel con los enlaces de abajo.
+                </p>
+                <div class="px-3 space-y-1 mb-2">
+                    @foreach($sidebarRoleModuleLinks as $rl)
+                        @if(!empty($rl['url']))
+                            <a href="{{ $rl['url'] }}"
+                               class="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-xs font-medium border transition-colors
+                                      {{ !empty($rl['is_primary']) ? 'border-[#39A900]/40 bg-[#39A900]/5 text-[#1f6b00]' : 'border-slate-100 bg-slate-50/80 text-slate-700 hover:bg-slate-100' }}">
+                                <span class="truncate">{{ $rl['label'] }}</span>
+                                @if(!empty($rl['is_primary']))
+                                    <span class="shrink-0 text-[10px] uppercase tracking-wide text-[#39A900]">Principal</span>
+                                @else
+                                    <span class="flex items-center gap-0.5 shrink-0 text-slate-400" title="Abrir panel de este rol">
+                                        <span class="text-[10px] text-slate-500">Ir</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                    </span>
+                                @endif
+                            </a>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            @if($showSuperAdmin)
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
+                    Super administración
+                </p>
+                <a href="{{ route('super-admin.centros-administradores') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('super-admin.centros-administradores*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0 text-amber-600/90" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+                    </svg>
+                    Centro ↔ administrador
+                </a>
+            @endif
+
+            @if($showAdmin)
                 {{-- Vistas desplegables para el rol Administrador (como en el mockup SGD) --}}
 
                 {{-- GESTIÓN USUARIOS --}}
@@ -194,11 +275,13 @@
                         </svg>
                     </button>
                     <div x-show="openCatalogs" x-collapse class="pl-11 pr-3 py-2 space-y-1">
-                        <a href="{{ route('admin.training-centers.index') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/></svg>
-                            Centros de Formación
-                        </a>
+                        @if($sidebarUser && $sidebarUser->hasRole('super_administrador'))
+                            <a href="{{ route('admin.training-centers.index') }}"
+                               class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">
+                                <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/></svg>
+                                Centros de Formación
+                            </a>
+                        @endif
                         <a href="{{ route('admin.training-programs.index') }}"
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-programs.*') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
@@ -229,7 +312,7 @@
                     </div>
                 </div>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('director_investigacion'))
+            @elseif($showDirectorInv)
                 {{-- Menú Director de Investigación --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
                     Administración
@@ -281,7 +364,7 @@
                     Macroproyectos
                 </a>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('director_semilleros'))
+            @elseif($showDirectorSem)
                 {{-- Menú Director de Semilleros --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN SEMILLEROS</p>
                 <div x-data="{ openSemilleros: {{ request()->routeIs('dir-sem.semilleros.*', 'dir-sem.documentos.*', 'dir-sem.reportes.*') ? 'true' : 'false' }} }" class="mb-1">
@@ -328,9 +411,10 @@
                     </div>
                 </div>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('asesor_semillero'))
+            @elseif($showAsesor)
                 {{-- Menú Asesor Semillero (Dashboard ya viene del genérico de arriba) --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión</p>
+                @include('components.asesor-semillero-switcher')
 
                 <a href="{{ route('asesor.mis_semilleros.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.mis_semilleros.*') ? 'nav-item-active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.798-1.318 2.552l-13.98-2.796c-1.348-.245-1.745-1.9-.79-2.855L5 14.5"/></svg>
@@ -351,7 +435,7 @@
                     Productos
                 </a>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('lider_semillero'))
+            @elseif($showLiderSem)
                 {{-- Menú Líder de Semillero --}}
                 @php
                     $lidSemillero = $sidebarUser->ledSeedlings()->first();
@@ -406,7 +490,7 @@
                     Doc. Interna
                 </a>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('investigador_asociado'))
+            @elseif($showInvestigador)
                 {{-- ══════════════════════════════════════════════════════════
                      Menú Investigador Asociado
                 ══════════════════════════════════════════════════════════ --}}
@@ -462,11 +546,12 @@
                     Mis Reportes
                 </a>
 
-            @elseif($sidebarUser && $sidebarUser->hasRole('asesor_semillero'))
+            @elseif($showAsesor)
                 {{-- ══════════════════════════════════════════════════════════
                      Menú Asesor de Semillero
                 ══════════════════════════════════════════════════════════ --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Principal</p>
+                @include('components.asesor-semillero-switcher')
 
                 @can('aprendices.listar')
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión</p>
@@ -514,7 +599,7 @@
                     Usuarios
                 </a>
                 @endcan
-                @hasrole('administrador_sistema|admin')
+                @hasrole('super_administrador|administrador_sistema|admin')
                     @can('catalogos.leer')
                     <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
@@ -522,7 +607,7 @@
                     </a>
                     @endcan
                 @endhasrole
-                @hasrole('administrador_sistema|admin')
+                @hasrole('super_administrador|administrador_sistema|admin')
                 <div x-data="{ paramOpen: {{ request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') ? 'true' : 'false' }} }" class="mt-2">
                     <button @click="paramOpen = !paramOpen" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -534,7 +619,9 @@
                     <div x-show="paramOpen" x-collapse class="pl-11 pr-3 py-2 space-y-1">
                         <a href="{{ route('admin.departments.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.departments.*') ? 'bg-slate-50 text-slate-900' : '' }}">Departamentos</a>
                         <a href="{{ route('admin.cities.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.cities.*') ? 'bg-slate-50 text-slate-900' : '' }}">Municipios</a>
-                        <a href="{{ route('admin.training-centers.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">Centros de Form.</a>
+                        @if($sidebarUser && $sidebarUser->hasRole('super_administrador'))
+                            <a href="{{ route('admin.training-centers.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">Centros de Form.</a>
+                        @endif
                         <a href="{{ route('admin.entity-positions.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.entity-positions.*') ? 'bg-slate-50 text-slate-900' : '' }}">Cargos Entidades</a>
                         <a href="{{ route('admin.linkage-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.linkage-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos de Vinculación</a>
                         <a href="{{ route('admin.training-records.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-records.*') ? 'bg-slate-50 text-slate-900' : '' }}">Fichas de Form.</a>
@@ -627,15 +714,12 @@
 
         <!-- Topbar -->
         @unless(request()->has('embedded'))
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center
-                       justify-between px-6 sticky top-0 z-30">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
             <div></div>
-            <div class="flex items-center gap-3">
-                <div class="hidden sm:flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-[#39A900]"></div>
-                    <span class="text-xs font-medium text-slate-600">{{ $roleLabel ?? 'Usuario' }}</span>
-                    <span class="text-xs text-slate-400 hidden md:inline">—</span>
-                    <span class="text-xs text-slate-500 truncate max-w-[120px] md:max-w-none">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div class="hidden sm:flex items-center gap-2 min-w-0">
+                    <div class="w-2 h-2 rounded-full bg-[#39A900] shrink-0"></div>
+                    <span class="text-xs text-slate-500 truncate max-w-[140px] md:max-w-[220px]">
                         {{ Auth::user()->name ?? Auth::user()->email ?? '' }}
                     </span>
                 </div>

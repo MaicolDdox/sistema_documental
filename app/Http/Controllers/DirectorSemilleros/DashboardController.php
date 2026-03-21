@@ -19,9 +19,11 @@ class DashboardController extends Controller
 
         // Semilleros del centro: los que pertenecen a un grupo de investigación de este centro
         $semillerosQuery = Seedling::with(['leader.person', 'members', 'advisors', 'researchGroup'])
-            ->when($centerId, function ($q) use ($centerId) {
-                $q->whereHas('researchGroup', fn ($r) => $r->where('training_center_id', $centerId));
-            });
+            ->when(
+                $centerId,
+                fn ($q) => $q->whereHas('researchGroup', fn ($r) => $r->where('training_center_id', $centerId)),
+                fn ($q) => $q->whereRaw('0 = 1')
+            );
 
         $semilleros = (clone $semillerosQuery)->get();
         $semillerosActivos = (clone $semillerosQuery)->active()->count();
@@ -29,7 +31,11 @@ class DashboardController extends Controller
 
         // Líderes: todos los usuarios con rol lider_semillero del mismo centro (igual que en Líderes index)
         $lideresQuery = User::role('lider_semillero')
-            ->when($centerId, fn ($q) => $q->where('training_center_id', $centerId))
+            ->when(
+                $centerId,
+                fn ($q) => $q->where('training_center_id', $centerId),
+                fn ($q) => $q->whereRaw('0 = 1')
+            )
             ->with(['person', 'ledSeedlings']);
         $totalLideres = (clone $lideresQuery)->count();
         $lideresEsteMes = $centerId

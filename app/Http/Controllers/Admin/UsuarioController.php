@@ -6,6 +6,8 @@ use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
 use App\Models\User;
+use App\Support\RoleModuleLinks;
+use App\Support\TrainingCenterAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -23,8 +25,13 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.listar');
 
-        $query = User::with(['person.entityPosition', 'roles'])
-            ->where('training_center_id', auth()->user()->training_center_id);
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $auth = $request->user();
+        $query = TrainingCenterAccess::scopeUserQueryForList(
+            User::with(['person.entityPosition', 'roles']),
+            $auth
+        );
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -89,8 +96,10 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.asignar_rol');
 
-        $usuarios = User::with('person')
-            ->where('training_center_id', auth()->user()->training_center_id)
+        $usuarios = TrainingCenterAccess::scopeUserQueryForList(
+            User::with('person'),
+            auth()->user()
+        )
             ->whereDoesntHave('roles')
             ->orderBy('numero_documento')
             ->get();
@@ -108,8 +117,10 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.asignar_rol');
 
-        $query = User::with(['person', 'roles'])
-            ->where('training_center_id', auth()->user()->training_center_id)
+        $query = TrainingCenterAccess::scopeUserQueryForList(
+            User::with(['person', 'roles']),
+            auth()->user()
+        )
             ->whereHas('roles')
             ->orderBy('numero_documento');
 
@@ -128,8 +139,16 @@ class UsuarioController extends Controller
         $usuarios = $query->paginate(15)->withQueryString();
         $roles = Role::orderBy('name')->get();
         $roleNamesAssignable = $this->getAssignableRoleNames();
+        $primaryRoleNamesByUserId = RoleModuleLinks::primaryRoleNamesByUserIds(
+            $usuarios->getCollection()->pluck('id')->all()
+        );
 
-        return view('admin.usuarios.usuarios_con_rol', compact('usuarios', 'roles', 'roleNamesAssignable'));
+        return view('admin.usuarios.usuarios_con_rol', compact(
+            'usuarios',
+            'roles',
+            'roleNamesAssignable',
+            'primaryRoleNamesByUserId'
+        ));
     }
 
     /**
@@ -148,8 +167,17 @@ class UsuarioController extends Controller
             'rol'     => ['required', 'string', 'exists:roles,name', 'in:' . implode(',', $assignable)],
         ]);
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($validated['user_id']);
+        $usuario = TrainingCenterAccess::scopeUserQueryForList(User::query(), auth()->user())
+            ->findOrFail($validated['user_id']);
+        TrainingCenterAccess::validateCentroBoundRoleAssignment($usuario, $validated['rol'], auth()->user());
+
+        $hadRoles = $usuario->roles()->exists();
+        RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($validated['rol']);
+        if (! $hadRoles) {
+            $usuario->refresh();
+            $usuario->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
+        }
 
         if ($request->input('_from') === 'usuarios_con_rol') {
             return redirect()->route('admin.usuarios.usuarios_con_rol')->with('success', 'Rol agregado correctamente.');
@@ -211,8 +239,10 @@ class UsuarioController extends Controller
         ]);
 
         // Asignar rol solo si se envió
-        if (!empty($validated['rol'])) {
+        if (! empty($validated['rol'])) {
             $user->assignRole($validated['rol']);
+            $user->refresh();
+            $user->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
         }
 
         // Enviar credenciales (Si tiene permiso usuarios.asignar_credenciales)
@@ -233,7 +263,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.editar');
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+        $usuario = $this->findUserScoped((int) $id);
         $roles = Role::all();
 
         return view('admin.usuarios.edit', compact('usuario', 'roles'));
@@ -247,7 +277,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.editar');
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+        $usuario = $this->findUserScoped((int) $id);
 
         $validated = $request->validate([
             'nombre'           => 'required|string|max:100',
@@ -292,8 +322,14 @@ class UsuarioController extends Controller
             ]);
         }
 
-        // Sincronizar Rol
-        $usuario->syncRoles([$validated['rol']]);
+        TrainingCenterAccess::validateCentroBoundRoleAssignment($usuario, $validated['rol'], auth()->user());
+
+        // Asegurar el rol elegido sin quitar otros roles (evitar syncRoles).
+        if (! $usuario->hasRole($validated['rol'])) {
+            $usuario->assignRole($validated['rol']);
+        }
+        $usuario->primary_role_name = $validated['rol'];
+        $usuario->save();
 
         return redirect()->route('admin.usuarios.index')
                          ->with('success', 'Usuario actualizado correctamente.');
@@ -303,6 +339,12 @@ class UsuarioController extends Controller
      * Separa un nombre/apellido completo en primer y segundo componente.
      * Ej: "Juan Carlos" => ["Juan", "Carlos"], "Pérez" => ["Pérez", null]
      */
+    private function findUserScoped(int $id): User
+    {
+        return TrainingCenterAccess::scopeUserQueryForList(User::query(), auth()->user())
+            ->findOrFail($id);
+    }
+
     private function splitNombreCompleto(string $valor): array
     {
         $valor = trim(preg_replace('/\s+/', ' ', $valor));
@@ -324,7 +366,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.activar_desactivar');
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+        $usuario = $this->findUserScoped((int) $id);
 
         if ($usuario->id === auth()->id()) {
             return redirect()->back()->with('error', 'No puedes desactivar tu propio usuario.');
@@ -351,8 +393,14 @@ class UsuarioController extends Controller
 
         $request->validate(['rol' => 'required|exists:roles,name']);
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+        $usuario = $this->findUserScoped((int) $id);
+        $hadRoles = $usuario->roles()->exists();
+        RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($request->rol);
+        if (! $hadRoles) {
+            $usuario->refresh();
+            $usuario->forceFill(['primary_role_name' => $request->rol])->saveQuietly();
+        }
 
         return redirect()->back()->with('success', 'Rol asignado correctamente.');
     }
@@ -367,13 +415,18 @@ class UsuarioController extends Controller
 
         $request->validate(['rol' => 'required|exists:roles,name']);
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
-        
-        if ($usuario->id === auth()->id() && $request->rol === 'administrador_sistema') {
+        $usuario = $this->findUserScoped((int) $id);
+
+        if ($usuario->id === auth()->id() && in_array($request->rol, ['administrador_sistema', 'super_administrador'], true)) {
             return redirect()->back()->with('error', 'No puedes revocar tu propio rol de administrador.');
         }
 
+        $clearPrimary = $usuario->primary_role_name === $request->rol;
         $usuario->removeRole($request->rol);
+        if ($clearPrimary) {
+            $usuario->primary_role_name = null;
+            $usuario->saveQuietly();
+        }
 
         return redirect()->back()->with('success', 'Rol revocado correctamente.');
     }
@@ -386,7 +439,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.editar');
 
-        $usuario = User::where('training_center_id', auth()->user()->training_center_id)->findOrFail($id);
+        $usuario = $this->findUserScoped((int) $id);
 
         if ($usuario->id === auth()->id()) {
             return redirect()->back()->with('error', 'No puedes eliminar tu propio usuario.');

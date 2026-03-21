@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
 
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('administrador_sistema') ? true : null;
+            return $user->hasAnyRole(['super_administrador', 'administrador_sistema']) ? true : null;
         });
 
         // Registrar políticas del módulo Director de Investigación

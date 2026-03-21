@@ -14,7 +14,8 @@
     modalEliminar: false,
     detalleLider: null,
     editLider: null,
-    deleteLider: null
+    deleteLider: null,
+    menuRowId: null
 }">
 {{-- Breadcrumbs --}}
 <nav class="text-sm text-slate-500 mb-2">
@@ -130,24 +131,24 @@
                         @endif
                     </td>
                     <td class="px-4 py-3">
-                        <div class="relative flex items-center justify-end" x-data="{ open: false }">
+                        <div class="relative flex items-center justify-end">
                             <button type="button"
-                                    @click.stop="open = !open"
-                                    @keydown.escape.window="open = false"
+                                    @click.stop="menuRowId = menuRowId === {{ $lider->id }} ? null : {{ $lider->id }}"
+                                    @keydown.escape.window="menuRowId = null"
                                     class="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
                                     aria-haspopup="true"
-                                    :aria-expanded="open ? 'true' : 'false'">
+                                    :aria-expanded="menuRowId === {{ $lider->id }} ? 'true' : 'false'">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             </button>
-                            <div x-show="open"
+                            <div x-show="menuRowId === {{ $lider->id }}"
                                  x-cloak
-                                 @click.away="open = false"
+                                 @click.away="menuRowId = null"
                                  class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
                                 @can('usuarios.listar')
                                 <button type="button"
-                                        @click="open = false; detalleLider = @json($liderDetalle); modalDetalle = true"
+                                        @click="menuRowId = null; detalleLider = @js($liderDetalle); modalDetalle = true"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
@@ -158,7 +159,7 @@
                                 @endcan
                                 @can('usuarios.editar')
                                 <button type="button"
-                                        @click="open = false; editLider = @json($liderEdit); modalEditar = true"
+                                        @click="menuRowId = null; editLider = @js($liderEdit); modalEditar = true"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
                                     <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
@@ -168,7 +169,7 @@
                                 <form action="{{ route('dir-sem.lideres.toggle-estado', $lider) }}" method="POST" class="m-0">
                                     @csrf
                                     <button type="submit"
-                                            @click="open = false"
+                                            @click="menuRowId = null"
                                             class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
                                         @if($lider->estado === \App\Enums\EstadoEnum::Activo)
                                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -184,7 +185,7 @@
                                     </button>
                                 </form>
                                 <button type="button"
-                                        @click="open = false; deleteLider = @json(['id' => $lider->id, 'nombre' => $nombreCompleto]); modalEliminar = true"
+                                        @click="menuRowId = null; deleteLider = @js(['id' => $lider->id, 'nombre' => $nombreCompleto]); modalEliminar = true"
                                         class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
                                     <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
@@ -265,6 +266,7 @@
                     </div>
                     <div class="mb-4">
                         <label for="modal_semillero_id" class="block text-sm font-medium text-slate-700 mb-1">Asignar a Semillero (opcional)</label>
+                        <p class="text-xs text-slate-500 mb-1.5">Solo se listan semilleros <span class="font-medium">sin líder asignado</span> para no quitar el semillero a otro líder.</p>
                         <select name="semillero_id" id="modal_semillero_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             <option value="">Selecciona un semillero (o asigna después)...</option>
                             @foreach($semilleros ?? [] as $semillero)
@@ -273,12 +275,12 @@
                         </select>
                         @error('semillero_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
-                    @can('usuarios.asignar_credenciales')
+                    @canany(['usuarios.crear_lider_semillero', 'usuarios.asignar_credenciales'])
                     <div class="mb-5 p-4 bg-green-50 border border-green-100 rounded-lg flex items-start gap-3">
                         <input type="checkbox" name="enviar_credenciales" id="modal_enviar_credenciales" value="1" {{ old('enviar_credenciales', true) ? 'checked' : '' }} class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
                         <label for="modal_enviar_credenciales" class="text-sm text-slate-700">Enviar credenciales por correo al líder.</label>
                     </div>
-                    @endcan
+                    @endcanany
                     <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
                         <button type="button" @click="modalNuevoLider = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
                         <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold flex items-center gap-2">

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\ResearchGroup;
-use App\Models\TrainingCenter;
 use App\Models\User;
+use App\Support\TrainingCenterAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ResearchGroupController extends Controller
@@ -17,16 +18,20 @@ class ResearchGroupController extends Controller
     {
         // Cargamos todos los usuarios relacionados y luego, en la vista,
         // escogemos como responsable el que tenga rol 'director' o 'investigador_lider'.
-        $grupos = ResearchGroup::with(['trainingCenter', 'users'])
-            ->orderBy('nombre')
-            ->paginate(15);
+        $q = ResearchGroup::with(['trainingCenter', 'users'])->orderBy('nombre');
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            $q->where('training_center_id', (int) Auth::user()->training_center_id);
+        } elseif (TrainingCenterAccess::isCentroAdmin(Auth::user())) {
+            $q->whereRaw('0 = 1');
+        }
+        $grupos = $q->paginate(15);
 
         return view('admin.research_groups.index', compact('grupos'));
     }
 
     public function create(): View
     {
-        $centros = TrainingCenter::orderBy('nombre')->get();
+        $centros = TrainingCenterAccess::centersForSelect(Auth::user());
         $usuarios = $this->usuariosPotenciales();
 
         return view('admin.research_groups.form', [
@@ -40,6 +45,9 @@ class ResearchGroupController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validateData($request);
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            $data['training_center_id'] = Auth::user()->training_center_id;
+        }
         $embedded = $request->boolean('embedded');
 
         $grupo = ResearchGroup::create($data);
@@ -62,7 +70,14 @@ class ResearchGroupController extends Controller
 
     public function edit(ResearchGroup $researchGroup): View
     {
-        $centros = TrainingCenter::orderBy('nombre')->get();
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            abort_unless(
+                (int) $researchGroup->training_center_id === (int) Auth::user()->training_center_id,
+                403
+            );
+        }
+
+        $centros = TrainingCenterAccess::centersForSelect(Auth::user());
         $usuarios = $this->usuariosPotenciales();
         $responsableActual = $researchGroup->users()
             ->wherePivot('rol', 'director')
@@ -78,7 +93,17 @@ class ResearchGroupController extends Controller
 
     public function update(Request $request, ResearchGroup $researchGroup): RedirectResponse
     {
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            abort_unless(
+                (int) $researchGroup->training_center_id === (int) Auth::user()->training_center_id,
+                403
+            );
+        }
+
         $data = $this->validateData($request);
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            $data['training_center_id'] = Auth::user()->training_center_id;
+        }
         $embedded = $request->boolean('embedded');
         $researchGroup->update($data);
 
@@ -101,6 +126,13 @@ class ResearchGroupController extends Controller
 
     public function destroy(ResearchGroup $researchGroup): RedirectResponse
     {
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            abort_unless(
+                (int) $researchGroup->training_center_id === (int) Auth::user()->training_center_id,
+                403
+            );
+        }
+
         $researchGroup->delete();
 
         return redirect()->route('admin.research-groups.index')
@@ -109,8 +141,14 @@ class ResearchGroupController extends Controller
 
     private function validateData(Request $request): array
     {
+        $centerRule = ['required', 'exists:training_centers,id'];
+        $allowed = TrainingCenterAccess::allowedCenterIdsForSave(Auth::user());
+        if ($allowed !== null) {
+            $centerRule[] = Rule::in($allowed);
+        }
+
         return $request->validate([
-            'training_center_id' => ['required', 'exists:training_centers,id'],
+            'training_center_id' => $centerRule,
             'nombre'             => ['required', 'string', 'max:255'],
             'codigo'             => ['nullable', 'string', 'max:100'],
             'descripccion'       => ['nullable', 'string'],
@@ -120,15 +158,20 @@ class ResearchGroupController extends Controller
 
     private function usuariosPotenciales()
     {
-        return User::orderBy('email')
+        $q = User::orderBy('email')
             ->whereHas('roles', function ($q) {
                 $q->whereIn('name', [
                     'director_investigacion',
                     'investigador_asociado',
                     'investigador',
                 ]);
-            })
-            ->get();
+            });
+
+        if (TrainingCenterAccess::scopedToTrainingCenter(Auth::user())) {
+            $q->where('training_center_id', Auth::user()->training_center_id);
+        }
+
+        return $q->get();
     }
 }
 

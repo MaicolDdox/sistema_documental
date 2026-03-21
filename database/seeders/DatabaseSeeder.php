@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class, // ← debe ir ANTES de UserSeeder
             ResearchGroupSeeder::class,
             UserSeeder::class,
+            SuperAdminSeeder::class,
 
             // Catálogos módulo Asesor Semillero
             LineasInvestigacionesSeeder::class,

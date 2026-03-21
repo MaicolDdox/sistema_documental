@@ -128,6 +128,18 @@
                     </span>
                 </div>
             </div>
+            @php
+                $sidActivo = session(\App\Support\AsesorSemilleroContext::SESSION_KEY);
+            @endphp
+            <form method="POST" action="{{ route('asesor.semillero-activo.store') }}" class="shrink-0">
+                @csrf
+                <input type="hidden" name="seedling_id" value="{{ $sem->id }}">
+                <button type="submit" class="text-xs font-medium px-3 py-2 rounded-lg border transition-colors whitespace-nowrap
+                    @if((int) $sidActivo === (int) $sem->id) border-[#39A900] bg-white text-[#39A900] @else border-slate-200 bg-white text-slate-600 hover:border-[#39A900]/50 @endif"
+                    title="Aprendices y nuevos proyectos usarán este semillero">
+                    @if((int) $sidActivo === (int) $sem->id) ✓ Activo @else Usar este semillero @endif
+                </button>
+            </form>
         </div>
 
         {{-- Proyectos del semillero --}}

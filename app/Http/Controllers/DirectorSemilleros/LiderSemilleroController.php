@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\DirectorSemilleros;
 
 use App\Http\Controllers\Controller;
+use App\Models\Seedling;
 use App\Models\User;
 use App\Enums\EstadoEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -37,9 +39,7 @@ class LiderSemilleroController extends Controller
 
         $lideres = $query->orderBy('email')->paginate(10)->withQueryString();
 
-        $semilleros = \App\Models\Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $user->training_center_id))
-            ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+        $semilleros = $this->semillerosDisponiblesParaNuevoLider($user);
 
         return view('director_semilleros.lideres.index', compact('lideres', 'semilleros'));
     }
@@ -49,11 +49,8 @@ class LiderSemilleroController extends Controller
         $this->authorize('usuarios.crear_lider_semillero');
 
         $user = Auth::user();
-        
-        // semilleros del centro para el select
-        $semilleros = \App\Models\Seedling::whereHas('leader', function($q) use ($user) {
-            $q->where('training_center_id', $user->training_center_id);
-        })->get();
+
+        $semilleros = $this->semillerosDisponiblesParaNuevoLider($user);
 
         return view('director_semilleros.lideres.create', compact('semilleros'));
     }
@@ -100,29 +97,57 @@ class LiderSemilleroController extends Controller
 
         // Asignar rol
         $newUser->assignRole('lider_semillero');
+        $newUser->forceFill(['primary_role_name' => 'lider_semillero'])->saveQuietly();
 
-        // Asignar a semillero si se seleccionó
+        // Asignar a semillero si se seleccionó (solo sin líder previo y del mismo centro)
         if (!empty($validated['semillero_id'])) {
-            $semillero = \App\Models\Seedling::find($validated['semillero_id']);
-            if ($semillero) {
-                $semillero->update(['leader_id' => $newUser->id]);
+            $semillero = $this->semilleroDisponibleParaAsignar(
+                (int) $validated['semillero_id'],
+                Auth::user()
+            );
+            if (!$semillero) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors([
+                        'semillero_id' => 'El semillero seleccionado no está disponible o ya tiene líder asignado.',
+                    ]);
             }
+            $semillero->update(['leader_id' => $newUser->id]);
         }
 
-        // Si tiene permiso y marcó checkbox
-        if ($request->has('enviar_credenciales') && Auth::user()->can('usuarios.asignar_credenciales')) {
-            // Enviar credenciales
+        $advertenciaMail = null;
+        $quiereCorreo = $request->boolean('enviar_credenciales');
+        $puedeEnviarCorreo = $quiereCorreo && (
+            Auth::user()->can('usuarios.asignar_credenciales')
+            || Auth::user()->can('usuarios.crear_lider_semillero')
+        );
+
+        if ($puedeEnviarCorreo) {
             try {
-                Mail::raw("Tus credenciales de acceso son: Email: {$newUser->email} y Contraseña: {$password}", function ($message) use ($newUser) {
-                    $message->to($newUser->email)->subject('Credenciales de acceso GIDESTH');
-                });
-            } catch (\Exception $e) {
-                // ignorar error si mail no está config
+                Mail::raw(
+                    "Bienvenido al sistema GIDESTH.\n\nTus credenciales de acceso:\n\nCorreo: {$newUser->email}\nContraseña temporal: {$password}\n\nPor favor cambia tu contraseña al ingresar por primera vez.",
+                    function ($message) use ($newUser) {
+                        $message->to($newUser->email)->subject('Credenciales de acceso — GIDESTH');
+                    }
+                );
+            } catch (\Throwable $e) {
+                Log::error('LiderSemillero: fallo al enviar credenciales por correo', [
+                    'nuevo_usuario_id' => $newUser->id,
+                    'email' => $newUser->email,
+                    'error' => $e->getMessage(),
+                ]);
+                $advertenciaMail = 'El líder se registró correctamente, pero no se pudo enviar el correo con la contraseña. Revise la configuración de correo (MAIL_*) en el servidor o consulte al administrador.';
             }
         }
 
-        return redirect()->route('dir-sem.lideres.index')
+        $redirect = redirect()->route('dir-sem.lideres.index')
             ->with('success', 'Líder de semillero creado exitosamente.');
+
+        if ($advertenciaMail !== null) {
+            $redirect->with('warning', $advertenciaMail);
+        }
+
+        return $redirect;
     }
 
     public function show(User $lider)
@@ -204,5 +229,26 @@ class LiderSemilleroController extends Controller
         if (!$lider->hasRole('lider_semillero') || $lider->training_center_id !== Auth::user()->training_center_id) {
             abort(403, 'No tienes permiso para gestionar este usuario.');
         }
+    }
+
+    /**
+     * Semilleros del centro sin líder asignado (evita reemplazar al líder actual al registrar uno nuevo).
+     */
+    private function semillerosDisponiblesParaNuevoLider(User $director)
+    {
+        return Seedling::query()
+            ->whereNull('leader_id')
+            ->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $director->training_center_id))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+    }
+
+    private function semilleroDisponibleParaAsignar(int $semilleroId, User $director): ?Seedling
+    {
+        return Seedling::query()
+            ->whereKey($semilleroId)
+            ->whereNull('leader_id')
+            ->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $director->training_center_id))
+            ->first();
     }
 }

@@ -46,6 +46,7 @@ class InvestigadorService
 
             // 2. Asignar rol Spatie
             $user->assignRole('investigador_asociado');
+            $user->forceFill(['primary_role_name' => 'investigador_asociado'])->saveQuietly();
 
             // 3. Crear perfil Person
             Person::create([

@@ -11,6 +11,7 @@ use App\Models\Person;
 use App\Models\Seedling;
 use App\Models\TrainingProgram;
 use App\Models\User;
+use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,18 +22,10 @@ use Illuminate\View\View;
 
 class AprendizController extends Controller
 {
-    /**
-     * Obtiene el semillero del asesor autenticado.
-     * El asesor pertenece al semillero donde está en seedling_members.
-     */
+    /** Semillero activo en sesión (el asesor puede tener varios semilleros). */
     private function getSemilleroDelAsesor(): ?Seedling
     {
-        // El asesor NO está en seedling_members, sino en seedling_advisors
-        // a través de su registro en external_advisors (user_id)
-        return Seedling::whereHas('advisors', function ($q) {
-            $q->where('external_advisors.user_id', Auth::id())
-              ->where('seedling_advisors.activo', true);
-        })->first();
+        return AsesorSemilleroContext::semilleroActivo();
     }
 
     /**

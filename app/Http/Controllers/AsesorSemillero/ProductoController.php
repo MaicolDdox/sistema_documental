@@ -5,12 +5,12 @@ namespace App\Http\Controllers\AsesorSemillero;
 use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AsesorSemillero\StoreProductoRequest;
-use App\Models\ExternalAdvisor;
 use App\Models\Product;
 use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
 use App\Models\Seedling;
+use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -24,22 +24,14 @@ class ProductoController extends Controller
     // HELPERS
     // ──────────────────────────────────────────────────
 
-    /** Todos los semilleros del asesor autenticado. */
     private function getSemillerosDelAsesor(): \Illuminate\Database\Eloquent\Collection
     {
-        $advisor = ExternalAdvisor::where('user_id', Auth::id())->first();
-        if (!$advisor) return collect();
-
-        return Seedling::whereHas('seedlingAdvisors', function ($q) use ($advisor) {
-            $q->where('external_advisor_id', $advisor->id)
-              ->where('activo', true);
-        })->get(['id', 'nombre']);
+        return AsesorSemilleroContext::semillerosDelUsuarioAutenticado();
     }
 
-    /** Primer semillero del asesor (backwards compat). */
     private function getSemilleroDelAsesor(): ?Seedling
     {
-        return $this->getSemillerosDelAsesor()->first();
+        return AsesorSemilleroContext::semilleroActivo($this->getSemillerosDelAsesor());
     }
 
     private function getProyectosDelSemillero(int $seedlingId): \Illuminate\Database\Eloquent\Collection
@@ -53,7 +45,7 @@ class ProductoController extends Controller
 
     private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
     {
-        $semilleroIds = $this->getSemillerosDelAsesor()->pluck('id');
+        $semilleroIds = AsesorSemilleroContext::idsSemillerosDelAsesor();
 
         return DB::table('project_seedlings')
             ->whereIn('seedling_id', $semilleroIds)
@@ -70,7 +62,7 @@ class ProductoController extends Controller
     {
         // Verificar que el asesor pertenece a este semillero
         $semilleros = $this->getSemillerosDelAsesor();
-        if (!$semilleros->contains('id', $seedling_id)) {
+        if (! $semilleros->pluck('id')->contains((int) $seedling_id)) {
             return response()->json([]);
         }
 

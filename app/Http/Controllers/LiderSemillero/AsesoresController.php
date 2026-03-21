@@ -8,6 +8,7 @@ use App\Enums\TipoDocumentoEnum;
 use App\Models\ExternalAdvisor;
 use App\Models\SeedlingAdvisor;
 use App\Models\User;
+use App\Support\RoleModuleLinks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,7 +71,8 @@ class AsesoresController extends Controller
                 // Ya existe usuario con ese email: reutilizar y solo vincular al semillero (puede estar en varios)
                 $eraUsuarioExistente = true;
                 $userId = $existingUser->id;
-                if (!$existingUser->hasRole('asesor_semillero')) {
+                if (! $existingUser->hasRole('asesor_semillero')) {
+                    RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($existingUser);
                     $existingUser->assignRole('asesor_semillero');
                 }
                 $advisor = ExternalAdvisor::firstOrCreate(
@@ -106,6 +108,7 @@ class AsesoresController extends Controller
                     'eps'                 => '',
                 ]);
                 $newUser->assignRole('asesor_semillero');
+                $newUser->forceFill(['primary_role_name' => 'asesor_semillero'])->saveQuietly();
                 $userId = $newUser->id;
                 $advisor = ExternalAdvisor::create([
                     'user_id'         => $userId,

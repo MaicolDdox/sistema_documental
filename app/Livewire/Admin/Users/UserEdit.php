@@ -4,12 +4,12 @@ namespace App\Livewire\Admin\Users;
 
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
-use App\Models\TrainingCenter;
 use App\Models\User;
+use App\Support\RoleModuleLinks;
+use App\Support\TrainingCenterAccess;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
-use Spatie\Permission\Models\Role;
 
 class UserEdit extends Component
 {
@@ -45,6 +45,16 @@ class UserEdit extends Component
     {
         $this->user = $user->load('person', 'roles');
 
+        $auth = auth()->user();
+        if (! TrainingCenterAccess::isSuperAdmin($auth)) {
+            if ($user->hasRole('super_administrador')) {
+                abort(403);
+            }
+            if ($user->hasRole('administrador_sistema') && $auth->id !== $user->id) {
+                abort(403);
+            }
+        }
+
         $this->training_center_id = $user->training_center_id;
         $this->email = $user->email ?? '';
         $this->tipo_documento = $user->tipo_documento?->value ?? '';
@@ -66,11 +76,36 @@ class UserEdit extends Component
             $this->training_program_id = $user->person->training_program_id;
         }
 
-        $this->role = $user->roles->first()?->name ?? '';
+        $roleNames = $user->roles->pluck('name')->all();
+        $this->role = ($user->primary_role_name && in_array($user->primary_role_name, $roleNames, true))
+            ? $user->primary_role_name
+            : (RoleModuleLinks::pickPrimaryRoleNameFromNames($roleNames)
+                ?? $user->roles->first()?->name
+                ?? '');
     }
 
     public function update(): void
     {
+        $auth = auth()->user();
+
+        $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
+        if ($this->role === 'administrador_sistema' || TrainingCenterAccess::roleRequiresTrainingCenter($this->role)) {
+            $trainingCenterRules = ['required', Rule::exists('training_centers', 'id')->where('activo', true)];
+        }
+        $allowedCenters = TrainingCenterAccess::allowedCenterIdsForSave($auth);
+        if ($allowedCenters !== null) {
+            $trainingCenterRules[] = Rule::in($allowedCenters);
+        }
+
+        $roleRules = ['required', 'string', 'exists:roles,name'];
+        if ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
+            $forbidden = ['super_administrador', 'administrador_sistema'];
+            if ($auth->id === $this->user->id && $this->user->hasRole('administrador_sistema')) {
+                $forbidden = ['super_administrador'];
+            }
+            $roleRules[] = Rule::notIn($forbidden);
+        }
+
         Validator::make([
             'email' => $this->email ?: null,
             'tipo_documento' => $this->tipo_documento,
@@ -88,14 +123,22 @@ class UserEdit extends Component
             'primer_nombre' => ['required', 'string', 'max:100'],
             'primer_apellido' => ['required', 'string', 'max:100'],
             'email_institucional' => ['nullable', 'email', 'max:255', Rule::unique('people', 'email_institucional')->ignore($this->user->person?->id)],
-            'role' => ['required', 'string', 'exists:roles,name'],
+            'role' => $roleRules,
             'estado' => ['required', Rule::enum(EstadoEnum::class)],
-            'training_center_id' => ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)],
+            'training_center_id' => $trainingCenterRules,
         ])->validate();
+
+        if ($allowedCenters !== null) {
+            $this->training_center_id = $allowedCenters[0];
+        }
+
+        $this->user->training_center_id = $this->training_center_id;
+        TrainingCenterAccess::validateCentroBoundRoleAssignment($this->user, $this->role, $auth, 'training_center_id');
 
         // Update user
         $this->user->update([
             'training_center_id' => $this->training_center_id,
+            'primary_role_name' => $this->role,
             'email' => $this->email ?: null,
             'tipo_documento' => $this->tipo_documento,
             'numero_documento' => $this->numero_documento,
@@ -120,19 +163,26 @@ class UserEdit extends Component
             ]);
         }
 
-        // Sync role
-        $this->user->syncRoles([$this->role]);
+        // Rol principal: solo asegurar que el rol elegido esté asignado (no syncRoles: conserva el resto).
+        if (! $this->user->hasRole($this->role)) {
+            $this->user->assignRole($this->role);
+        }
+        $this->user->load('roles');
 
         session()->flash('status', 'Usuario actualizado exitosamente.');
     }
 
     public function render()
     {
+        $auth = auth()->user();
+        $includeAdminRol = $auth->id === $this->user->id && $this->user->hasRole('administrador_sistema');
+
         return view('livewire.admin.users.user-edit', [
             'tiposDocumento' => TipoDocumentoEnum::cases(),
-            'roles' => Role::all(),
-            'trainingCenters' => TrainingCenter::activos()->orderBy('nombre')->get(),
+            'roles' => TrainingCenterAccess::rolesForUserForm($auth, $includeAdminRol),
+            'trainingCenters' => TrainingCenterAccess::centersForSelect($auth),
             'estados' => EstadoEnum::cases(),
+            'centerSelectReadonly' => TrainingCenterAccess::isCentroAdmin($auth) && $auth->training_center_id,
         ]);
     }
 }

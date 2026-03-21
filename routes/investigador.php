@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\InvestigadorAsociado\ReporteController;
 
-Route::middleware(['auth', 'ensure.active', 'role:investigador_asociado'])
+Route::middleware(['auth', 'ensure.active', 'training.center', 'role:investigador_asociado'])
     ->prefix('investigador')
     ->name('investigador.')
     ->group(function () {

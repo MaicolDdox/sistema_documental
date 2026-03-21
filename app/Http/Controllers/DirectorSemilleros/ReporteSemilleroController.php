@@ -85,9 +85,9 @@ class ReporteSemilleroController extends Controller
     protected function exportarExcel(string $tipo, $semilleros, ?string $fechaDesde, ?string $fechaHasta)
     {
         $data = $this->buildDatosReporte($tipo, $semilleros, $fechaDesde, $fechaHasta);
-        $nombre = $this->nombreArchivo($tipo, 'csv');
+        $nombre = $this->nombreArchivo($tipo, 'xls');
 
-        return new StreamedResponse(function () use ($tipo, $data, $nombre) {
+        return new StreamedResponse(function () use ($tipo, $data) {
             $out = fopen('php://output', 'w');
             fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
 
@@ -110,8 +110,10 @@ class ReporteSemilleroController extends Controller
 
             fclose($out);
         }, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Type'        => 'application/vnd.ms-excel; charset=UTF-8',
             'Content-Disposition'  => 'attachment; filename="'.$nombre.'"',
+            'Cache-Control'       => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma'              => 'public',
         ]);
     }
 
@@ -163,12 +165,21 @@ class ReporteSemilleroController extends Controller
             $filas[] = [
                 'semillero'     => $semilleroNombres,
                 'proyecto'      => $p->nombre,
-                'estado'        => $p->estado->value ?? $p->estado,
+                'estado'        => $this->estadoProyectoLabel($p->estado),
                 'fecha_inicio'  => $p->fecha_inicio?->format('d/m/Y') ?? '—',
                 'fecha_fin'     => $p->fecha_fin?->format('d/m/Y') ?? '—',
             ];
         }
         return ['titulo' => $titulo, 'filas' => $filas, 'semilleros' => $semilleros, 'proyectos' => $proyectos];
+    }
+
+    protected function estadoProyectoLabel($estado): string
+    {
+        if (is_object($estado) && isset($estado->value)) {
+            return (string) $estado->value;
+        }
+
+        return (string) ($estado ?? '—');
     }
 
     protected function nombreArchivo(string $tipo, string $ext): string

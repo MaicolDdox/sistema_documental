@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\DirectorSemilleros;
 
+use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\RoleModuleLinks;
+use App\Support\TrainingCenterAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,11 +21,7 @@ class AsignarRolController extends Controller
 
         $user = Auth::user();
 
-        $usuarios = User::with('person')
-            ->when($user->training_center_id, fn ($q) => $q->where('training_center_id', $user->training_center_id))
-            ->whereDoesntHave('roles')
-            ->orderBy('numero_documento')
-            ->get();
+        $usuarios = $this->queryUsuariosSinRolElegiblesParaDirector($user)->get();
 
         $rolesAsignables = collect();
         if (Auth::user()->can('usuarios.crear_lider_semillero')) {
@@ -45,12 +44,42 @@ class AsignarRolController extends Controller
         ]);
 
         $currentUser = Auth::user();
-        $usuario = User::when($currentUser->training_center_id, fn ($q) => $q->where('training_center_id', $currentUser->training_center_id))
-            ->findOrFail($validated['user_id']);
+        $usuario = $this->queryUsuariosSinRolElegiblesParaDirector($currentUser)
+            ->whereKey($validated['user_id'])
+            ->firstOrFail();
 
+        TrainingCenterAccess::validateCentroBoundRoleAssignment($usuario, $validated['rol'], $currentUser);
+        $hadRoles = $usuario->roles()->exists();
+        RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($validated['rol']);
+        if (! $hadRoles) {
+            $usuario->refresh();
+            $usuario->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
+        }
 
         return redirect()->route('dir-sem.asignar-roles.index')
             ->with('success', 'Rol asignado correctamente.');
+    }
+
+    /**
+     * Usuarios del centro sin rol Spatie, excluyendo aprendices registrados por el asesor
+     * (inactivos vinculados a un semillero como integrantes — seedling_members).
+     * El director/admin suele crear usuarios activos o pendientes sin vínculo de integrante.
+     */
+    private function queryUsuariosSinRolElegiblesParaDirector(User $director)
+    {
+        return User::query()
+            ->with('person')
+            ->when(
+                $director->training_center_id,
+                fn ($q) => $q->where('training_center_id', $director->training_center_id),
+                fn ($q) => $q->whereRaw('0 = 1')
+            )
+            ->whereDoesntHave('roles')
+            ->where(function ($q) {
+                $q->where('estado', '!=', EstadoEnum::Inactivo)
+                    ->orWhereDoesntHave('seedlings');
+            })
+            ->orderBy('numero_documento');
     }
 }

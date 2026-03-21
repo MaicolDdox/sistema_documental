@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Product;
 use App\Models\Seedling;
-use App\Models\ExternalAdvisor;
 use App\Models\User;
+use App\Support\AsesorSemilleroContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -16,22 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class ExportarReporteController extends Controller
 {
-    /** Obtiene los semilleros del asesor autenticado. */
     private function getSemillerosDelAsesor(): \Illuminate\Database\Eloquent\Collection
     {
-        $advisor = ExternalAdvisor::where('user_id', Auth::id())->first();
-        if (!$advisor) return collect();
-
-        return Seedling::with(['researchGroup', 'leader.person', 'members.person'])
-            ->whereHas('seedlingAdvisors', function ($q) use ($advisor) {
-                $q->where('external_advisor_id', $advisor->id)
-                  ->where('activo', true);
-            })->get();
+        return AsesorSemilleroContext::semillerosDelUsuarioAutenticadoConDetalle();
     }
 
     private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
     {
-        $semilleroIds = $this->getSemillerosDelAsesor()->pluck('id');
+        $semilleroIds = AsesorSemilleroContext::idsSemillerosDelAsesor();
 
         return DB::table('project_seedlings')
             ->whereIn('seedling_id', $semilleroIds)
