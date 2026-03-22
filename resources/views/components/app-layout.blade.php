@@ -117,6 +117,13 @@
             }
 
             $menuContext = $routeMenuContext ?: ($sidebarPrimaryRole?->name);
+
+            // Super administrador: mismo panel (Super admin + catálogos + usuarios) en todas las rutas,
+            // no solo en super-admin.* — evita que al entrar a otros módulos desaparezca el menú lateral.
+            if ($sidebarUser && $sidebarUser->hasRole('super_administrador')) {
+                $menuContext = 'super_administrador';
+            }
+
             $showSuperAdmin = $sidebarUser && $sidebarUser->hasRole('super_administrador') && $menuContext === 'super_administrador';
             $showAdmin = $sidebarUser && $sidebarUser->hasAnyRole('super_administrador', 'administrador_sistema', 'admin')
                 && in_array($menuContext, ['super_administrador', 'administrador_sistema', 'admin'], true);

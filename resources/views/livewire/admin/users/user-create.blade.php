@@ -30,14 +30,20 @@
                         <p class="text-sm text-slate-700 py-2 px-3 rounded-lg border border-slate-200 bg-slate-50">{{ $trainingCenters->first()?->nombre ?? '—' }}</p>
                         <input type="hidden" wire:model="training_center_id" />
                     @else
-                        <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm" @if($role === 'administrador_sistema') required @endif>
-                            <option value="">Seleccionar...</option>
+                        <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm">
+                            <option value="">
+                                @if($role === 'administrador_sistema')
+                                    Sin centro (luego en Centro ↔ administrador)
+                                @else
+                                    Seleccionar centro…
+                                @endif
+                            </option>
                             @foreach($trainingCenters as $center)
                                 <option value="{{ $center->id }}">{{ $center->nombre }}</option>
                             @endforeach
                         </select>
                         @if($role === 'administrador_sistema')
-                            <p class="text-xs text-amber-700 mt-1">Obligatorio para el rol administrador del sistema.</p>
+                            <p class="text-xs text-amber-700 mt-1">Opcional: si lo dejas sin centro, podrás asignarlo desde <strong>Centro ↔ administrador</strong>.</p>
                         @endif
                     @endif
                 </div>

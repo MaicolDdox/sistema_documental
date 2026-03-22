@@ -51,7 +51,7 @@
                         @endforeach
                     </select>
                     @if($role === 'administrador_sistema')
-                        <p class="text-xs text-amber-700 mt-1">Obligatorio mientras el usuario tenga rol administrador del sistema.</p>
+                        <p class="text-xs text-amber-700 mt-1">Puedes dejar <strong>Sin centro</strong> para vincularlo luego en Super admin → Centro ↔ administrador.</p>
                     @endif
                 @endif
             </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Support\TrainingCenterAccess;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\TrainingCenter;

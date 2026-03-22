@@ -15,7 +15,8 @@
         <h2 class="text-lg font-semibold text-slate-900">Vincular centro de formación con administrador</h2>
         <p class="text-sm text-slate-600 mt-1 max-w-3xl">
             <strong>Centros:</strong> solo los que <strong>aún no tienen</strong> un administrador del sistema vinculado.
-            <strong>Administradores:</strong> solo quienes <strong>aún no tienen centro</strong> (nunca el super administrador).
+            <strong>Administradores:</strong> solo quienes tienen rol de administrador del sistema (o <code class="text-xs bg-amber-100/80 px-1 rounded">admin</code>) y <strong>aún no tienen centro</strong> (nunca el super administrador).
+            Créalos en <strong>Usuarios</strong> con ese rol y deja el centro vacío, o quita el centro en edición, para que aparezcan aquí.
             Lo que ya aparece en el resumen a la derecha no sale en los desplegables.
         </p>
     </div>

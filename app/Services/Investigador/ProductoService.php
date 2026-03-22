@@ -24,54 +24,59 @@ class ProductoService
      */
     public function registrar(array $data, int $userId, int $grupoId): GroupProduct
     {
-        // 1. Validar que el proyecto existe y el usuario está vinculado
         $proyecto = Project::where('id', $data['project_id'])->firstOrFail();
 
-        // Se permite registrar productos si el usuario:
-        //  - es autor del proyecto (project_authors), O
-        //  - es el creador del proyecto (project_creator_id)
+        $productBase = ! empty($data['product_base_id'])
+            ? Product::find($data['product_base_id'])
+            : null;
+        $esAsignadoPorLider = $productBase
+            && (int) $productBase->assigned_investigator_user_id === $userId;
+
         $esAutor = ProjectAuthor::where('project_id', $proyecto->id)
             ->where('user_id', $userId)
             ->exists();
         $esCreador = $proyecto->project_creator_id === $userId;
 
-        if (!($esAutor || $esCreador)) {
+        if (! ($esAutor || $esCreador || $esAsignadoPorLider)) {
             throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor.');
         }
 
-        // 2. Validar que los autores propuestos existan entre los autores del proyecto
         $autoresProyecto = ProjectAuthor::where('project_id', $proyecto->id)
             ->pluck('user_id')
             ->toArray();
-
         $autoresProducto = $data['autores'] ?? [];
-        $invalidos = array_diff($autoresProducto, $autoresProyecto);
-
-        if (! empty($invalidos)) {
-            throw new RuntimeException(
-                'Uno o más autores del producto no son autores del proyecto seleccionado.'
-            );
+        if (! empty($autoresProducto)) {
+            $invalidos = array_diff($autoresProducto, $autoresProyecto);
+            if (! empty($invalidos)) {
+                throw new RuntimeException(
+                    'Uno o más autores del producto no son autores del proyecto seleccionado.'
+                );
+            }
         }
 
         return DB::transaction(function () use ($data, $userId, $grupoId, $proyecto) {
-            // Reutilizar o crear el Product base
-            if (!empty($data['product_base_id'])) {
+            if (! empty($data['product_base_id'])) {
                 $product = Product::findOrFail($data['product_base_id']);
-                // Se mantiene el archivo/url originarios que aprobó el líder, y el estado_revision del product.
                 $product->update([
-                    'nombre' => $data['titulo'], // Actualiza título por si el investigador lo cambió
+                    'nombre' => $data['titulo'],
                 ]);
             } else {
                 $product = Product::create([
                     'project_id'        => $proyecto->id,
                     'nombre'            => $data['titulo'],
                     'estado'            => EstadoEnum::Activo,
-                    'estado_revision'   => 'pendiente',
+                    'estado_revision'   => EstadoRevisionEnum::Pendiente,
                     'url_repositorio'   => $data['url_repositorio'] ?? null,
                 ]);
             }
 
-            // Crear el GroupProduct (registro formal en el grupo)
+            $tieneRepo = (bool) ($data['tiene_repositorio'] ?? false);
+            $evidenciaGp = null;
+            if (! $tieneRepo && filled($product->archivo)) {
+                $evidenciaGp = $product->archivo;
+            }
+            $urlRepoGp = $tieneRepo ? ($data['url_repositorio'] ?? $product->url_repositorio) : null;
+
             $groupProduct = GroupProduct::create([
                 'author_id'                      => $userId,
                 'product_id'                     => $product->id,
@@ -86,12 +91,17 @@ class ProductoService
                 'minciencias_subcategory_id'     => $data['minciencias_subcategory_id'] ?? null,
                 'knowledge_grand_area_id'        => $data['knowledge_grand_area_id'] ?? null,
                 'knowledge_area_id'              => $data['knowledge_area_id'] ?? null,
-                'tiene_repositorio'              => $data['tiene_repositorio'] ?? false,
-                'url_repositorio'                => $data['url_repositorio'] ?? null,
+                'tiene_repositorio'              => $tieneRepo,
+                'url_repositorio'                => $urlRepoGp,
+                'evidencia'                      => $evidenciaGp,
                 'autoriza_datos'                 => $data['autoriza_datos'] ?? false,
                 'estado_revision'                => EstadoRevisionEnum::Pendiente,
                 'observaciones_revision'         => null,
             ]);
+
+            if ($product->assigned_investigator_user_id !== null) {
+                $product->update(['assigned_investigator_user_id' => null]);
+            }
 
             // Registrar autores del producto
             $autoresProducto = $data['autores'] ?? [];

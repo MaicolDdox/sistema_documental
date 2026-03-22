@@ -5,7 +5,7 @@
 
         <div class="mb-4">
             <h1 class="text-2xl font-bold text-slate-900">Productos de Semilleros</h1>
-            <p class="text-sm text-slate-500 mt-0.5">Productos pre-aprobados listos para ser formalizados ante el Director de Grupo</p>
+            <p class="text-sm text-slate-500 mt-0.5">Productos aprobados por el líder de semillero. Si el líder te los asignó explícitamente, solo tú los verás aquí; si no hubo asignación, aparecen a los autores del proyecto vinculado.</p>
         </div>
 
         @if(session('success'))

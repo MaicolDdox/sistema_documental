@@ -48,11 +48,18 @@ class ProductoController extends Controller
     public function bandejaSemilleros(): View
     {
         $proyectosIds = \App\Models\ProjectAuthor::where('user_id', Auth::id())->pluck('project_id');
+        $uid = Auth::id();
 
-        $productos = \App\Models\Product::with(['project', 'productAuthors.projectAuthor.user.person'])
-            ->whereIn('project_id', $proyectosIds)
+        $productos = \App\Models\Product::with(['project', 'productAuthors.projectAuthor.user.person', 'assignedInvestigator.person'])
             ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)
             ->whereDoesntHave('groupProducts')
+            ->where(function ($q) use ($proyectosIds, $uid) {
+                $q->where('assigned_investigator_user_id', $uid)
+                    ->orWhere(function ($q2) use ($proyectosIds) {
+                        $q2->whereNull('assigned_investigator_user_id')
+                            ->whereIn('project_id', $proyectosIds);
+                    });
+            })
             ->latest()
             ->paginate(15);
 
@@ -66,7 +73,15 @@ class ProductoController extends Controller
     {
         $soyAutor = \App\Models\ProjectAuthor::where('user_id', Auth::id())
             ->where('project_id', $producto->project_id)->exists();
-        if (!$soyAutor) abort(403, 'No estás autorizado para formalizar este producto.');
+        if ($producto->assigned_investigator_user_id !== null) {
+            abort_unless(
+                (int) $producto->assigned_investigator_user_id === (int) Auth::id(),
+                403,
+                'Este producto fue enviado a otro investigador asociado.'
+            );
+        } else {
+            abort_unless($soyAutor, 403, 'No estás autorizado para formalizar este producto.');
+        }
 
         $proyectos = Project::where('id', $producto->project_id)->get();
 

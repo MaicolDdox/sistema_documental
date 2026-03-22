@@ -8,9 +8,10 @@
                 <h2 class="text-xl font-semibold text-slate-900 mt-0.5">Panel super administrador</h2>
                 <p class="text-sm text-slate-600 mt-1 max-w-2xl">
                     Métricas y actividad de <span class="font-medium text-slate-800">todos los centros de formación</span>.
-                    Para dar de alta un <strong>administrador del sistema</strong>, úsalo en <em>Usuarios (Livewire)</em> con rol
-                    <code class="text-xs bg-slate-100 px-1 rounded">administrador_sistema</code> y elige su <strong>centro de formación</strong>;
-                    ese administrador solo verá datos y listados de ese centro.
+                    Para dar de alta un <strong>administrador del sistema</strong>, úsalo en <em>Usuarios</em> con rol
+                    <code class="text-xs bg-slate-100 px-1 rounded">administrador_sistema</code>.
+                    Puedes asignar el <strong>centro</strong> al crearlo o dejarlo sin centro y vincularlo en <strong>Centro ↔ administrador</strong>;
+                    con centro asignado solo verá datos de ese centro.
                 </p>
             </div>
             <span class="inline-flex items-center gap-1.5 self-start rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shrink-0">

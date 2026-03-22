@@ -25,14 +25,16 @@
     modalAprobar: false,
     modalRechazar: false,
     modalRegistrar: false,
+    modalAsignarInv: false,
     selectedId: null,
     selectedTitulo: '',
     detalleId: null,
     baseUrl: '{{ url('lider-semillero/productos') }}',
     openDetalle(id) { this.detalleId = id; this.modalDetalle = true; },
     openAprobar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAprobar = true; },
-    openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; }
-}" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif">
+    openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; },
+    openAsignarInv(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAsignarInv = true; }
+}" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif @if(session('open_asignar_product_id')) $nextTick(() => { selectedId = {{ session('open_asignar_product_id') }}; modalAsignarInv = true; }); @endif">
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
@@ -61,10 +63,13 @@
 @if($errors->has('observaciones'))
 <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('observaciones') }}</div>
 @endif
+@if($errors->has('assigned_investigator_user_id'))
+<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('assigned_investigator_user_id') }}</div>
+@endif
 
 <div class="mb-4">
     <h2 class="text-base font-semibold text-slate-900">Productos del semillero</h2>
-    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero (no puedes aprobar los tuyos propios)</p>
+    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero (no puedes aprobar los tuyos propios). Los aprobados los envías a un <strong>investigador asociado</strong> de tu grupo para que los formalice y suban al grupo.</p>
 </div>
 
 <div class="sgd-table-card bg-white overflow-hidden">
@@ -158,19 +163,31 @@
                                 </button>
                             @endif
 
-                            {{-- Subir al grupo de investigación (solo aprobados) --}}
+                            {{-- Enviar a investigador asociado → formaliza en grupo (solo aprobados) --}}
                             @if($estadoRev === 'aprobado')
                                 @if(!$prod->ya_en_grupo)
-                                    <form action="{{ route('lider-sem.productos.subir-grupo', $prod) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit"
-                                                class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition"
-                                                title="Subir al grupo de investigación">
-                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 9.75 12 5.25m0 0-4.5 4.5M12 5.25V18" />
-                                            </svg>
-                                        </button>
-                                    </form>
+                                    @if($semillero->research_group_id)
+                                        @if($prod->assigned_investigator_user_id)
+                                            <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-100 max-w-[10rem] truncate inline-block align-middle" title="Esperando formalización por el investigador">
+                                                → {{ $prod->assignedInvestigator?->person?->nombre_completo ?? $prod->assignedInvestigator?->email ?? 'Investigador' }}
+                                            </span>
+                                        @else
+                                            <button type="button"
+                                                data-id="{{ $prod->id }}"
+                                                data-titulo="{{ e($prod->nombre ?? '') }}"
+                                                @click="openAsignarInv($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                                @disabled($investigadoresGrupo->isEmpty())
+                                                class="inline-flex items-center gap-1 ml-1 text-[11px] px-2 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-500 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
+                                                title="{{ $investigadoresGrupo->isEmpty() ? 'No hay investigadores asociados en tu grupo' : 'Elegir investigador que formalizará en el grupo' }}">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                                </svg>
+                                                Enviar a investigador
+                                            </button>
+                                        @endif
+                                    @else
+                                        <span class="ml-1 text-[11px] text-slate-400 italic">Sin grupo vinculado</span>
+                                    @endif
                                 @else
                                     <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
                                         En grupo
@@ -449,6 +466,64 @@
                     <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">Registrar producto</button>
                 </div>
             </form>
+        </div>
+    </div>
+</template>
+
+{{-- Modal: enviar producto a investigador asociado del grupo --}}
+<template x-teleport="body">
+    <div x-show="modalAsignarInv" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50" @click="modalAsignarInv = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+            @click.stop
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Enviar a investigador asociado</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Debe pertenecer a tu grupo de investigación y al mismo centro</p>
+                </div>
+                <button type="button" @click="modalAsignarInv = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 mb-4 text-sm text-sky-900" x-show="selectedTitulo">
+                <span class="font-medium">Producto:</span> <span x-text="selectedTitulo"></span>
+            </div>
+            @if($investigadoresGrupo->isEmpty())
+                <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">No hay investigadores asociados vinculados a tu grupo. Verifica el grupo del semillero y que existan usuarios con rol <strong>investigador asociado</strong>.</p>
+                <div class="flex justify-end pt-4">
+                    <button type="button" @click="modalAsignarInv = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
+                </div>
+            @else
+                <form :action="baseUrl + '/' + selectedId + '/asignar-investigador'" method="post" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label for="assigned_investigator_user_id" class="block text-sm font-medium text-slate-700 mb-1">Investigador asociado *</label>
+                        <select name="assigned_investigator_user_id" id="assigned_investigator_user_id" required
+                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+                            <option value="">Seleccionar…</option>
+                            @foreach($investigadoresGrupo as $inv)
+                                @php $label = $inv->person?->nombre_completo ?? $inv->email; @endphp
+                                <option value="{{ $inv->id }}" @selected((string) old('assigned_investigator_user_id') === (string) $inv->id)>{{ $label }} — {{ $inv->email }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <p class="text-xs text-slate-500">El investigador verá el producto en <strong>Productos → Bandeja de Semilleros</strong> y completará la formalización para el Director del grupo.</p>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" @click="modalAsignarInv = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">Enviar</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 </template>

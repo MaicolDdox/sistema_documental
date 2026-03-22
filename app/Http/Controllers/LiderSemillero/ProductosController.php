@@ -15,12 +15,13 @@ use App\Models\Product;
 use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
+use App\Models\User;
 use App\Services\Investigador\ProductoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class ProductosController extends Controller
@@ -30,16 +31,17 @@ class ProductosController extends Controller
      */
     public function index(): View
     {
-        $semillero = Auth::user()->ledSeedlings()->first();
+        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
         $productos = collect();
         $proyectosParaRegistro = collect();
+        $investigadoresGrupo = collect();
 
         if ($semillero) {
             $projectIds = DB::table('project_seedlings')
                 ->where('seedling_id', $semillero->id)
                 ->pluck('project_id');
 
-            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'groupProducts'])
+            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'groupProducts', 'assignedInvestigator.person'])
                 ->whereIn('project_id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()
@@ -50,6 +52,19 @@ class ProductosController extends Controller
                     $prod->ya_en_grupo = $prod->groupProducts->isNotEmpty();
                     return $prod;
                 });
+
+            if ($semillero->research_group_id) {
+                $investigadoresGrupo = User::query()
+                    ->whereHas('roles', fn ($q) => $q->where('name', 'investigador_asociado'))
+                    ->whereHas('researchGroups', fn ($q) => $q->where('research_groups.id', $semillero->research_group_id))
+                    ->when(
+                        Auth::user()->training_center_id,
+                        fn ($q, $tc) => $q->where('training_center_id', $tc)
+                    )
+                    ->with('person')
+                    ->orderBy('email')
+                    ->get();
+            }
 
             // Proyectos del semillero donde el usuario es autor (para registrar producto)
             $proyectosParaRegistro = Project::whereIn('id', $projectIds)
@@ -64,6 +79,7 @@ class ProductosController extends Controller
             'semillero' => $semillero,
             'productos' => $productos,
             'proyectosParaRegistro' => $proyectosParaRegistro,
+            'investigadoresGrupo' => $investigadoresGrupo,
         ]);
     }
 
@@ -154,28 +170,8 @@ class ProductosController extends Controller
             ]);
         }
 
-        $groupProductData = [
-            'author_id' => Auth::id(),
-            'product_id' => $product->id,
-            'tipo_proyecto_origen' => TipoProyectoOrigenEnum::Semilleros,
-            'codigo_proyecto_origen' => '0',
-            'titulo' => $validated['titulo'],
-            'anio_publicacion' => (int) now()->format('Y'),
-            'nombre_programa_formacion_impacto' => 'N/A',
-            'minciencias_typology_id' => $validated['minciencias_typology_id'],
-            'minciencias_subcategory_id' => $subcategory->id,
-            'knowledge_grand_area_id' => $knowledgeGrand->id,
-            'knowledge_area_id' => $knowledgeArea->id,
-            'tiene_repositorio' => $tieneRepositorio,
-            'url_repositorio' => $tieneRepositorio ? $validated['url_repositorio'] : null,
-            'evidencia' => !$tieneRepositorio ? $archivoProducto : null,
-            'autoriza_datos' => false,
-            'estado_revision' => EstadoRevisionEnum::Pendiente,
-        ];
-        GroupProduct::create($groupProductData);
-
         return redirect()->route('lider-sem.productos')
-            ->with('success', 'Producto registrado correctamente. Estado de revisión: pendiente.');
+            ->with('success', 'Producto registrado correctamente. Estado de revisión: pendiente. Cuando esté aprobado, asígnalo a un investigador asociado de tu grupo para que lo formalice ante el Director.');
     }
 
     /**
@@ -256,67 +252,71 @@ class ProductosController extends Controller
     }
 
     /**
-     * Toma un producto ya registrado por el asesor y aprobado,
-     * y lo sube al grupo de investigación asociado al semillero del líder.
+     * Asigna un producto aprobado a un investigador asociado del mismo grupo de investigación del semillero;
+     * el investigador lo formalizará desde su bandeja (subida al grupo).
      */
-    public function subirAGrupo(Product $producto, ProductoService $service): RedirectResponse
+    public function asignarInvestigadorGrupo(Request $request, Product $producto): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
-        if (!$semillero || !$semillero->researchGroup) {
+        if (! $semillero || ! $semillero->research_group_id) {
             return redirect()->route('lider-sem.productos')
                 ->with('error', 'Tu semillero no tiene un grupo de investigación asociado.');
         }
 
-        // Verificar que el producto pertenece al semillero del líder
-        if (!$this->perteneceAlSemillero($producto, $semillero->id)) {
+        if (! $this->perteneceAlSemillero($producto, $semillero->id)) {
             abort(403, 'El producto no pertenece a tu semillero.');
         }
 
-        // Si ya tiene un registro en el grupo, no duplicar
         if ($producto->groupProducts()->exists()) {
             return redirect()->route('lider-sem.productos')
                 ->with('error', 'Este producto ya está vinculado al grupo de investigación.');
         }
 
-        // Solo productos aprobados pasan al grupo
         if ($producto->estado_revision !== EstadoRevisionEnum::Aprobado) {
             return redirect()->route('lider-sem.productos')
-                ->with('error', 'Solo puedes subir al grupo productos aprobados.');
+                ->with('error', 'Solo puedes asignar productos aprobados.');
         }
 
-        $grupoId = $semillero->researchGroup->id;
+        $validator = Validator::make($request->all(), [
+            'assigned_investigator_user_id' => ['required', 'exists:users,id'],
+        ], [
+            'assigned_investigator_user_id.required' => 'Debes elegir un investigador asociado.',
+        ]);
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('open_asignar_product_id', $producto->id);
+        }
+        $validated = $validator->validated();
 
-        // Construimos datos mínimos para el servicio a partir del producto existente
-        $validated = [
-            'project_id'                       => $producto->project_id,
-            'product_base_id'                  => $producto->id,
-            'titulo'                           => $producto->nombre,
-            'descripccion'                     => null,
-            'tipo_proyecto_origen'             => TipoProyectoOrigenEnum::Semilleros->value,
-            'campo_otro'                       => null,
-            'codigo_proyecto_origen'           => null,
-            'anio_publicacion'                 => (int) now()->year,
-            'nombre_programa_formacion_impacto'=> null,
-            'minciencias_typology_id'          => null,
-            'minciencias_subcategory_id'       => null,
-            'knowledge_grand_area_id'          => null,
-            'knowledge_area_id'                => null,
-            'tiene_repositorio'                => (bool) $producto->url_repositorio,
-            'url_repositorio'                  => $producto->url_repositorio,
-            'autoriza_datos'                   => false,
-            'autores'                          => [],
-        ];
+        $invId = (int) $validated['assigned_investigator_user_id'];
+        $investigador = User::with(['roles', 'researchGroups'])->findOrFail($invId);
 
-        try {
-            $service->registrar($validated, Auth::id(), (int) $grupoId);
-        } catch (\RuntimeException $e) {
+        if (! $investigador->hasRole('investigador_asociado')) {
             return redirect()->route('lider-sem.productos')
-                ->with('error', $e->getMessage());
+                ->with('error', 'El usuario seleccionado no tiene rol de investigador asociado.');
         }
+
+        $idsGruposInv = $investigador->researchGroups->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if (! in_array((int) $semillero->research_group_id, $idsGruposInv, true)) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', 'El investigador debe pertenecer al mismo grupo de investigación vinculado a tu semillero.');
+        }
+
+        if (Auth::user()->training_center_id
+            && (int) $investigador->training_center_id !== (int) Auth::user()->training_center_id) {
+            return redirect()->route('lider-sem.productos')
+                ->with('error', 'El investigador debe pertenecer a tu mismo centro de formación.');
+        }
+
+        $producto->update([
+            'assigned_investigator_user_id' => $invId,
+        ]);
 
         return redirect()
             ->route('lider-sem.productos')
-            ->with('success', 'Producto enviado al grupo de investigación para revisión del Director.');
+            ->with('success', 'Producto enviado al investigador asociado. Podrá formalizarlo y subirlo al grupo desde su bandeja.');
     }
 
     /**

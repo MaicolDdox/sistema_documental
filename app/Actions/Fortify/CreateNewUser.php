@@ -30,7 +30,7 @@ class CreateNewUser implements CreatesNewUsers
 
         $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
         $roleName = $input['role'] ?? '';
-        if ($roleName === 'administrador_sistema' || TrainingCenterAccess::roleRequiresTrainingCenter($roleName)) {
+        if (TrainingCenterAccess::roleRequiresTrainingCenter($roleName)) {
             $trainingCenterRules = ['required', Rule::exists('training_centers', 'id')->where('activo', true)];
         }
 

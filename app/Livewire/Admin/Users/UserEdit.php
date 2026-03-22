@@ -89,7 +89,7 @@ class UserEdit extends Component
         $auth = auth()->user();
 
         $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
-        if ($this->role === 'administrador_sistema' || TrainingCenterAccess::roleRequiresTrainingCenter($this->role)) {
+        if (TrainingCenterAccess::roleRequiresTrainingCenter($this->role)) {
             $trainingCenterRules = ['required', Rule::exists('training_centers', 'id')->where('activo', true)];
         }
         $allowedCenters = TrainingCenterAccess::allowedCenterIdsForSave($auth);
