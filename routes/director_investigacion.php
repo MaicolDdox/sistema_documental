@@ -35,6 +35,7 @@ Route::middleware(['auth', 'ensure.active', 'role:director_investigacion'])
             Route::get('/create',                    [InvestigadorController::class, 'create'])->name('create');
             Route::post('/',                         [InvestigadorController::class, 'store'])->name('store');
             Route::patch('/{investigador}/estado',   [InvestigadorController::class, 'toggleEstado'])->name('toggle-estado');
+            Route::patch('/{investigador}/reset-password',  [InvestigadorController::class, 'resetPassword'])->name('reset-password');
             Route::patch('/{investigador}/rol',      [InvestigadorController::class, 'cambiarRol'])->name('cambiar-rol');
             Route::delete('/{investigador}/desvincular', [InvestigadorController::class, 'desvincular'])->name('desvincular');
         });

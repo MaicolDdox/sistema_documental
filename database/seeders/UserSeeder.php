@@ -121,31 +121,33 @@ class UserSeeder extends Seeder
         }
 
         // Vincular directores de investigación a sus grupos en research_group_users
+        // Se busca por training_center_id para garantizar que cada director
+        // quede vinculado al grupo de SU propio centro (lógica multiplatforma).
         $dirGrupo1 = User::where('email', 'dirgrupo1@sena.edu.co')->first();
         $dirGrupo2 = User::where('email', 'dirgrupo2@sena.edu.co')->first();
 
-        // Obtener los dos grupos de investigación (primero = Agroindustrial, segundo = Industria)
-        $grupos = ResearchGroup::orderBy('id')->take(2)->get();
+        $grupoAgroindustrial = ResearchGroup::where('training_center_id', $centroAgroindustrial->id)->first();
+        $grupoIndustria      = ResearchGroup::where('training_center_id', $centroIndustria->id)->first();
 
-        if ($dirGrupo1 && $grupos->isNotEmpty()) {
+        if ($dirGrupo1 && $grupoAgroindustrial) {
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->first()->id, 'user_id' => $dirGrupo1->id],
+                ['research_group_id' => $grupoAgroindustrial->id, 'user_id' => $dirGrupo1->id],
                 ['rol' => RolGrupoEnum::Director]
             );
         }
 
-        if ($dirGrupo2 && $grupos->count() >= 2) {
+        if ($dirGrupo2 && $grupoIndustria) {
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->last()->id, 'user_id' => $dirGrupo2->id],
+                ['research_group_id' => $grupoIndustria->id, 'user_id' => $dirGrupo2->id],
                 ['rol' => RolGrupoEnum::Director]
             );
         }
 
-        // Vincular investigador asociado de prueba al grupo 1
+        // Vincular investigador asociado de prueba al grupo del centroAgroindustrial
         $investigador = User::where('email', 'investigador@sena.edu.co')->first();
-        if ($investigador && $grupos->isNotEmpty()) {
+        if ($investigador && $grupoAgroindustrial) {
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupos->first()->id, 'user_id' => $investigador->id],
+                ['research_group_id' => $grupoAgroindustrial->id, 'user_id' => $investigador->id],
                 ['rol' => RolGrupoEnum::InvestigadorAsociado]
             );
         }

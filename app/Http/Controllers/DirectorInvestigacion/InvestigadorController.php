@@ -55,14 +55,15 @@ class InvestigadorController extends Controller
         $grupoId = $this->getGrupoId();
 
         $validated = $request->validate([
-            'email'            => ['required', 'email', 'max:255', 'unique:users,email'],
-            'tipo_documento'   => ['required', 'string', Rule::in(['cedula ciudadana', 'tarjeta identidad', 'cedula extranjeria', 'pasaporte'])],
-            'numero_documento' => ['required', 'string', 'max:20', 'unique:users,numero_documento'],
-            'primer_nombre'    => ['required', 'string', 'max:100'],
-            'segundo_nombre'   => ['nullable', 'string', 'max:100'],
-            'primer_apellido'  => ['required', 'string', 'max:100'],
-            'segundo_apellido' => ['nullable', 'string', 'max:100'],
-            'cvlac_link'       => ['nullable', 'string', 'max:500'],
+            'email'                 => ['required', 'email', 'max:255', 'unique:users,email'],
+            'tipo_documento'        => ['required', 'string', Rule::in(['cedula ciudadana', 'tarjeta identidad', 'cedula extranjeria', 'pasaporte'])],
+            'numero_documento'      => ['required', 'string', 'max:20', 'unique:users,numero_documento'],
+            'primer_nombre'         => ['required', 'string', 'max:100'],
+            'segundo_nombre'        => ['nullable', 'string', 'max:100'],
+            'primer_apellido'       => ['required', 'string', 'max:100'],
+            'segundo_apellido'      => ['nullable', 'string', 'max:100'],
+            'cvlac_link'            => ['nullable', 'string', 'max:500'],
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         $validated['training_center_id'] = Auth::user()->training_center_id;
@@ -77,7 +78,7 @@ class InvestigadorController extends Controller
 
         return redirect()
             ->to($route)
-            ->with('success', 'Investigador creado y notificado por correo exitosamente.');
+            ->with('success', 'Investigador creado exitosamente. Recuerda entregarle las credenciales personalmente.');
     }
 
     /**
@@ -128,6 +129,37 @@ class InvestigadorController extends Controller
     }
 
     /**
+     * Permite al director resetear la contraseña de un investigador de su grupo.
+     */
+    public function resetPassword(Request $request, User $investigador): RedirectResponse
+    {
+        $grupoId = $this->getGrupoId();
+
+        // Seguridad: el investigador debe pertenecer al grupo del director
+        abort_unless(
+            ResearchGroupUser::where('research_group_id', $grupoId)
+                ->where('user_id', $investigador->id)
+                ->whereNot('rol', RolGrupoEnum::Director)
+                ->exists(),
+            403
+        );
+
+        $request->validate([
+            'nueva_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'nueva_password.required'  => 'La nueva contraseña es obligatoria.',
+            'nueva_password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+            'nueva_password.confirmed' => 'Las contraseñas no coinciden.',
+        ]);
+
+        $investigador->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->nueva_password),
+        ]);
+
+        return back()->with('success', "Contraseña de {$investigador->person?->primer_nombre} restablecida exitosamente. Entrega las nuevas credenciales al investigador.");
+    }
+
+    /**
      * Desvincula al investigador del grupo (no lo elimina del sistema).
      */
     public function desvincular(User $investigador): RedirectResponse
@@ -143,3 +175,4 @@ class InvestigadorController extends Controller
             ->with('success', 'Investigador desvinculado del grupo.');
     }
 }
+

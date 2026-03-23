@@ -62,10 +62,17 @@
                         </td>
                         <td class="px-4 py-3 text-slate-500 text-xs">{{ $proyecto->fecha_inicio?->format('d/m/Y') ?? '—' }}</td>
                         <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                Activo
+                            @if($proyecto->fecha_fin && $proyecto->fecha_fin < now())
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 border border-blue-200 text-blue-700">
+                                <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                Finalizado
                             </span>
+                            @else
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 border border-green-200 text-green-700">
+                                <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                En ejecución
+                            </span>
+                            @endif
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2 justify-end">
