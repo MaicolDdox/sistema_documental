@@ -8,7 +8,7 @@
                 <h2 class="text-xl font-semibold text-slate-900 mt-0.5">Panel super administrador</h2>
                 <p class="text-sm text-slate-600 mt-1 max-w-2xl">
                     Métricas y actividad de <span class="font-medium text-slate-800">todos los centros de formación</span>.
-                    Para dar de alta un <strong>administrador del sistema</strong>, úsalo en <em>Usuarios</em> con rol
+                    Para dar de alta un <strong>administrador del sistema</strong>, úsalo en <em>Gestión de usuarios</em> (<code class="text-xs bg-slate-100 px-1 rounded">/admin/usuarios</code>) con rol
                     <code class="text-xs bg-slate-100 px-1 rounded">administrador_sistema</code>.
                     Puedes asignar el <strong>centro</strong> al crearlo o dejarlo sin centro y vincularlo en <strong>Centro ↔ administrador</strong>;
                     con centro asignado solo verá datos de ese centro.
@@ -59,9 +59,7 @@
                         <h3 class="text-sm font-semibold text-slate-900">Usuarios recientes</h3>
                         <p class="text-xs text-slate-500 mt-0.5">Últimos registros en cualquier centro</p>
                     </div>
-                    @if(\Illuminate\Support\Facades\Route::has('admin.users.manage'))
-                    <a href="{{ route('admin.users.manage') }}" class="text-sm font-medium text-[#39A900] hover:text-[#2d8500] transition-colors">Gestionar usuarios</a>
-                    @endif
+                    <a href="{{ route('admin.usuarios.index') }}" wire:navigate class="text-sm font-medium text-[#39A900] hover:text-[#2d8500] transition-colors">Gestionar usuarios</a>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="sgd-table text-sm">
@@ -171,12 +169,12 @@
                         </span>
                         Panel admin (tu centro)
                     </a>
-                    @if(\Illuminate\Support\Facades\Route::has('admin.users.manage'))
-                    <a href="{{ route('admin.users.manage') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium">
+                    <a href="{{ route('admin.usuarios.index') }}"
+                       wire:navigate
+                       class="sgd-btn-primary inline-flex w-full items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium cursor-pointer no-underline hover:text-white">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                        Usuarios (Livewire)
+                        Gestión de usuarios
                     </a>
-                    @endif
                     @if(\Illuminate\Support\Facades\Route::has('admin.training-centers.index'))
                     <a href="{{ route('admin.training-centers.index') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/></svg>

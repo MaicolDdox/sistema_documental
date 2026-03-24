@@ -99,6 +99,14 @@
                             <div>
                                 <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Cargo / Estado</p>
                                 <p class="text-sm text-slate-700">{{ $cargoLabel }}</p>
+                                @php
+                                    $rolPrincipalNombre = \App\Support\RoleModuleLinks::primaryRoleNameForUser($user) ?? $user->primary_role_name;
+                                    $rolSistemaLabel = $rolPrincipalNombre ? ucfirst(str_replace('_', ' ', $rolPrincipalNombre)) : '—';
+                                @endphp
+                                <p class="text-xs text-slate-500 mt-0.5">Rol sistema: <span class="text-slate-700 font-medium">{{ $rolSistemaLabel }}</span></p>
+                                @if(\App\Support\TrainingCenterAccess::isSuperAdmin(auth()->user()))
+                                <p class="text-xs text-slate-500 mt-0.5">Centro: <span class="text-slate-700 font-medium">{{ $user->trainingCenter?->nombre ?? 'Sin centro' }}</span></p>
+                                @endif
                                 @if($estadoActivo)
                                 <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 mt-0.5"><span class="w-2 h-2 rounded-full bg-green-500"></span> Activo</span>
                                 @else
@@ -114,6 +122,7 @@
                             'email' => $user->email,
                             'email_institucional' => $user->person?->email_institucional ?? $user->email ?? '—',
                             'cargo' => $cargoLabel,
+                            'centro' => $user->trainingCenter?->nombre ?? 'Sin centro',
                             'roles' => $user->roles->pluck('name')->map(fn($n) => ucfirst(str_replace('_', ' ', $n)))->toArray(),
                             'estado' => $estadoActivo ? 'Activo' : 'Inactivo',
                         ]) }})" class="p-2.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Ver detalle">
@@ -228,6 +237,7 @@
                             <div><dt class="text-slate-500 font-medium">Correo electrónico</dt><dd class="text-slate-900 mt-0.5 break-all" x-text="detalle.email"></dd></div>
                             <div><dt class="text-slate-500 font-medium">Email institucional</dt><dd class="text-slate-900 mt-0.5 break-all" x-text="detalle.email_institucional || '—'"></dd></div>
                             <div><dt class="text-slate-500 font-medium">Cargo / Rol</dt><dd class="text-slate-900 mt-0.5" x-text="detalle.cargo"></dd></div>
+                            <div><dt class="text-slate-500 font-medium">Centro de formación</dt><dd class="text-slate-900 mt-0.5" x-text="detalle.centro || 'Sin centro'"></dd></div>
                             <div x-show="detalle.roles && detalle.roles.length">
                                 <dt class="text-slate-500 font-medium">Roles asignados</dt>
                                 <dd class="mt-1 flex flex-wrap gap-1.5">

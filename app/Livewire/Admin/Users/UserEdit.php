@@ -6,6 +6,7 @@ use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\User;
 use App\Support\RoleModuleLinks;
+use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -130,6 +131,19 @@ class UserEdit extends Component
 
         if ($allowedCenters !== null) {
             $this->training_center_id = $allowedCenters[0];
+        }
+
+        if (TrainingCenterAccess::isSuperAdmin($auth)
+            && SystemAdminCenterLink::roleNameIsSystemAdministrator($this->role)
+            && $this->training_center_id !== null
+            && (int) $this->training_center_id !== 0
+            && SystemAdminCenterLink::trainingCenterHasSystemAdmin((int) $this->training_center_id, (int) $this->user->id)) {
+            $this->addError(
+                'training_center_id',
+                'Cada centro solo puede tener un administrador del sistema. Usa «Centro ↔ administrador» o deja sin centro al administrador actual.'
+            );
+
+            return;
         }
 
         $this->user->training_center_id = $this->training_center_id;
