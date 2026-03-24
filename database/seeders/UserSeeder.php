@@ -149,12 +149,10 @@ class UserSeeder extends Seeder
         $dirGrupo1 = User::where('email', 'dirgrupo1@sena.edu.co')->first();
         $dirGrupo2 = User::where('email', 'dirgrupo2@sena.edu.co')->first();
 
-        // Grupos: típicamente id menor = Agroindustrial (9116), id mayor = Industria (9527)
-        $grupoAgro = ResearchGroup::where('codigo', 9116)->first()
-            ?? ResearchGroup::orderBy('id')->first();
-        $grupoIndustria = ResearchGroup::where('codigo', 9527)->first()
-            ?? ResearchGroup::orderByDesc('id')->first();
+        $grupoAgroindustrial = ResearchGroup::where('training_center_id', $centroAgroindustrial->id)->first();
+        $grupoIndustria = ResearchGroup::where('training_center_id', $centroIndustria->id)->first();
 
+        // dirgrupo1 → grupo del centro Industria (9527); dirgrupo2 → grupo Agroindustrial (9116)
         if ($dirGrupo1 && $grupoIndustria) {
             ResearchGroupUser::where('user_id', $dirGrupo1->id)->delete();
             ResearchGroupUser::firstOrCreate(
@@ -163,19 +161,19 @@ class UserSeeder extends Seeder
             );
         }
 
-        if ($dirGrupo2 && $grupoAgro) {
+        if ($dirGrupo2 && $grupoAgroindustrial) {
             ResearchGroupUser::where('user_id', $dirGrupo2->id)->delete();
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupoAgro->id, 'user_id' => $dirGrupo2->id],
+                ['research_group_id' => $grupoAgroindustrial->id, 'user_id' => $dirGrupo2->id],
                 ['rol' => RolGrupoEnum::Director]
             );
         }
 
-        // Vincular investigador asociado de prueba al grupo Agroindustrial
+        // Vincular investigador asociado de prueba al grupo del centro agroindustrial
         $investigador = User::where('email', 'investigador@sena.edu.co')->first();
-        if ($investigador && $grupoAgro) {
+        if ($investigador && $grupoAgroindustrial) {
             ResearchGroupUser::firstOrCreate(
-                ['research_group_id' => $grupoAgro->id, 'user_id' => $investigador->id],
+                ['research_group_id' => $grupoAgroindustrial->id, 'user_id' => $investigador->id],
                 ['rol' => RolGrupoEnum::InvestigadorAsociado]
             );
         }

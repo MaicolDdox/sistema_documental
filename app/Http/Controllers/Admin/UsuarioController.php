@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
+use App\Models\TrainingCenter;
 use App\Models\User;
 use App\Support\RoleModuleLinks;
+use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -29,7 +32,7 @@ class UsuarioController extends Controller
 
         $auth = $request->user();
         $query = TrainingCenterAccess::scopeUserQueryForList(
-            User::with(['person.entityPosition', 'roles']),
+            User::with(['person.entityPosition', 'roles', 'trainingCenter']),
             $auth
         );
 
@@ -117,15 +120,31 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.asignar_rol');
 
+        $validatedFilter = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'rol'    => ['nullable', 'string', 'exists:roles,name'],
+        ]);
+
         $query = TrainingCenterAccess::scopeUserQueryForList(
             User::with(['person', 'roles']),
             auth()->user()
-        )
-            ->whereHas('roles')
-            ->orderBy('numero_documento');
+        );
 
-        if ($request->filled('search')) {
-            $term = $request->search;
+        $rolFiltro = $validatedFilter['rol'] ?? null;
+        if ($rolFiltro) {
+            $query->where(function (Builder $q) use ($rolFiltro) {
+                $q->whereHas('roles', function (Builder $r) use ($rolFiltro) {
+                    $r->where('roles.name', $rolFiltro)->where('roles.guard_name', 'web');
+                })->orWhere('users.primary_role_name', $rolFiltro);
+            });
+        } else {
+            $query->whereHas('roles');
+        }
+
+        $query->orderBy('numero_documento');
+
+        if (! empty($validatedFilter['search'])) {
+            $term = $validatedFilter['search'];
             $query->where(function ($q) use ($term) {
                 $q->where('numero_documento', 'like', "%{$term}%")
                   ->orWhere('email', 'like', "%{$term}%")
@@ -192,9 +211,13 @@ class UsuarioController extends Controller
     public function create()
     {
         $this->authorize('usuarios.crear');
-        
+
         $roles = Role::all();
-        return view('admin.usuarios.create', compact('roles'));
+        $trainingCenters = TrainingCenterAccess::isSuperAdmin(auth()->user())
+            ? TrainingCenter::query()->where('activo', true)->orderBy('nombre')->get()
+            : collect();
+
+        return view('admin.usuarios.create', compact('roles', 'trainingCenters'));
     }
 
     /**
@@ -214,12 +237,41 @@ class UsuarioController extends Controller
             'rol'              => 'nullable|exists:roles,name',
         ]);
 
+        $actor = auth()->user();
+        if (TrainingCenterAccess::isSuperAdmin($actor)) {
+            $request->validate([
+                'training_center_id' => ['nullable', 'exists:training_centers,id'],
+            ]);
+        }
+
         // Separar nombre y apellido en primer/segundo (para tabla people)
         [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
         [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
 
+        // Por defecto: quien crea no es super → hereda el centro del creador (usuarios de su sede).
+        // Super administrador: no copia su propio centro; elige en el formulario o queda sin centro (vinculación manual después).
+        if (! TrainingCenterAccess::isSuperAdmin($actor)) {
+            $trainingCenterId = $actor->training_center_id;
+        } else {
+            $rawTc = $request->input('training_center_id');
+            $trainingCenterId = ($rawTc === null || $rawTc === '') ? null : (int) $rawTc;
+            if (! empty($validated['rol'])
+                && in_array($validated['rol'], ['administrador_sistema', 'admin'], true)
+            ) {
+                $trainingCenterId = null;
+            }
+            if (TrainingCenterAccess::roleRequiresTrainingCenter($validated['rol'] ?? null)
+                && ($trainingCenterId === null || (int) $trainingCenterId === 0)) {
+                return redirect()->back()
+                    ->withErrors([
+                        'training_center_id' => 'Este rol exige un centro de formación. Selecciónalo o crea el usuario y asígnalo al editar.',
+                    ])
+                    ->withInput();
+            }
+        }
+
         $user = User::create([
-            'training_center_id' => auth()->user()->training_center_id,
+            'training_center_id' => $trainingCenterId,
             'email'              => $validated['email'],
             'numero_documento'   => $validated['numero_documento'],
             // Usamos el valor del enum por defecto: cédula de ciudadanía
@@ -265,8 +317,11 @@ class UsuarioController extends Controller
 
         $usuario = $this->findUserScoped((int) $id);
         $roles = Role::all();
+        $trainingCenters = TrainingCenterAccess::isSuperAdmin(auth()->user())
+            ? TrainingCenter::query()->where('activo', true)->orderBy('nombre')->get()
+            : collect();
 
-        return view('admin.usuarios.edit', compact('usuario', 'roles'));
+        return view('admin.usuarios.edit', compact('usuario', 'roles', 'trainingCenters'));
     }
 
     /**
@@ -287,14 +342,40 @@ class UsuarioController extends Controller
             'rol'              => 'required|exists:roles,name',
         ]);
 
+        if (TrainingCenterAccess::isSuperAdmin(auth()->user())) {
+            $request->validate([
+                'training_center_id' => ['nullable', 'exists:training_centers,id'],
+            ]);
+        }
+
+        if (TrainingCenterAccess::isSuperAdmin(auth()->user())) {
+            $rawTc = $request->input('training_center_id');
+            $newTcId = ($rawTc === null || $rawTc === '') ? null : (int) $rawTc;
+            if (SystemAdminCenterLink::roleNameIsSystemAdministrator($validated['rol'])
+                && $newTcId !== null && $newTcId !== 0
+                && SystemAdminCenterLink::trainingCenterHasSystemAdmin($newTcId, $usuario->id)) {
+                return redirect()->back()
+                    ->withErrors([
+                        'training_center_id' => 'Cada centro solo puede tener un administrador del sistema. Este centro ya está vinculado a otro usuario. Usa «Centro ↔ administrador» o deja sin centro al administrador actual.',
+                    ])
+                    ->withInput();
+            }
+        }
+
         // Separar nombre y apellido en primer/segundo
         [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
         [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
 
-        $usuario->update([
+        $userAttrs = [
             'email'            => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-        ]);
+        ];
+        if (TrainingCenterAccess::isSuperAdmin(auth()->user())) {
+            $rawTc = $request->input('training_center_id');
+            $userAttrs['training_center_id'] = ($rawTc === null || $rawTc === '') ? null : (int) $rawTc;
+        }
+        $usuario->update($userAttrs);
+        $usuario->refresh();
 
         // Actualizar Persona
         if ($usuario->person) {

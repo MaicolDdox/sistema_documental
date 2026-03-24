@@ -76,4 +76,24 @@
             </form>
         </div>
     </div>
+    <script>
+        function filterTrainingCenterCities(deptSelect, citySelect) {
+            if (!deptSelect || !citySelect) return;
+            var deptId = deptSelect.value;
+            citySelect.querySelectorAll('option[data-department]').forEach(function (opt) {
+                var ok = deptId && String(opt.getAttribute('data-department')) === String(deptId);
+                opt.hidden = !ok;
+                opt.disabled = !ok;
+            });
+            var cur = citySelect.selectedOptions[0];
+            if (cur && cur.disabled) citySelect.value = '';
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            var d = document.getElementById('department_id');
+            var c = document.getElementById('city_id');
+            if (!d || !c) return;
+            d.addEventListener('change', function () { filterTrainingCenterCities(d, c); });
+            filterTrainingCenterCities(d, c);
+        });
+    </script>
 </x-app-layout>
