@@ -281,7 +281,7 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
                 @foreach($productos as $i => $p)
                 @php $estado = $p->estado_revision?->value ?? (string)($p->estado_revision ?? 'pendiente'); @endphp
                 <tr>
-                    <td style="text-align:center; color:#94a3b8;">{{ $i + 1 }}</td>
+                    <td style="text-align:center; color:#94a3b8;">{{ $loop->iteration }}</td>
                     <td style="color:#64748b; font-size:8px;">{{ $p->author?->person?->nombre_completo ?? $p->author?->email ?? '—' }}</td>
                     <td><strong style="color:#0f172a;">{{ $p->titulo }}</strong></td>
                     <td style="color:#64748b; font-size:8px;">{{ $p->product?->project?->nombre ?? '—' }}</td>

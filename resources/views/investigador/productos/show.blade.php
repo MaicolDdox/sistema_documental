@@ -113,7 +113,7 @@
                       class="flex items-end gap-3">
                     @csrf
                     <div class="flex-1">
-                        <input type="file" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+                        <input type="file" name="archivos[]" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" multiple
                                class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-sm file:font-medium hover:file:bg-slate-200 transition-all">
                     </div>
                     <button type="submit" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all flex-shrink-0">

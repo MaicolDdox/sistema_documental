@@ -104,11 +104,13 @@ class ProductoController extends Controller
     /**
      * Formulario para registrar un nuevo producto del semillero.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $proyectos = Project::where('project_creator_id', Auth::id())
             ->orderBy('nombre')
             ->get();
+            
+        $proyectoSeleccionado = $request->query('project_id');
 
         $tipologias      = MincienciasTypology::orderBy('nombre')->get();
         $subcategorias   = MincienciasSubcategory::orderBy('nombre')->get();
@@ -123,6 +125,7 @@ class ProductoController extends Controller
             'subcategorias'    => $subcategorias,
             'grandesAreas'     => $grandesAreas,
             'areasConocimiento' => $areasConocimiento,
+            'proyectoSeleccionado' => $proyectoSeleccionado,
         ]);
     }
 

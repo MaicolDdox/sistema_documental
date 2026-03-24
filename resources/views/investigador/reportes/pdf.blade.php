@@ -95,8 +95,10 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
     $logoPath = public_path('images/sena-logo.png');
     $logoB64  = file_exists($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
     $tipoLabel = match($tipo) {
-        'aprobados' => 'Solo Productos Aprobados',
-        default     => 'Todos los Productos',
+        'aprobados'  => 'Solo Productos Aprobados',
+        'internos'   => 'Productos Internos del Grupo',
+        'semilleros' => 'Productos de Semilleros',
+        default      => 'Todos los Productos',
     };
 @endphp
 
@@ -154,6 +156,12 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
 
 {{-- ══ MÉTRICAS ══ --}}
 <div class="sec-title">Resumen de Actividad</div>
+@php
+    $aprobados  = $productos->filter(fn($p) => ($p->estado_revision?->value ?? $p->estado_revision) === 'aprobado')->count();
+    $revision   = $productos->filter(fn($p) => ($p->estado_revision?->value ?? $p->estado_revision) === 'en_revision')->count();
+    $pendientes = $productos->filter(fn($p) => ($p->estado_revision?->value ?? $p->estado_revision) === 'pendiente')->count();
+    $rechazados = $productos->filter(fn($p) => ($p->estado_revision?->value ?? $p->estado_revision) === 'rechazado')->count();
+@endphp
 <div class="table-wrap" style="border-radius:0 0 6px 6px; padding:10px 8px; margin-bottom:4px;">
     <table class="metrics-table">
         <tr>
@@ -162,23 +170,23 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
                 <div class="m-label">Proyectos Creados</div>
             </td>
             <td class="metric-cell m-default">
-                <div class="m-num">{{ $metricas['total_productos'] }}</div>
+                <div class="m-num">{{ $productos->count() }}</div>
                 <div class="m-label">Total Productos</div>
             </td>
             <td class="metric-cell m-green">
-                <div class="m-num">{{ $metricas['productos_aprobados'] }}</div>
+                <div class="m-num">{{ $aprobados }}</div>
                 <div class="m-label">Aprobados</div>
             </td>
             <td class="metric-cell m-blue">
-                <div class="m-num">{{ $metricas['productos_revision'] }}</div>
+                <div class="m-num">{{ $revision }}</div>
                 <div class="m-label">En Revisión</div>
             </td>
             <td class="metric-cell m-amber">
-                <div class="m-num">{{ $metricas['productos_pendientes'] }}</div>
+                <div class="m-num">{{ $pendientes }}</div>
                 <div class="m-label">Pendientes</div>
             </td>
             <td class="metric-cell m-red">
-                <div class="m-num">{{ $metricas['productos_rechazados'] }}</div>
+                <div class="m-num">{{ $rechazados }}</div>
                 <div class="m-label">Rechazados</div>
             </td>
         </tr>
@@ -211,7 +219,7 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
                 $estado = $p->estado_revision?->value ?? (string)($p->estado_revision ?? 'pendiente');
             @endphp
             <tr>
-                <td style="text-align:center; color:#94a3b8;">{{ $i + 1 }}</td>
+                <td style="text-align:center; color:#94a3b8;">{{ $loop->iteration }}</td>
                 <td><strong style="color:#0f172a;">{{ $p->titulo }}</strong></td>
                 <td style="color:#64748b;">{{ $p->product?->project?->nombre ?? '—' }}</td>
                 <td style="text-align:center; color:#475569; font-weight:bold;">{{ $p->anio_publicacion ?? '—' }}</td>

@@ -28,21 +28,24 @@ class EvidenciaController extends Controller
         $this->authorize('subirEvidencia', $producto);
 
         $request->validate([
-            'archivo'    => ['required', 'file', 'max:10240'], // 10 MB
+            'archivos'   => ['required', 'array', 'min:1', 'max:10'], // Máx 10 a la vez
+            'archivos.*' => ['required', 'file', 'max:10240'], // 10 MB c/u
             'descripccion' => ['nullable', 'string', 'max:300'],
         ]);
 
         try {
-            $this->service->subirParaProducto(
-                $request->file('archivo'),
-                $producto,
-                Auth::id()
-            );
+            foreach ($request->file('archivos') as $file) {
+                $this->service->subirParaProducto(
+                    $file,
+                    $producto,
+                    Auth::id()
+                );
+            }
         } catch (\RuntimeException $e) {
-            return back()->withErrors(['archivo' => $e->getMessage()]);
+            return back()->withErrors(['archivos' => $e->getMessage()]);
         }
 
-        return back()->with('success', 'Evidencia cargada correctamente.');
+        return back()->with('success', 'Evidencia(s) cargada(s) correctamente.');
     }
 
     /**
@@ -53,21 +56,24 @@ class EvidenciaController extends Controller
         $this->authorize('update', $proyecto);
 
         $request->validate([
-            'archivo'    => ['required', 'file', 'max:10240'],
+            'archivos'   => ['required', 'array', 'min:1', 'max:10'], // Máx 10 a la vez
+            'archivos.*' => ['required', 'file', 'max:10240'], // 10 MB c/u
             'descripccion' => ['nullable', 'string', 'max:300'],
         ]);
 
         try {
-            $this->service->subirParaProyecto(
-                $request->file('archivo'),
-                $proyecto,
-                Auth::id()
-            );
+            foreach ($request->file('archivos') as $file) {
+                $this->service->subirParaProyecto(
+                    $file,
+                    $proyecto,
+                    Auth::id()
+                );
+            }
         } catch (\RuntimeException $e) {
-            return back()->withErrors(['archivo' => $e->getMessage()]);
+            return back()->withErrors(['archivos' => $e->getMessage()]);
         }
 
-        return back()->with('success', 'Evidencia de proyecto cargada correctamente.');
+        return back()->with('success', 'Evidencia(s) de proyecto cargada(s) correctamente.');
     }
 
     /**
