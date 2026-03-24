@@ -28,10 +28,7 @@ class ProyectoController extends Controller
      */
     private function getSemilleroDelAsesor(): ?Seedling
     {
-        return Seedling::whereHas('advisors', function ($q) {
-            $q->where('external_advisors.user_id', Auth::id())
-              ->where('seedling_advisors.activo', true);
-        })->first();
+        return \App\Support\AsesorSemilleroContext::semilleroActivo();
     }
 
     /**
@@ -50,7 +47,7 @@ class ProyectoController extends Controller
      */
     public function index(Request $request): View
     {
-        $semillero = $this->getSemilleroActivo();
+        $semillero = $this->getSemilleroDelAsesor();
         $proyectos = collect();
 
         if ($semillero) {
@@ -83,7 +80,7 @@ class ProyectoController extends Controller
      */
     public function create(): View
     {
-        $semillero        = $this->getSemilleroActivo();
+        $semillero        = $this->getSemilleroDelAsesor();
         if (! $semillero) {
             abort(403, 'No tienes un semillero asignado.');
         }
@@ -108,7 +105,7 @@ class ProyectoController extends Controller
      */
     public function store(StoreProyectoRequest $request): RedirectResponse
     {
-        $semillero = $this->getSemilleroActivo();
+        $semillero = $this->getSemilleroDelAsesor();
         if (!$semillero) {
             return redirect()->back()->with('error', 'No tienes un semillero asignado.');
         }

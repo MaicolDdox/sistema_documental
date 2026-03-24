@@ -80,7 +80,7 @@
             </div>
             <div class="header-right">
                 <p style="color: #cbd5e1; font-weight: bold; font-size: 18px;">SENA</p>
-                <p>Fecha de emisión: <br>{{ date('d/m/Y H:i A') }}</p>
+                <p>Fecha de emisión: <br>{{ now('America/Bogota')->format('d/m/Y h:i A') }}</p>
             </div>
         </div>
     </div>

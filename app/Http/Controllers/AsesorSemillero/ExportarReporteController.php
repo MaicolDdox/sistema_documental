@@ -207,6 +207,12 @@ class ExportarReporteController extends Controller
                 ->where('projects.estado', 'inactivo')->count();
             $sem->totalMiembros = $sem->members()->count();
             $sem->miembros = $sem->members()->with('person')->get();
+
+            // Asegurar que el líder esté cargado con su relación person
+            if (! $sem->relationLoaded('leader') || ! $sem->leader?->relationLoaded('person')) {
+                $sem->load('leader.person');
+            }
+
             return $sem;
         });
 

@@ -61,8 +61,8 @@
             </td>
             <td>{{ $sem->researchGroup?->nombre ?? '—' }}</td>
             <td>
-                @if($sem->leader && $sem->leader->person)
-                    <strong>{{ $sem->leader->person->primer_nombre }} {{ $sem->leader->person->primer_apellido }}</strong>
+                @if($sem->leader)
+                    <strong>{{ $sem->leader->person ? trim($sem->leader->person->primer_nombre . ' ' . $sem->leader->person->primer_apellido) : $sem->leader->email }}</strong>
                 @else
                     <span class="text-muted">Sin líder asignado</span>
                 @endif

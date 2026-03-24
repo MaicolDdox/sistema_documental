@@ -14,7 +14,7 @@
 </head>
 <body>
     <h1>{{ $titulo ?? 'Semilleros con Métricas' }}</h1>
-    <p>Generado: {{ now()->format('d/m/Y H:i') }}</p>
+    <p>Generado: {{ now('America/Bogota')->format('d/m/Y H:i') }}</p>
     <table>
         <thead>
             <tr>

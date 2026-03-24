@@ -91,7 +91,7 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
         <div class="header-doc-cell">
             <div class="doc-label">Informe del Grupo</div>
             <div class="doc-sub">Director de Investigación</div>
-            <div class="doc-code">Código: SGD-GRP-{{ now()->format('Ymd') }}</div>
+            <div class="doc-code">Código: SGD-GRP-{{ now('America/Bogota')->format('Ymd') }}</div>
         </div>
     </div>
 </div>
@@ -111,7 +111,7 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
             </td>
             <td style="padding-right:16px;">
                 <div style="font-size:8px;font-weight:bold;text-transform:uppercase;color:#64748b;letter-spacing:.5px;margin-bottom:2px;">Fecha generación</div>
-                <div style="font-size:10px;font-weight:bold;color:#166534;">{{ now()->format('d/m/Y H:i') }}</div>
+                <div style="font-size:10px;font-weight:bold;color:#166534;">{{ now('America/Bogota')->format('d/m/Y H:i') }}</div>
             </td>
             <td>
                 <div style="font-size:8px;font-weight:bold;text-transform:uppercase;color:#64748b;letter-spacing:.5px;margin-bottom:2px;">Total registros</div>
@@ -241,12 +241,12 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
 {{-- ══ FOOTER ══ --}}
 <div class="footer">
     <div class="footer-left">
-        SENA · Servicio Nacional de Aprendizaje · {{ now()->year }}<br>
+        SENA · Servicio Nacional de Aprendizaje · {{ now('America/Bogota')->year }}<br>
         <span style="color:#bbb;">Documento de uso interno. Sistema de Gestión Documental — SGD.</span>
     </div>
     <div class="footer-center">sgd.sena.gov.co</div>
     <div class="footer-right">
-        Generado el {{ now()->format('d/m/Y \a \l\a\s H:i:s') }}<br>
+        Generado el {{ now('America/Bogota')->format('d/m/Y \a \l\a\s H:i:s') }}<br>
         <span style="color:#bbb;">Página 1 de 1</span>
     </div>
 </div>
