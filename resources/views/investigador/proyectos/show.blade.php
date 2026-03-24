@@ -18,6 +18,15 @@
                             Vinculado a macro-proyecto
                         </span>
                     @endif
+                    @if($proyecto->fecha_fin && $proyecto->fecha_fin < now())
+                        <span class="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 ml-1">
+                            Proyecto Finalizado
+                        </span>
+                    @else
+                        <span class="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 ml-1">
+                            En ejecución
+                        </span>
+                    @endif
                 </div>
                 <a href="{{ route('investigador.proyectos.edit', $proyecto) }}"
                    class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2 px-3 rounded-lg text-sm transition-all flex-shrink-0">
@@ -52,9 +61,10 @@
                     <h3 class="text-sm font-semibold text-slate-900">Productos registrados</h3>
                     <p class="text-xs text-slate-400 mt-0.5">{{ $proyecto->products->count() }} producto(s) asociado(s) a este proyecto</p>
                 </div>
-                <a href="{{ route('investigador.productos.create') }}"
-                   class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all">
-                    + Registrar producto
+                <a href="{{ route('investigador.productos.create', ['project_id' => $proyecto->id]) }}"
+                   class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2 px-3 rounded-lg text-xs transition-all flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                    Registrar producto final
                 </a>
             </div>
             <div class="p-5">
@@ -104,9 +114,16 @@
                       class="flex items-end gap-3">
                     @csrf
                     <div class="flex-1">
-                        <label class="block text-xs font-medium text-slate-700 mb-1">Archivo (PDF, imagen, Word — máx. 10 MB)</label>
-                        <input type="file" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Archivo(s) (PDF, imagen, Word — máx. 10 MB c/u)</label>
+                        <input type="file" name="archivos[]" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" multiple
                                class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-sm file:font-medium hover:file:bg-slate-200 transition-all">
+                        <p class="text-xs text-slate-400 mt-1">Usa Ctrl o Shift al seleccionar la evidencia para subir múltiples archivos a la vez.</p>
+                        @error('archivos')
+                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
+                        @error('archivos.*')
+                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <button type="submit" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all flex-shrink-0">
                         Subir

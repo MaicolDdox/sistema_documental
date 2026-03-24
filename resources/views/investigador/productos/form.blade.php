@@ -66,7 +66,7 @@
                             </div>
                         </div>
                     @elseif(!isset($groupProduct) || !$groupProduct)
-                    <div x-data="autoresLoader()" x-init="init()">
+                    <div x-data="autoresLoader('{{ old('project_id', $proyectoSeleccionado ?? '') }}')" x-init="init()">
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Proyecto asociado <span class="text-red-500">*</span></label>
                         <select name="project_id" x-model="proyectoId" @change="cargarAutores($event.target.value)"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all" required>
@@ -161,49 +161,70 @@
             </div>
 
             {{-- Clasificación Minciencias --}}
-            <div class="bg-white rounded-xl border border-slate-200 mb-4">
+            <div class="bg-white rounded-xl border border-slate-200 mb-4"
+                 x-data="{
+                    tipologiaSeleccionada: '{{ old('minciencias_typology_id', $groupProduct?->minciencias_typology_id ?? '') }}',
+                    subcategoriaSeleccionada: '{{ old('minciencias_subcategory_id', $groupProduct?->minciencias_subcategory_id ?? '') }}',
+                    todasSubcategorias: {{ $subcategorias->toJson() }},
+                    
+                    granAreaSeleccionada: '{{ old('knowledge_grand_area_id', $groupProduct?->knowledge_grand_area_id ?? '') }}',
+                    areaSeleccionada: '{{ old('knowledge_area_id', $groupProduct?->knowledge_area_id ?? '') }}',
+                    todasAreas: {{ $areasConocimiento->toJson() }},
+                    
+                    get subcategoriasFiltradas() {
+                        if (!this.tipologiaSeleccionada) return [];
+                        return this.todasSubcategorias.filter(s => s.minciencias_typology_id == this.tipologiaSeleccionada);
+                    },
+                    get areasFiltradas() {
+                        if (!this.granAreaSeleccionada) return [];
+                        return this.todasAreas.filter(a => a.knowledge_grand_area_id == this.granAreaSeleccionada);
+                    }
+                 }">
+                 
                 <div class="px-5 py-4 border-b border-slate-100">
                     <h3 class="text-sm font-semibold text-slate-900">Clasificación Minciencias</h3>
                 </div>
                 <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Tipología Minciencias</label>
-                        <select name="minciencias_typology_id"
+                        <select name="minciencias_typology_id" x-model="tipologiaSeleccionada"
+                                @change="subcategoriaSeleccionada = ''"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                             <option value="">Selecciona...</option>
                             @foreach($tipologias as $t)
-                                <option value="{{ $t->id }}" {{ old('minciencias_typology_id', $groupProduct?->minciencias_typology_id) == $t->id ? 'selected' : '' }}>{{ $t->nombre }}</option>
+                                <option value="{{ $t->id }}">{{ $t->nombre }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Subcategoría Minciencias</label>
-                        <select name="minciencias_subcategory_id"
+                        <select name="minciencias_subcategory_id" x-model="subcategoriaSeleccionada"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                             <option value="">Selecciona...</option>
-                            @foreach($subcategorias as $s)
-                                <option value="{{ $s->id }}" {{ old('minciencias_subcategory_id', $groupProduct?->minciencias_subcategory_id) == $s->id ? 'selected' : '' }}>{{ $s->nombre }}</option>
-                            @endforeach
+                            <template x-for="s in subcategoriasFiltradas" :key="s.id">
+                                <option :value="s.id" x-text="s.nombre"></option>
+                            </template>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Gran área del conocimiento</label>
-                        <select name="knowledge_grand_area_id"
+                        <select name="knowledge_grand_area_id" x-model="granAreaSeleccionada"
+                                @change="areaSeleccionada = ''"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                             <option value="">Selecciona...</option>
                             @foreach($grandesAreas as $ga)
-                                <option value="{{ $ga->id }}" {{ old('knowledge_grand_area_id', $groupProduct?->knowledge_grand_area_id) == $ga->id ? 'selected' : '' }}>{{ $ga->nombre }}</option>
+                                <option value="{{ $ga->id }}">{{ $ga->nombre }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Área del conocimiento</label>
-                        <select name="knowledge_area_id"
+                        <select name="knowledge_area_id" x-model="areaSeleccionada"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                             <option value="">Selecciona...</option>
-                            @foreach($areasConocimiento as $ac)
-                                <option value="{{ $ac->id }}" {{ old('knowledge_area_id', $groupProduct?->knowledge_area_id) == $ac->id ? 'selected' : '' }}>{{ $ac->nombre }}</option>
-                            @endforeach
+                            <template x-for="a in areasFiltradas" :key="a.id">
+                                <option :value="a.id" x-text="a.nombre"></option>
+                            </template>
                         </select>
                     </div>
                 </div>
@@ -251,11 +272,15 @@
 
     @push('scripts')
     <script>
-    function autoresLoader() {
+    function autoresLoader(initialId = '') {
         return {
-            proyectoId: '',
+            proyectoId: initialId,
             autores: [],
-            init() {},
+            init() {
+                if (this.proyectoId) {
+                    this.cargarAutores(this.proyectoId);
+                }
+            },
             async cargarAutores(proyectoId) {
                 if (!proyectoId) { this.autores = []; return; }
                 const select = document.querySelector('[name="project_id"]');

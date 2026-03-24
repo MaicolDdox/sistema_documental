@@ -144,6 +144,8 @@ class UserSeeder extends Seeder
         User::where('email', 'dirgrupo2@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
 
         // Vincular directores de investigación a sus grupos en research_group_users
+        // Se busca por training_center_id para garantizar que cada director
+        // quede vinculado al grupo de SU propio centro (lógica multiplatforma).
         $dirGrupo1 = User::where('email', 'dirgrupo1@sena.edu.co')->first();
         $dirGrupo2 = User::where('email', 'dirgrupo2@sena.edu.co')->first();
 

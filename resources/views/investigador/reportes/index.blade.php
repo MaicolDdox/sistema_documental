@@ -122,7 +122,7 @@
     @endif
 
     {{-- Panel de descargas --}}
-    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm" x-data="{ tipo: 'aprobados', periodo: '' }">
+    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm mt-auto" x-data="initReportesData()">
         <h3 class="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <svg class="w-4 h-4 text-[#39A900]" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
@@ -134,48 +134,51 @@
             {{-- Tipo --}}
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1.5">Productos a incluir</label>
-                <div class="flex gap-2">
-                    <button type="button" @click="tipo = 'aprobados'"
-                            :class="tipo === 'aprobados' ? 'bg-[#39A900] text-white border-[#39A900]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#39A900] hover:text-[#39A900]'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Solo Aprobados</button>
-                    <button type="button" @click="tipo = 'todos'"
-                            :class="tipo === 'todos' ? 'bg-[#39A900] text-white border-[#39A900]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#39A900] hover:text-[#39A900]'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Todos</button>
+                <div class="flex gap-2 flex-wrap">
+                    @foreach([['aprobados','Solo Aprobados'],['internos','Internos'],['semilleros','De Semilleros'],['todos','Todos (Ambos)']] as [$key,$lbl])
+                    <button type="button" @click="tipo = '{{ $key }}'"
+                            :class="tipo === '{{ $key }}' ? 'bg-[#39A900] text-white border-[#39A900]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#39A900] hover:text-[#39A900]'"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">{{ $lbl }}</button>
+                    @endforeach
                 </div>
             </div>
 
             {{-- Periodo --}}
             <div>
-                <label class="block text-xs font-medium text-slate-500 mb-1.5">Periodo</label>
-                <div class="flex gap-2">
-                    <button type="button" @click="periodo = ''"
-                            :class="periodo === '' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Todos</button>
-                    <button type="button" @click="periodo = 'semanal'"
-                            :class="periodo === 'semanal' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Semanal</button>
-                    <button type="button" @click="periodo = 'mensual'"
-                            :class="periodo === 'mensual' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Mensual</button>
-                    <button type="button" @click="periodo = 'anual'"
-                            :class="periodo === 'anual' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'"
-                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">Anual</button>
+                <label class="block text-xs font-medium text-slate-500 mb-1.5">Período</label>
+                <div class="flex gap-2 flex-wrap mb-1.5">
+                    @foreach([['','Todos'],['semanal','Semanal'],['mensual','Mensual'],['anual','Anual']] as [$key,$lbl])
+                    <button type="button" @click="setPeriodo('{{ $key }}')"
+                            :class="['{{ $key }}', 'personalizado'].includes(periodo) && '{{ $key }}' !== '' && periodo !== '' || periodo === '{{ $key }}' ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all">{{ $lbl }}</button>
+                    @endforeach
+                </div>
+
+                <div x-show="periodo !== ''" x-cloak class="flex items-center gap-2 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-200 w-fit">
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] font-semibold text-slate-500 uppercase flex-shrink-0">Desde</label>
+                        <input type="date" x-model="fecha_desde" @input="periodo = 'personalizado'" class="text-xs border-slate-300 rounded focus:ring-[#39A900] focus:border-[#39A900] py-1 px-2 h-7" max="{{ date('Y-m-d') }}">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] font-semibold text-slate-500 uppercase flex-shrink-0">Hasta</label>
+                        <input type="date" x-model="fecha_hasta" @input="periodo = 'personalizado'" class="text-xs border-slate-300 rounded focus:ring-[#39A900] focus:border-[#39A900] py-1 px-2 h-7" :min="fecha_desde" max="{{ date('Y-m-d') }}">
+                    </div>
                 </div>
             </div>
 
             {{-- Botones de descarga --}}
-            <div class="flex gap-2">
+            <div class="flex gap-2 relative z-10">
                 <button type="button"
-                        @click="window.location = '{{ route('investigador.reportes.exportar.csv') }}?tipo=' + tipo + '&periodo=' + periodo"
-                        class="flex items-center gap-2 bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-all shadow">
+                        @click="window.location.href = exportUrl('{{ route('investigador.reportes.exportar.csv') }}')"
+                        class="flex items-center gap-2 bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-all shadow h-10 mt-auto">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/>
                     </svg>
                     CSV (Excel)
                 </button>
                 <button type="button"
-                        @click="window.open('{{ route('investigador.reportes.exportar.pdf') }}?tipo=' + tipo + '&periodo=' + periodo, '_blank')"
-                        class="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-all shadow">
+                        @click="window.open(exportUrl('{{ route('investigador.reportes.exportar.pdf') }}'), '_blank')"
+                        class="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-all shadow h-10 mt-auto">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
                     </svg>
@@ -184,5 +187,62 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        function initReportesData() {
+            return {
+                tipo: 'aprobados',
+                periodo: '',
+                fecha_desde: '',
+                fecha_hasta: '',
+
+                init() {
+                    this.$watch('periodo', val => {
+                        if (val !== 'personalizado') {
+                            this.calcularFechas(val);
+                        }
+                    });
+                },
+
+                setPeriodo(val) {
+                    this.periodo = val;
+                    if (val === '') {
+                        this.fecha_desde = '';
+                        this.fecha_hasta = '';
+                    } else if (val !== 'personalizado') {
+                        this.calcularFechas(val);
+                    }
+                },
+
+                calcularFechas(val) {
+                    const hoy = new Date();
+                    let desde = new Date();
+                    
+                    if (val === 'semanal') {
+                        desde.setDate(hoy.getDate() - 7);
+                    } else if (val === 'mensual') {
+                        desde.setMonth(hoy.getMonth() - 1);
+                    } else if (val === 'anual') {
+                        desde.setFullYear(hoy.getFullYear() - 1);
+                    }
+
+                    this.fecha_desde = desde.toISOString().split('T')[0];
+                    this.fecha_hasta = hoy.toISOString().split('T')[0];
+                },
+
+                exportUrl(baseUrl) {
+                    let url = baseUrl + '?tipo=' + this.tipo + '&periodo=' + this.periodo;
+                    if (this.periodo !== '') {
+                        if (this.fecha_desde) url += '&desde=' + this.fecha_desde;
+                        if (this.fecha_hasta) url += '&hasta=' + this.fecha_hasta;
+                    }
+                    url += '&_t=' + Date.now();
+                    return url;
+                }
+            }
+        }
+    </script>
+    @endpush
 
 </x-app-layout>

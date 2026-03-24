@@ -74,21 +74,25 @@ class ReporteController extends Controller
     public function exportarCsv(Request $request): Response
     {
         $request->validate([
-            'tipo'    => ['nullable', 'in:aprobados,todos'],
-            'periodo' => ['nullable', 'in:semanal,mensual,anual'],
+            'tipo'    => ['nullable', 'in:aprobados,todos,internos,semilleros'],
+            'periodo' => ['nullable', 'in:semanal,mensual,anual,personalizado'],
+            'desde'   => ['nullable', 'date'],
+            'hasta'   => ['nullable', 'date'],
         ]);
 
         $userId  = auth()->id();
         $tipo    = $request->input('tipo', 'aprobados');
         $periodo = $request->input('periodo') ?? '';
 
-        [$desde, $hasta] = $this->rangoFechas($periodo);
-        $etiqueta        = $this->etiquetaPeriodo($periodo);
+        [$desde, $hasta] = $this->rangoFechas($periodo, $request);
+        $etiqueta        = $this->etiquetaPeriodo($periodo, $request);
 
         $query = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
             ->where('author_id', $userId)
             ->orderBy('anio_publicacion', 'desc')
             ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', 'aprobado'))
+            ->when($tipo === 'internos', fn($q) => $q->where('tipo_proyecto_origen', '!=', 'SEMILLEROS'))
+            ->when($tipo === 'semilleros', fn($q) => $q->where('tipo_proyecto_origen', 'SEMILLEROS'))
             ->when($desde, fn($q) => $q->whereBetween('created_at', [$desde, $hasta]));
 
         $productos = $query->get();
@@ -137,16 +141,18 @@ class ReporteController extends Controller
     public function exportarPdf(Request $request)
     {
         $request->validate([
-            'tipo'    => ['nullable', 'in:aprobados,todos'],
-            'periodo' => ['nullable', 'in:semanal,mensual,anual'],
+            'tipo'    => ['nullable', 'in:aprobados,todos,internos,semilleros'],
+            'periodo' => ['nullable', 'in:semanal,mensual,anual,personalizado'],
+            'desde'   => ['nullable', 'date'],
+            'hasta'   => ['nullable', 'date'],
         ]);
 
         $userId  = auth()->id();
         $tipo    = $request->input('tipo', 'todos');
         $periodo = $request->input('periodo') ?? '';
 
-        [$desde, $hasta] = $this->rangoFechas($periodo);
-        $etiqueta        = $this->etiquetaPeriodo($periodo);
+        [$desde, $hasta] = $this->rangoFechas($periodo, $request);
+        $etiqueta        = $this->etiquetaPeriodo($periodo, $request);
 
         $metricas = [
             'total_proyectos'      => Project::where('project_creator_id', $userId)->count(),
@@ -161,6 +167,8 @@ class ReporteController extends Controller
             ->where('author_id', $userId)
             ->orderBy('anio_publicacion', 'desc')
             ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', 'aprobado'))
+            ->when($tipo === 'internos', fn($q) => $q->where('tipo_proyecto_origen', '!=', 'SEMILLEROS'))
+            ->when($tipo === 'semilleros', fn($q) => $q->where('tipo_proyecto_origen', 'SEMILLEROS'))
             ->when($desde, fn($q) => $q->whereBetween('created_at', [$desde, $hasta]))
             ->get();
 
@@ -173,8 +181,15 @@ class ReporteController extends Controller
 
     // ──────────────────────────────────────────────────────────────────────────
 
-    private function rangoFechas(?string $periodo): array
+    private function rangoFechas(?string $periodo, Request $request = null): array
     {
+        if ($periodo === 'personalizado' && $request && $request->filled(['desde', 'hasta'])) {
+            return [
+                Carbon::parse($request->desde)->startOfDay(),
+                Carbon::parse($request->hasta)->endOfDay()
+            ];
+        }
+
         return match ($periodo ?? '') {
             'semanal' => [Carbon::now()->startOfWeek(),  Carbon::now()->endOfWeek()],
             'mensual' => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
@@ -183,8 +198,12 @@ class ReporteController extends Controller
         };
     }
 
-    private function etiquetaPeriodo(?string $periodo): string
+    private function etiquetaPeriodo(?string $periodo, Request $request = null): string
     {
+        if ($periodo === 'personalizado' && $request && $request->filled(['desde', 'hasta'])) {
+            return 'Del ' . Carbon::parse($request->desde)->format('d/m/Y') . ' al ' . Carbon::parse($request->hasta)->format('d/m/Y');
+        }
+
         return match ($periodo ?? '') {
             'semanal' => 'Semana ' . now()->weekOfYear . ' (' . now()->startOfWeek()->format('d/m') . ' - ' . now()->endOfWeek()->format('d/m/Y') . ')',
             'mensual' => ucfirst(now()->translatedFormat('F Y')),
