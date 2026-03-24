@@ -7,6 +7,19 @@
             El aprendiz quedará registrado con <strong>estado inactivo</strong> — no tendrá acceso al sistema. Es un registro documental del semillero.
         </p>
 
+        @if(session('error'))
+            <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2">
+                <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium">
+                Por favor, corrige los errores en el formulario para continuar.
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('asesor.aprendices.store') }}" novalidate>
             @csrf
 
@@ -23,7 +36,8 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Segundo nombre</label>
                         <input type="text" name="segundo_nombre" value="{{ old('segundo_nombre') }}"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('segundo_nombre') border-red-400 @enderror">
+                        @error('segundo_nombre') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Primer apellido <span class="text-red-500">*</span></label>
@@ -34,7 +48,8 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Segundo apellido</label>
                         <input type="text" name="segundo_apellido" value="{{ old('segundo_apellido') }}"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('segundo_apellido') border-red-400 @enderror">
+                        @error('segundo_apellido') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -82,7 +97,8 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Teléfono fijo</label>
                         <input type="number" name="telefono" value="{{ old('telefono') }}"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('telefono') border-red-400 @enderror">
+                        @error('telefono') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
             </div>
