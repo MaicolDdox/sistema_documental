@@ -66,11 +66,8 @@ class ProductosController extends Controller
                     ->get();
             }
 
-            // Proyectos del semillero donde el usuario es autor (para registrar producto)
+            // Todos los proyectos del semillero (el líder puede registrar productos en cualquiera)
             $proyectosParaRegistro = Project::whereIn('id', $projectIds)
-                ->whereHas('projectAuthors', function ($q) {
-                    $q->where('user_id', Auth::id());
-                })
                 ->orderBy('nombre')
                 ->get(['id', 'nombre']);
         }
@@ -116,26 +113,20 @@ class ProductosController extends Controller
         $projectIds = DB::table('project_seedlings')
             ->where('seedling_id', $semillero->id)
             ->pluck('project_id');
-        $esAutorEnProyecto = DB::table('project_authors')
-            ->where('project_id', $request->input('project_id'))
-            ->where('user_id', Auth::id())
-            ->exists();
-        if (!in_array((int) $request->input('project_id'), $projectIds->toArray()) || !$esAutorEnProyecto) {
-            abort(403, 'Debes ser autor en un proyecto de tu semillero para registrar un producto.');
+        if (!in_array((int) $request->input('project_id'), $projectIds->toArray())) {
+            abort(403, 'El proyecto no pertenece a tu semillero.');
         }
 
         $tieneRepositorio = $request->boolean('tiene_repositorio');
         $rules = [
-            'titulo' => 'required|string|max:500',
-            'project_id' => 'required|exists:projects,id',
-            'tiene_repositorio' => 'required|boolean',
-            'autores' => 'required|array',
-            'autores.*' => 'integer|exists:project_authors,id',
+            'titulo'           => 'required|string|max:500',
+            'project_id'       => 'required|exists:projects,id',
+            'tiene_repositorio'=> 'required|boolean',
         ];
         if ($tieneRepositorio) {
             $rules['url_repositorio'] = 'required|url|max:500';
         } else {
-            $rules['evidencia'] = 'required|file|max:10240'; // 10MB
+            $rules['evidencia'] = 'required|file|mimes:pdf,doc,docx,zip|max:10240';
         }
 
         $validated = $request->validate($rules, [
@@ -161,94 +152,20 @@ class ProductosController extends Controller
             'estado_revision' => EstadoRevisionEnum::Pendiente,
         ]);
 
-        // Vincular autores seleccionados al producto
-        $autorIds = $validated['autores'] ?? [];
-        foreach ($autorIds as $projectAuthorId) {
-            ProductAuthor::firstOrCreate([
-                'product_id'        => $product->id,
-                'project_author_id' => (int) $projectAuthorId,
-            ]);
-        }
-
         return redirect()->route('lider-sem.productos')
-            ->with('success', 'Producto registrado correctamente. Estado de revisión: pendiente. Cuando esté aprobado, asígnalo a un investigador asociado de tu grupo para que lo formalice ante el Director.');
+            ->with('success', 'Producto registrado correctamente. Cuando lo apruebes, podrás enviarlo a un investigador asociado de tu grupo.');
     }
 
-    /**
-     * Formulario para registrar un producto directamente para el grupo de investigación
-     * asociado al semillero del líder.
-     */
-    public function createGrupo(): View
-    {
-        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
-        if (!$semillero || !$semillero->researchGroup) {
-            abort(403, 'Tu semillero no tiene un grupo de investigación asociado.');
-        }
-
-        $proyectos = $semillero->projects()
-            ->orderBy('nombre')
-            ->get();
-
-        $tipologias        = MincienciasTypology::orderBy('nombre')->get();
-        $subcategorias     = MincienciasSubcategory::orderBy('nombre')->get();
-        $grandesAreas      = KnowledgeGrandArea::orderBy('nombre')->get();
-        $areasConocimiento = KnowledgeArea::orderBy('nombre')->get();
-
-        return view('lider_semillero.productos.create_grupo', [
-            'proyectos'          => $proyectos,
-            'tipologias'         => $tipologias,
-            'subcategorias'      => $subcategorias,
-            'grandesAreas'       => $grandesAreas,
-            'areasConocimiento'  => $areasConocimiento,
-            'semillero'          => $semillero,
-            'grupo'              => $semillero->researchGroup,
-        ]);
-    }
 
     /**
-     * Registra el producto en el grupo de investigación usando el mismo servicio
-     * que emplean los investigadores.
+     * Versión del método de asignación que recibe el product_id en el cuerpo del request
+     * en lugar de en la URL, para facilitar el uso desde formularios con Alpine.js.
      */
-    public function storeGrupo(Request $request, ProductoService $service): RedirectResponse
+    public function asignarInvestigadorForm(Request $request): RedirectResponse
     {
-        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
-        if (!$semillero || !$semillero->researchGroup) {
-            abort(403, 'Tu semillero no tiene un grupo de investigación asociado.');
-        }
-
-        $grupoId = $semillero->researchGroup->id;
-
-        $validated = $request->validate([
-            'project_id'                       => ['required', 'exists:projects,id'],
-            'titulo'                           => ['required', 'string', 'max:500'],
-            'descripccion'                     => ['nullable', 'string'],
-            'tipo_proyecto_origen'             => ['required', 'string'],
-            'campo_otro'                       => ['nullable', 'string', 'max:255'],
-            'codigo_proyecto_origen'           => ['nullable', 'string', 'max:100'],
-            'anio_publicacion'                 => ['required', 'integer', 'min:2000', 'max:' . (now()->year + 2)],
-            'nombre_programa_formacion_impacto'=> ['nullable', 'string', 'max:300'],
-            'minciencias_typology_id'          => ['nullable', 'exists:minciencias_typologies,id'],
-            'minciencias_subcategory_id'       => ['nullable', 'exists:minciencias_subcategories,id'],
-            'knowledge_grand_area_id'          => ['nullable', 'exists:knowledge_grand_areas,id'],
-            'knowledge_area_id'                => ['nullable', 'exists:knowledge_areas,id'],
-            'tiene_repositorio'                => ['boolean'],
-            'url_repositorio'                  => ['nullable', 'url', 'max:500'],
-            'autoriza_datos'                   => ['boolean'],
-        ]);
-
-        // Campos que el servicio espera pero aquí no usamos
-        $validated['product_base_id'] = null;
-        $validated['autores'] = [];
-
-        try {
-            $service->registrar($validated, Auth::id(), (int) $grupoId);
-        } catch (\RuntimeException $e) {
-            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
-        }
-
-        return redirect()
-            ->route('lider-sem.productos')
-            ->with('success', 'Producto registrado en el grupo de investigación. Estado pendiente para revisión del Director.');
+        $request->validate(['product_id' => 'required|integer|exists:products,id']);
+        $producto = Product::findOrFail($request->input('product_id'));
+        return $this->asignarInvestigadorGrupo($request, $producto);
     }
 
     /**

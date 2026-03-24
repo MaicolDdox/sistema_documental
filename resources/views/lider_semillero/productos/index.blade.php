@@ -41,13 +41,7 @@
         <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
     </div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('lider-sem.productos.grupo.create') }}"
-           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            Producto grupo investigación
-        </a>
+
         <button type="button" @click="modalRegistrar = true" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             + Registrar Producto
@@ -87,11 +81,20 @@
             <tbody>
                 @forelse($productos as $prod)
                 @php
-                    $estadoRev = $prod->estado_revision->value ?? (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
-                    $autorNombre = $prod->autor?->person?->nombre_completo ?? $prod->autor?->email ?? '—';
-                    $iniciales = $prod->autor && $prod->autor->person
-                        ? strtoupper(mb_substr($prod->autor->person->primer_nombre ?? '', 0, 1) . mb_substr($prod->autor->person->primer_apellido ?? '', 0, 1))
-                        : ($prod->autor ? strtoupper(mb_substr($prod->autor->email ?? '?', 0, 2)) : '—');
+                    $estadoRev = $prod->estado_revision instanceof \App\Enums\EstadoRevisionEnum
+                        ? $prod->estado_revision->value
+                        : (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
+                    $autorUser = $prod->productAuthors->first()?->projectAuthor?->user;
+                    $autorPerson = $autorUser?->person;
+                    $autorNombre = $autorPerson
+                        ? trim(($autorPerson->primer_nombre ?? '') . ' ' . ($autorPerson->primer_apellido ?? ''))
+                        : ($autorUser?->email ?? '—');
+                    if (!$autorNombre) $autorNombre = $autorUser?->email ?? '—';
+                    $iniciales = $autorPerson
+                        ? strtoupper(mb_substr($autorPerson->primer_nombre ?? '', 0, 1) . mb_substr($autorPerson->primer_apellido ?? '', 0, 1))
+                        : strtoupper(mb_substr($autorUser?->email ?? '?', 0, 2));
+                    // Compatibilidad con $prod->es_mio que usa el primer autor
+                    $prod->autor = $autorUser;
                     $proyectoNombre = $prod->project?->nombre ?? '—';
                     $repositorio = $prod->url_repositorio ? '✓ URL' : ($prod->archivo ? 'Archivo' : '—');
                 @endphp
@@ -418,14 +421,7 @@
                     </select>
                     @error('project_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Autores vinculados *</label>
-                    <select name="autores[]" id="registro-autores" multiple required
-                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900] min-h-[3rem]">
-                    </select>
-                    <p class="mt-1 text-xs text-slate-500">Selecciona los aprendices/asesores que serán autores del producto.</p>
-                    @error('autores')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">¿Tiene repositorio en línea?</label>
                     <div class="flex gap-6">
@@ -459,7 +455,7 @@
                     @error('evidencia')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-800">
-                    El producto se crea con estado_revision = pendiente. Debes ser autor en proyecto_autores del proyecto seleccionado.
+                    El producto se crea con estado <strong>pendiente de revisión</strong>. Una vez que lo apruebes, podrás enviarlo al investigador asociado desde esta misma lista.
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="modalRegistrar = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -504,8 +500,9 @@
                     <button type="button" @click="modalAsignarInv = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
                 </div>
             @else
-                <form :action="baseUrl + '/' + selectedId + '/asignar-investigador'" method="post" class="space-y-4">
+                <form action="{{ route('lider-sem.productos.asignar-investigador-form') }}" method="post" class="space-y-4">
                     @csrf
+                    <input type="hidden" name="product_id" :value="selectedId">
                     <div>
                         <label for="assigned_investigator_user_id" class="block text-sm font-medium text-slate-700 mb-1">Investigador asociado *</label>
                         <select name="assigned_investigator_user_id" id="assigned_investigator_user_id" required
@@ -532,44 +529,4 @@
 @endsection
 
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const projectSelect = document.getElementById('registro-project-id');
-    const autoresSelect = document.getElementById('registro-autores');
-    if (!projectSelect || !autoresSelect) return;
-
-    const oldAutores = @json(old('autores', []));
-
-    function cargarAutores(projectId) {
-        autoresSelect.innerHTML = '';
-        if (!projectId) return;
-
-        fetch(`{{ url('lider-semillero/api/proyecto') }}/${projectId}/autores`)
-            .then(resp => resp.ok ? resp.json() : [])
-            .then(data => {
-                autoresSelect.innerHTML = '';
-                data.forEach(function (item) {
-                    const opt = document.createElement('option');
-                    opt.value = item.id;
-                    opt.textContent = item.nombre;
-                    if (oldAutores.includes(item.id) || oldAutores.includes(String(item.id))) {
-                        opt.selected = true;
-                    }
-                    autoresSelect.appendChild(opt);
-                });
-            })
-            .catch(() => {
-                autoresSelect.innerHTML = '';
-            });
-    }
-
-    if (projectSelect.value) {
-        cargarAutores(projectSelect.value);
-    }
-
-    projectSelect.addEventListener('change', function () {
-        cargarAutores(this.value);
-    });
-});
-</script>
 @endpush

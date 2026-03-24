@@ -37,8 +37,14 @@ class ProductoService
             ->exists();
         $esCreador = $proyecto->project_creator_id === $userId;
 
-        if (! ($esAutor || $esCreador || $esAsignadoPorLider)) {
-            throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor.');
+        $esLiderDeProyecto = DB::table('project_seedlings')
+            ->join('seedlings', 'project_seedlings.seedling_id', '=', 'seedlings.id')
+            ->where('project_seedlings.project_id', $proyecto->id)
+            ->where('seedlings.leader_id', $userId)
+            ->exists();
+
+        if (! ($esAutor || $esCreador || $esAsignadoPorLider || $esLiderDeProyecto)) {
+            throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor ni eres el líder del semillero.');
         }
 
         $autoresProyecto = ProjectAuthor::where('project_id', $proyecto->id)

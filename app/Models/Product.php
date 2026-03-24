@@ -27,7 +27,8 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'estado' => EstadoEnum::class,
+        'estado'           => EstadoEnum::class,
+        'estado_revision'  => EstadoRevisionEnum::class,
     ];
 
     // ─────────────────────────────────────────────

@@ -46,14 +46,14 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:lider_semil
         Route::get('productos/{groupProduct}', [ProductosController::class, 'show'])->name('productos.show');
         Route::post('productos', [ProductosController::class, 'store'])->name('productos.store');
         // Usamos {producto} para que el binding coincida con Product $producto en el controlador
+        Route::post('productos/asignar-investigador-form', [ProductosController::class, 'asignarInvestigadorForm'])->name('productos.asignar-investigador-form');
         Route::patch('productos/{producto}/aprobar', [ProductosController::class, 'aprobar'])->name('productos.aprobar');
         Route::patch('productos/{producto}/rechazar', [ProductosController::class, 'rechazar'])->name('productos.rechazar');
         Route::post('productos/{producto}/asignar-investigador', [ProductosController::class, 'asignarInvestigadorGrupo'])->name('productos.asignar-investigador');
         Route::get('api/proyecto/{project_id}/autores', [ProductosController::class, 'apiAutoresPorProyecto'])->name('productos.autores');
 
         // Productos para grupo de investigación (registrados directamente por el líder)
-        Route::get('productos-grupo', [ProductosController::class, 'createGrupo'])->name('productos.grupo.create');
-        Route::post('productos-grupo', [ProductosController::class, 'storeGrupo'])->name('productos.grupo.store');
+
 
         // Aprendices: registro y vinculación
         Route::get('aprendices', [AprendicesController::class, 'index'])->name('aprendices');

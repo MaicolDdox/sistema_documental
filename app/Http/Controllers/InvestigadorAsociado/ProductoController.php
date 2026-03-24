@@ -44,21 +44,33 @@ class ProductoController extends Controller
 
     /**
      * Muestra productos aprobados por el semillero pendientes de formalización.
+     * Visible para el investigador asociado del grupo al que pertenece el semillero.
      */
     public function bandejaSemilleros(): View
     {
-        $proyectosIds = \App\Models\ProjectAuthor::where('user_id', Auth::id())->pluck('project_id');
         $uid = Auth::id();
+
+        // IDs de los grupos de investigación donde este usuario es miembro
+        $grupoIds = \App\Models\ResearchGroupUser::where('user_id', $uid)
+            ->pluck('research_group_id');
+
+        // IDs de semilleros vinculados a esos grupos
+        $semilleroIds = \App\Models\Seedling::whereIn('research_group_id', $grupoIds)
+            ->pluck('id');
+
+        // IDs de proyectos en esos semilleros
+        $proyectoIds = \Illuminate\Support\Facades\DB::table('project_seedlings')
+            ->whereIn('seedling_id', $semilleroIds)
+            ->pluck('project_id');
 
         $productos = \App\Models\Product::with(['project', 'productAuthors.projectAuthor.user.person', 'assignedInvestigator.person'])
             ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)
             ->whereDoesntHave('groupProducts')
-            ->where(function ($q) use ($proyectosIds, $uid) {
+            ->whereIn('project_id', $proyectoIds)
+            ->where(function ($q) use ($uid) {
+                // Mostrar si fue asignado explícitamente a este investigador, O si no tiene asignación específica
                 $q->where('assigned_investigator_user_id', $uid)
-                    ->orWhere(function ($q2) use ($proyectosIds) {
-                        $q2->whereNull('assigned_investigator_user_id')
-                            ->whereIn('project_id', $proyectosIds);
-                    });
+                  ->orWhereNull('assigned_investigator_user_id');
             })
             ->latest()
             ->paginate(15);

@@ -36,7 +36,8 @@ class DatabaseSeeder extends Seeder
             CargosEntidadesSeeder::class,
             LinkageTypesSeeder::class,
             TrainingProgramsSeeder::class,
-
+            MincienciasSeeder::class,
+            KnowledgeAreasSeeder::class,
         ]);
     }
 }
