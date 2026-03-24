@@ -88,6 +88,31 @@
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                @if($trainingCenters->isNotEmpty())
+                <div class="md:col-span-2">
+                    <label for="training_center_id" class="block text-sm font-medium text-slate-700 mb-1.5">Centro de formación <span class="text-slate-400 font-normal">(opcional)</span></label>
+                    <select name="training_center_id" id="training_center_id"
+                            class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_center_id') border-red-500 @enderror">
+                        <option value="">Sin centro (asignar luego en edición o en Centro ↔ administrador)</option>
+                        @foreach($trainingCenters as $tc)
+                            <option value="{{ $tc->id }}" {{ (string) old('training_center_id') === (string) $tc->id ? 'selected' : '' }}>
+                                {{ $tc->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('training_center_id')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-slate-500 mt-1">Como super administrador, el nuevo usuario <strong>no hereda</strong> automáticamente tu centro. Elígelo solo si aplica; roles como director de semilleros o investigador exigen centro.</p>
+                </div>
+                @endif
+
+                @if(auth()->user()?->hasRole('super_administrador'))
+                <div class="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
+                    <p><strong>Administrador del sistema / admin:</strong> se guardan <strong>sin centro</strong> aunque elijas uno aquí; la vinculación es en <strong>Super administración → Centro ↔ administrador</strong>.</p>
+                </div>
+                @endif
             </div>
 
             <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">

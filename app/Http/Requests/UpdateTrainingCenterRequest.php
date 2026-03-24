@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateTrainingCenterRequest extends FormRequest
 {
@@ -27,7 +28,12 @@ class UpdateTrainingCenterRequest extends FormRequest
             'nombre' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('training_centers', 'nombre')->ignore($id)],
             'codigo' => ['required', 'integer', 'min:0'],
             'department_id' => ['required', 'exists:departments,id'],
-            'city_id' => ['required', 'exists:cities,id'],
+            'city_id' => [
+                'required',
+                Rule::exists('cities', 'id')->where(function ($query) {
+                    $query->where('department_id', $this->input('department_id'));
+                }),
+            ],
         ];
     }
 }

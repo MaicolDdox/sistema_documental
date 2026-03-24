@@ -5,9 +5,9 @@
         <!-- Sidebar de Settings -->
         <aside class="w-full md:w-64 flex-shrink-0 bg-white rounded-xl border border-slate-200 p-3 h-fit">
             <nav class="space-y-1">
-                <a href="{{ route('settings.profile') }}" 
+                <a href="{{ route('profile.edit') }}" 
                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                          {{ request()->routeIs('settings.profile') ? 'bg-[#f0fdf4] text-[#39A900]' : 'text-slate-600 hover:bg-slate-50' }}">
+                          {{ request()->routeIs('profile.edit') ? 'bg-[#f0fdf4] text-[#39A900]' : 'text-slate-600 hover:bg-slate-50' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>

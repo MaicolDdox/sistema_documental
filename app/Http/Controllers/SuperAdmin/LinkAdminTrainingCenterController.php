@@ -5,23 +5,28 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\TrainingCenter;
 use App\Models\User;
+use App\Support\SystemAdminCenterLink;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LinkAdminTrainingCenterController extends Controller
 {
-    private const ADMIN_ROLE_NAMES = ['administrador_sistema', 'admin'];
-
     /**
-     * Administradores aún sin centro asignado (training_center_id null).
+     * Administradores aún sin centro asignado (training_center_id null o 0).
      */
     private function assignableAdministradores()
     {
-        return User::query()
-            ->whereNull('training_center_id')
-            ->whereHas('roles', fn ($r) => $r->whereIn('name', self::ADMIN_ROLE_NAMES))
-            ->whereDoesntHave('roles', fn ($r) => $r->where('name', 'super_administrador'))
+        [$roleIds, $roleNames] = SystemAdminCenterLink::webRoleIdsAndNames();
+
+        $base = User::query()
+            ->where(function (Builder $q) {
+                $q->whereNull('training_center_id')
+                    ->orWhere('training_center_id', 0);
+            });
+
+        return SystemAdminCenterLink::applyAdminSistemaNoSuperScope($base, $roleIds, $roleNames)
             ->with('person')
             ->orderBy('email')
             ->get();
@@ -32,32 +37,24 @@ class LinkAdminTrainingCenterController extends Controller
      */
     private function centrosDisponiblesParaVincular()
     {
+        [$roleIds, $roleNames] = SystemAdminCenterLink::webRoleIdsAndNames();
+
         return TrainingCenter::query()
-            ->whereDoesntHave('users', function ($q) {
-                $q->whereHas('roles', fn ($r) => $r->whereIn('name', self::ADMIN_ROLE_NAMES))
-                    ->whereDoesntHave('roles', fn ($r) => $r->where('name', 'super_administrador'));
+            ->whereDoesntHave('users', function ($q) use ($roleIds, $roleNames) {
+                SystemAdminCenterLink::applyAdminSistemaNoSuperScope($q, $roleIds, $roleNames);
             })
             ->orderBy('nombre')
             ->get();
     }
 
-    /** ¿Este centro ya tiene al menos un administrador del sistema (no super)? */
-    private function centroYaTieneAdministrador(int $trainingCenterId): bool
-    {
-        return User::query()
-            ->where('training_center_id', $trainingCenterId)
-            ->whereHas('roles', fn ($r) => $r->whereIn('name', self::ADMIN_ROLE_NAMES))
-            ->whereDoesntHave('roles', fn ($r) => $r->where('name', 'super_administrador'))
-            ->exists();
-    }
-
     public function index(): View
     {
+        [$roleIds, $roleNames] = SystemAdminCenterLink::webRoleIdsAndNames();
+
         $centers = TrainingCenter::query()
             ->with([
-                'users' => function ($q) {
-                    $q->whereHas('roles', fn ($r) => $r->whereIn('name', self::ADMIN_ROLE_NAMES))
-                        ->whereDoesntHave('roles', fn ($r) => $r->where('name', 'super_administrador'))
+                'users' => function ($q) use ($roleIds, $roleNames) {
+                    SystemAdminCenterLink::applyAdminSistemaNoSuperScope($q, $roleIds, $roleNames)
                         ->with('person');
                 },
             ])
@@ -83,16 +80,19 @@ class LinkAdminTrainingCenterController extends Controller
             return back()->withErrors(['user_id' => 'No puedes vincular al super administrador a un centro desde aquí.'])->withInput();
         }
 
-        if (! $user->hasAnyRole(self::ADMIN_ROLE_NAMES)) {
+        [, $roleNames] = SystemAdminCenterLink::webRoleIdsAndNames();
+        $esAdminSistema = $user->hasAnyRole($roleNames)
+            || in_array($user->primary_role_name, $roleNames, true);
+        if (! $esAdminSistema) {
             return back()->withErrors(['user_id' => 'El usuario seleccionado debe tener rol de administrador del sistema.'])->withInput();
         }
 
-        if ($user->training_center_id !== null) {
+        if ($user->training_center_id !== null && (int) $user->training_center_id !== 0) {
             return back()->withErrors(['user_id' => 'Este administrador ya tiene un centro de formación asignado.'])->withInput();
         }
 
         $centerId = (int) $validated['training_center_id'];
-        if ($this->centroYaTieneAdministrador($centerId)) {
+        if (SystemAdminCenterLink::trainingCenterHasSystemAdmin($centerId)) {
             return back()->withErrors(['training_center_id' => 'Este centro ya tiene un administrador del sistema vinculado.'])->withInput();
         }
 

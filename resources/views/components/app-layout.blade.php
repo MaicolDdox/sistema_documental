@@ -222,7 +222,7 @@
                     Gestión Usuarios
                 </p>
 
-                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.users.manage*', 'admin.external-advisors.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.external-advisors.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openAdminUsers = !openAdminUsers"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -673,7 +673,7 @@
                  class="mb-2 bg-white border border-slate-200 rounded-xl
                         shadow-lg overflow-hidden">
 
-                <a href="{{ route('settings.profile') }}"
+                <a href="{{ route('profile.edit') }}"
                    class="flex items-center gap-3 px-4 py-3 text-sm
                           text-slate-600 hover:bg-slate-50 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor"

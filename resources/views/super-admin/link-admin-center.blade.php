@@ -11,16 +11,6 @@
         <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
     @endif
 
-    <div class="mb-6 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-white px-4 py-4 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Vincular centro de formación con administrador</h2>
-        <p class="text-sm text-slate-600 mt-1 max-w-3xl">
-            <strong>Centros:</strong> solo los que <strong>aún no tienen</strong> un administrador del sistema vinculado.
-            <strong>Administradores:</strong> solo quienes tienen rol de administrador del sistema (o <code class="text-xs bg-amber-100/80 px-1 rounded">admin</code>) y <strong>aún no tienen centro</strong> (nunca el super administrador).
-            Créalos en <strong>Usuarios</strong> con ese rol y deja el centro vacío, o quita el centro en edición, para que aparezcan aquí.
-            Lo que ya aparece en el resumen a la derecha no sale en los desplegables.
-        </p>
-    </div>
-
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
         <div class="sgd-card bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
             <h3 class="text-sm font-semibold text-slate-900 mb-4">Nueva vinculación</h3>
@@ -75,14 +65,14 @@
         <div class="sgd-table-card bg-white overflow-hidden border border-slate-200 rounded-xl shadow-sm">
             <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
                 <h3 class="text-sm font-semibold text-slate-900">Resumen por centro</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Administradores del sistema asignados actualmente</p>
+                <p class="text-xs text-slate-500 mt-0.5">Un administrador del sistema por centro (asignación actual)</p>
             </div>
             <div class="overflow-x-auto max-h-[28rem] overflow-y-auto">
                 <table class="sgd-table text-sm w-full">
                     <thead class="sticky top-0 bg-white z-10 shadow-sm">
                         <tr>
                             <th class="text-left">Centro</th>
-                            <th class="text-left">Administrador(es)</th>
+                            <th class="text-left">Administrador del sistema</th>
                         </tr>
                     </thead>
                     <tbody>

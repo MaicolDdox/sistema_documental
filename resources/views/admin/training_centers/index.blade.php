@@ -13,7 +13,8 @@
             <h2 class="text-xl font-semibold text-slate-900">Centros de Formación</h2>
             <p class="text-sm text-slate-500 mt-1">Tabla: centros_formaciones → departamentos, ciudades</p>
         </div>
-        <button type="button" @click="modalNuevoCentro = true"
+        <button type="button"
+                @click="modalNuevoCentro = true; $nextTick(() => filterTrainingCenterCities(document.getElementById('modal_department_id'), document.getElementById('modal_city_id')))"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -346,6 +347,33 @@
     </div>
 
     <script>
+        function filterTrainingCenterCities(deptSelect, citySelect) {
+            if (!deptSelect || !citySelect) return;
+            var deptId = deptSelect.value;
+            citySelect.querySelectorAll('option[data-department]').forEach(function (opt) {
+                var ok = deptId && String(opt.getAttribute('data-department')) === String(deptId);
+                opt.hidden = !ok;
+                opt.disabled = !ok;
+            });
+            var cur = citySelect.selectedOptions[0];
+            if (cur && cur.disabled) {
+                citySelect.value = '';
+            }
+        }
+        function bindTrainingCenterCascade(deptId, cityId) {
+            var d = document.getElementById(deptId);
+            var c = document.getElementById(cityId);
+            if (!d || !c) return;
+            d.addEventListener('change', function () {
+                filterTrainingCenterCities(d, c);
+            });
+            filterTrainingCenterCities(d, c);
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            bindTrainingCenterCascade('modal_department_id', 'modal_city_id');
+            bindTrainingCenterCascade('edit_department_id', 'edit_city_id');
+        });
+
         function trainingCentersIndex() {
             return {
                 modalDetalle: false,
@@ -368,12 +396,13 @@
                     this.editFormAction = '{{ url('admin/training-centers') }}/' + id;
                     this.editData = { nombre: data.nombre || '', codigo: data.codigo ?? '', department_id: String(data.department_id || ''), city_id: String(data.city_id || '') };
                     this.modalEditar = true;
-                    this.$nextTick(() => {
+                    this.$nextTick(function () {
                         document.getElementById('edit_nombre').value = this.editData.nombre;
                         document.getElementById('edit_codigo').value = this.editData.codigo;
                         document.getElementById('edit_department_id').value = this.editData.department_id;
+                        filterTrainingCenterCities(document.getElementById('edit_department_id'), document.getElementById('edit_city_id'));
                         document.getElementById('edit_city_id').value = this.editData.city_id;
-                    });
+                    }.bind(this));
                 },
                 intentEliminar(activo, formId, nombre) {
                     if (activo) {
