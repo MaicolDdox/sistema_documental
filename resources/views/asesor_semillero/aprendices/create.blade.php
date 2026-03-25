@@ -122,7 +122,11 @@
                         <select name="entity_position_id"
                                 class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('entity_position_id') border-red-400 @enderror">
                             <option value="">Seleccionar cargo...</option>
-                            @foreach($cargos->flatten() as $cargo)
+                            @php
+                                $cargosPermitidos = ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'];
+                                $cargosFiltrados = $cargos->flatten()->filter(fn($c) => in_array($c->nombre, $cargosPermitidos));
+                            @endphp
+                            @foreach($cargosFiltrados as $cargo)
                                 <option value="{{ $cargo->id }}" {{ old('entity_position_id') == $cargo->id ? 'selected' : '' }}>
                                     {{ $cargo->nombre }}
                                 </option>
@@ -137,7 +141,11 @@
                         <select name="linkage_type_id"
                                 class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('linkage_type_id') border-red-400 @enderror">
                             <option value="">Seleccionar...</option>
-                            @foreach($tiposVinculacion as $tv)
+                            @php
+                                $tiposPermitidos = ['Tecnólogo', 'Técnico', 'Cursos cortos'];
+                                $tiposFiltrados = $tiposVinculacion->filter(fn($t) => in_array($t->nombre, $tiposPermitidos));
+                            @endphp
+                            @foreach($tiposFiltrados as $tv)
                                 <option value="{{ $tv->id }}" {{ old('linkage_type_id') == $tv->id ? 'selected' : '' }}>
                                     {{ $tv->nombre }}
                                 </option>
