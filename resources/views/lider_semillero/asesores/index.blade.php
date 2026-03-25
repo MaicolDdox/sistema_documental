@@ -72,6 +72,22 @@
                 <form action="{{ route('lider-sem.asesores.store') }}" method="POST" class="p-6 space-y-4">
                     @csrf
                     <p class="text-sm text-slate-600">El asesor quedará vinculado a tu semillero. Opcionalmente puedes crearle una cuenta para que ingrese al sistema con rol <strong>Asesor de Semillero</strong>.</p>
+                    
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-lg">
+                        <label for="external_advisor_id" class="block text-sm font-medium text-slate-700 mb-1">Vincular asesor existente (opcional)</label>
+                        <p class="text-xs text-slate-500 mb-2">Si ya existe en el sistema, selecciónalo aquí para solo vincularlo a tu semillero (puede estar en varios).</p>
+                        <select name="external_advisor_id" id="external_advisor_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <option value="">— Selecciona un asesor —</option>
+                            @foreach(($asesoresDisponibles ?? []) as $adv)
+                                <option value="{{ $adv->id }}" {{ old('external_advisor_id') == $adv->id ? 'selected' : '' }}>
+                                    {{ $adv->nombre_completo }}{{ $adv->email ? ' — '.$adv->email : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('external_advisor_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        <p class="text-xs text-slate-500 mt-2">Si eliges uno aquí, no necesitas llenar los campos de abajo.</p>
+                    </div>
+
                     <div>
                         <label for="nombre_completo" class="block text-sm font-medium text-slate-700 mb-1">Nombre completo <span class="text-red-500">*</span></label>
                         <input type="text" name="nombre_completo" id="nombre_completo" value="{{ old('nombre_completo') }}" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">

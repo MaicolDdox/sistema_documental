@@ -40,13 +40,6 @@
         <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
         <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
     </div>
-    <div class="flex items-center gap-2">
-
-        <button type="button" @click="modalRegistrar = true" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            + Registrar Producto
-        </button>
-    </div>
 </div>
 @if(session('success'))
 <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>

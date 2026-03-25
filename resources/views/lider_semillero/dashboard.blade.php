@@ -56,6 +56,53 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
+        {{-- Proyectos del semillero --}}
+        <div class="sgd-table-card bg-white overflow-hidden">
+            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900">Proyectos del semillero</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Proyectos vinculados a {{ $metricas['nombre_semillero'] }}</p>
+                </div>
+                <a href="{{ route('lider-sem.proyectos') }}" class="text-sm font-medium text-[#39A900] hover:underline">Ver todos</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="sgd-table text-sm">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Proyecto</th>
+                            <th class="text-left">Estado</th>
+                            <th class="text-left">Fechas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($proyectosDelSemillero ?? []) as $p)
+                        @php
+                            $estado = $p->estado?->value ?? (string) ($p->estado ?? '');
+                            $estadoLabel = $estado === 'activo' ? 'Activo' : ($estado === 'inactivo' ? 'Inactivo' : ($estado ?: '—'));
+                        @endphp
+                        <tr>
+                            <td class="px-5 py-3 font-medium text-slate-800">{{ $p->nombre }}</td>
+                            <td class="px-5 py-3">
+                                @if($estado === 'activo')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Activo</span>
+                                @elseif($estado === 'inactivo')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">Inactivo</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">{{ $estadoLabel }}</span>
+                                @endif
+                            </td>
+                            <td class="px-5 py-3 text-slate-600">
+                                {{ $p->fecha_inicio?->format('Y-m-d') ?? '—' }} → {{ $p->fecha_fin?->format('Y-m-d') ?? '—' }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="px-5 py-8 text-center text-slate-500">No hay proyectos vinculados a este semillero.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         {{-- Productos pendientes de revisión --}}
         <div class="sgd-table-card bg-white overflow-hidden">
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
@@ -202,7 +249,7 @@
             <div class="p-4 grid grid-cols-2 gap-3">
                 <a href="{{ route('lider-sem.productos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    Registrar Producto
+                    Ver productos
                 </a>
                 <a href="{{ route('lider-sem.proyectos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>

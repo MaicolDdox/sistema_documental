@@ -50,6 +50,7 @@
                     <th class="text-left">Documento</th>
                     <th class="text-left">Proyecto vinculado</th>
                     <th class="text-left">Estado vínculo</th>
+                    <th class="text-left">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -75,11 +76,34 @@
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">▲ Sin proyecto</span>
                         @endif
                     </td>
-                    {{-- Columna de acciones eliminada (no usada) --}}
+                    <td class="px-5 py-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button"
+                                    @click="showVincularId = {{ (int) $ap->id }}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700">
+                                @if($ap->tiene_vinculo ?? false)
+                                    Cambiar proyecto
+                                @else
+                                    Vincular
+                                @endif
+                            </button>
+
+                            @if(($ap->tiene_vinculo ?? false) && ($ap->vinculo_activo?->id))
+                                <form action="{{ route('lider-sem.aprendices.desvincular', $ap->vinculo_activo->id) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 hover:bg-red-50 text-red-700">
+                                        Desvincular
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="px-5 py-10 text-center text-slate-500">
+                    <td colspan="5" class="px-5 py-10 text-center text-slate-500">
                         @if(request('documento'))
                         No se encontraron aprendices con ese documento.
                         @else

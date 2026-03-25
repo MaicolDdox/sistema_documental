@@ -123,6 +123,12 @@ class LiderSemilleroController extends Controller
         );
 
         if ($puedeEnviarCorreo) {
+            $mailer = (string) config('mail.default');
+            if (in_array($mailer, ['log', 'array'], true)) {
+                $advertenciaMail = "El líder se registró correctamente, pero el correo NO se enviará porque el sistema está configurado con MAIL_MAILER={$mailer}. "
+                    . "En ambiente local las credenciales se escriben en el log. Revisa `storage/logs/laravel.log` o configura SMTP (MAIL_MAILER=smtp, MAIL_HOST, etc.).";
+            }
+
             try {
                 Mail::raw(
                     "Bienvenido al sistema GIDESTH.\n\nTus credenciales de acceso:\n\nCorreo: {$newUser->email}\nContraseña temporal: {$password}\n\nPor favor cambia tu contraseña al ingresar por primera vez.",

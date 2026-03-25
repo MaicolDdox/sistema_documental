@@ -1,8 +1,24 @@
 <x-app-layout>
 <x-slot name="header">Productos del Semillero</x-slot>
 
+<div x-data="{
+        openExport: false,
+        openModal: false,
+        modalUrl: null,
+        modalTitle: '',
+        openInModal(url, title) { this.modalUrl = url; this.modalTitle = title || ''; this.openModal = true; },
+        closeModal() { this.openModal = false; this.modalUrl = null; this.modalTitle = ''; },
+        openDelete: false,
+        deleteUrl: null,
+        deleteTitle: '',
+        askDelete(url, title) { this.deleteUrl = url; this.deleteTitle = title || ''; this.openDelete = true; },
+        closeDelete() { this.openDelete = false; this.deleteUrl = null; this.deleteTitle = ''; },
+    }"
+    @keydown.escape.window="if (openModal) closeModal(); if (openDelete) closeDelete();"
+>
+
 {{-- Acciones de página y Filtros --}}
-<div x-data="{ openExport: false }" class="flex flex-wrap items-center gap-3 mb-6">
+<div class="flex flex-wrap items-center gap-3 mb-6">
     {{-- Filtro por proyecto --}}
     <form method="GET" class="flex gap-2">
         <select name="proyecto" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
@@ -62,6 +78,112 @@
     </div>
 </div>
 
+{{-- Modal Ver / Editar (iframe) --}}
+<template x-teleport="body">
+    <div x-show="openModal" x-cloak
+         class="fixed inset-0 z-[120] flex items-center justify-center p-4"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" @click="closeModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[90vh] overflow-hidden"
+             @click.stop>
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-slate-900 truncate" x-text="modalTitle || 'Detalle'"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a :href="modalUrl" target="_blank"
+                       class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                       title="Abrir en pestaña">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                    </a>
+                    <button type="button" @click="closeModal()"
+                            class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                            title="Cerrar">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white">
+                <iframe :src="modalUrl"
+                        class="w-full h-[78vh] bg-white"
+                        style="border:0"
+                        title="Detalle"></iframe>
+            </div>
+        </div>
+    </div>
+</template>
+
+{{-- Modal Confirmar eliminación --}}
+<template x-teleport="body">
+    <div x-show="openDelete" x-cloak
+         class="fixed inset-0 z-[130] flex items-center justify-center p-4"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" @click="closeDelete()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden"
+             @click.stop>
+            <div class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5m-7.5 0l.7 13.3A2.25 2.25 0 0010.44 23h3.12a2.25 2.25 0 002.24-2.2L16.5 7.5" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-slate-900">Eliminar producto</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Esta acción no se puede deshacer.</p>
+                    </div>
+                    <button type="button" @click="closeDelete()"
+                            class="ml-auto inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                            title="Cerrar">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="px-6 py-5">
+                <p class="text-sm text-slate-700">
+                    ¿Seguro que deseas eliminar
+                    <span class="font-semibold text-slate-900" x-text="deleteTitle || 'este producto'"></span>?
+                </p>
+                <p class="text-xs text-slate-500 mt-2">
+                    Se eliminarán también los autores asociados, evidencias y archivos adjuntos.
+                </p>
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-end gap-2">
+                <button type="button" @click="closeDelete()"
+                        class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition">
+                    Cancelar
+                </button>
+                <form :action="deleteUrl" method="POST" @submit="closeDelete()">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition">
+                        Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</template>
+
 @if($productos->isEmpty())
 <div class="bg-white rounded-xl border border-slate-200 p-10 text-center">
     <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>
@@ -110,22 +232,40 @@
                 {{-- Autores --}}
                 <td class="px-4 py-3">
                     @if($product->productAuthors->isNotEmpty())
-                    <div class="flex items-center -space-x-1.5">
-                        @foreach($product->productAuthors->take(4) as $pa)
-                        @php
-                            $nombre = trim(($pa->projectAuthor?->user?->person?->primer_nombre ?? '') . ' ' . ($pa->projectAuthor?->user?->person?->primer_apellido ?? ''));
-                        @endphp
-                        <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                             style="background:#0a1628"
-                             title="{{ $nombre ?: 'Autor' }}">
-                            {{ strtoupper(substr($nombre ?: 'A', 0, 1)) }}
+                    @php
+                        $autoresNombres = $product->productAuthors
+                            ->map(function ($pa) {
+                                $u = $pa->projectAuthor?->user;
+                                $p = $u?->person;
+                                $nombre = trim(($p?->primer_nombre ?? '') . ' ' . ($p?->primer_apellido ?? ''));
+                                return $nombre ?: ($u?->email ?? 'Autor');
+                            })
+                            ->filter()
+                            ->values();
+                        $autoresPreview = $autoresNombres->take(3);
+                        $autoresLabel = $autoresNombres->join(', ');
+                    @endphp
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center -space-x-1.5" title="{{ $autoresLabel }}">
+                            @foreach($autoresPreview as $nombre)
+                            <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                 style="background:#0a1628"
+                                 title="{{ $nombre }}">
+                                {{ strtoupper(substr($nombre ?: 'A', 0, 1)) }}
+                            </div>
+                            @endforeach
+                            @if($autoresNombres->count() > 3)
+                            <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center bg-slate-200 text-slate-600 text-xs font-bold"
+                                 title="{{ $autoresLabel }}">
+                                +{{ $autoresNombres->count() - 3 }}
+                            </div>
+                            @endif
                         </div>
-                        @endforeach
-                        @if($product->productAuthors->count() > 4)
-                        <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center bg-slate-200 text-slate-600 text-xs font-bold">
-                            +{{ $product->productAuthors->count() - 4 }}
+                        <div class="min-w-0">
+                            <p class="text-xs text-slate-700 truncate max-w-[180px]" title="{{ $autoresLabel }}">
+                                {{ $autoresLabel ?: 'Autor' }}
+                            </p>
                         </div>
-                        @endif
                     </div>
                     @else
                     <span class="text-xs text-slate-400">—</span>
@@ -180,14 +320,39 @@
                 </td>
                 {{-- Acciones --}}
                 <td class="px-4 py-3">
-                    <div class="flex items-center gap-1.5 whitespace-nowrap">
+                    <div class="flex items-center gap-2 whitespace-nowrap">
                         @can('productos.ver_detalle')
-                        <a href="{{ route('asesor.productos.show', $product->id) }}"
-                           class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Ver</a>
+                        <button type="button"
+                           @click="openInModal('{{ route('asesor.productos.show', $product->id) }}', 'Ver producto: {{ e($product->nombre) }}')"
+                           class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                           title="Ver detalle">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
+                                <circle cx="12" cy="12" r="3.25" />
+                            </svg>
+                        </button>
                         @endcan
                         @can('productos.editar')
-                        <a href="{{ route('asesor.productos.edit', $product->id) }}"
-                           class="text-xs px-2.5 py-1.5 rounded-lg text-white transition-all hover:opacity-90" style="background:#39A900">Editar</a>
+                        <button type="button"
+                           @click="openInModal('{{ route('asesor.productos.edit', $product->id) }}', 'Editar producto: {{ e($product->nombre) }}')"
+                           class="inline-flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:opacity-90"
+                           style="background:#39A900"
+                           title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.125L16.862 4.487" />
+                            </svg>
+                        </button>
+
+                        <button type="button"
+                                @click="askDelete('{{ route('asesor.productos.destroy', $product->id) }}', '{{ e($product->nombre) }}')"
+                                class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
+                                title="Eliminar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5m-7.5 0l.7 13.3A2.25 2.25 0 0010.44 23h3.12a2.25 2.25 0 002.24-2.2L16.5 7.5" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 11v8.5M13.5 11v8.5" />
+                            </svg>
+                        </button>
                         @endcan
                     </div>
                 </td>
@@ -201,4 +366,5 @@
 <div class="mt-4">{{ $productos->links() }}</div>
 @endif
 @endif
+</div>
 </x-app-layout>

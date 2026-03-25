@@ -30,9 +30,19 @@ class AsesoresController extends Controller
             ? $semillero->seedlingAdvisors()->with('externalAdvisor.user')->get()
             : collect();
 
+        $asesoresDisponibles = $semillero
+            ? ExternalAdvisor::query()
+                ->whereDoesntHave('seedlings', function ($q) use ($semillero) {
+                    $q->where('seedlings.id', $semillero->id);
+                })
+                ->orderBy('nombre_completo')
+                ->get(['id', 'nombre_completo', 'email'])
+            : collect();
+
         return view('lider_semillero.asesores.index', [
             'semillero' => $semillero,
             'vinculos'  => $vinculos,
+            'asesoresDisponibles' => $asesoresDisponibles,
         ]);
     }
 
@@ -45,6 +55,31 @@ class AsesoresController extends Controller
         $semillero = Auth::user()->ledSeedlings()->first();
         if (!$semillero) {
             return redirect()->route('lider-sem.asesores')->with('error', 'No tienes un semillero asignado.');
+        }
+
+        // Vincular asesor existente (ya registrado) a este semillero
+        if ($request->filled('external_advisor_id')) {
+            $validated = $request->validate([
+                'external_advisor_id' => 'required|exists:external_advisors,id',
+            ]);
+
+            $advisor = ExternalAdvisor::query()->findOrFail((int) $validated['external_advisor_id']);
+
+            $vinculo = SeedlingAdvisor::firstOrCreate(
+                [
+                    'seedling_id'         => $semillero->id,
+                    'external_advisor_id' => $advisor->id,
+                ],
+                ['activo' => true]
+            );
+
+            if (!$vinculo->wasRecentlyCreated) {
+                return redirect()->route('lider-sem.asesores')
+                    ->with('warning', 'Este asesor ya estaba vinculado a tu semillero.');
+            }
+
+            return redirect()->route('lider-sem.asesores')
+                ->with('success', 'Asesor vinculado al semillero.');
         }
 
         $crearCuenta = $request->boolean('crear_cuenta');

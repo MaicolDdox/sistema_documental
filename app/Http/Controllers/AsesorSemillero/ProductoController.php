@@ -328,6 +328,36 @@ class ProductoController extends Controller
         return Storage::disk('public')->download($product->archivo, $downloadName);
     }
 
+    /** Permiso: productos.editar (usado también para eliminar) */
+    public function destroy(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        DB::transaction(function () use ($product) {
+            // Borrar archivos físicos (producto y evidencias)
+            if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
+                Storage::disk('public')->delete($product->archivo);
+            }
+
+            foreach ($product->productEvidences as $ev) {
+                if ($ev->archivo && Storage::disk('public')->exists($ev->archivo)) {
+                    Storage::disk('public')->delete($ev->archivo);
+                }
+            }
+
+            // Borrar relaciones dependientes
+            $product->productAuthors()->delete();
+            $product->productEvidences()->delete();
+            $product->groupProducts()->delete();
+
+            // Finalmente, borrar producto
+            $product->delete();
+        });
+
+        return redirect()->route('asesor.productos.index')
+            ->with('success', 'Producto eliminado correctamente.');
+    }
+
     // ──────────────────────────────────────────────────
     // HELPER PRIVADO
     // ──────────────────────────────────────────────────
@@ -336,7 +366,7 @@ class ProductoController extends Controller
     {
         $allProjectIds = $this->getAllProjectIdsDelAsesor();
 
-        $product = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'productEvidences'])
+        $product = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'productEvidences', 'groupProducts'])
             ->findOrFail($productId);
 
         if (!$allProjectIds->contains($product->project_id)) {

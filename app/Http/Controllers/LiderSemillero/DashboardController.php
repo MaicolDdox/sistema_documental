@@ -26,12 +26,14 @@ class DashboardController extends Controller
         $metricas = $this->calcularMetricas($user, $miSemillero);
         $productosPendientes = $this->productosPendientesRevision($miSemillero);
         $integrantesSinProyecto = $this->integrantesSinProyectoActivo($miSemillero);
+        $proyectosDelSemillero = $this->proyectosDelSemillero($miSemillero);
 
         return view('lider_semillero.dashboard', [
             'miSemillero'             => $miSemillero,
             'metricas'                => $metricas,
             'productosPendientes'     => $productosPendientes,
             'integrantesSinProyecto'  => $integrantesSinProyecto,
+            'proyectosDelSemillero'   => $proyectosDelSemillero,
         ]);
     }
 
@@ -130,5 +132,21 @@ class DashboardController extends Controller
             })
             ->take(10)
             ->values();
+    }
+
+    private function proyectosDelSemillero(?Seedling $miSemillero)
+    {
+        if (! $miSemillero) {
+            return collect();
+        }
+
+        $projectIds = DB::table('project_seedlings')
+            ->where('seedling_id', $miSemillero->id)
+            ->pluck('project_id');
+
+        return Project::query()
+            ->whereIn('id', $projectIds)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'estado', 'fecha_inicio', 'fecha_fin']);
     }
 }
