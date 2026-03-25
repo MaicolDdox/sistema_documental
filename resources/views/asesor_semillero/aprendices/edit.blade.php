@@ -195,7 +195,7 @@
                             </div>
                         </div>
 
-                        <input type="hidden" name="training_program_id" :value="esOtro ? null : programaSeleccionado">
+                        <input type="hidden" name="training_program_id" :value="esOtro ? '' : programaSeleccionado">
 
                         <div x-show="esOtro" x-cloak class="mt-2">
                             <input type="text" name="training_program_otro"

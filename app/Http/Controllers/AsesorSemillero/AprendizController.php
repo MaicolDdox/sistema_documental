@@ -109,12 +109,15 @@ class AprendizController extends Controller
             ]);
 
             // 2. Crear perfil extendido en personas
+            $progId = $validated['training_program_id'] ?? null;
+            $progOtro = $progId ? null : ($validated['training_program_otro'] ?? null);
+
             Person::create([
                 'user_id'                => $user->id,
                 'entity_position_id'     => $validated['entity_position_id'],
                 'linkage_type_id'        => $validated['linkage_type_id'],
-                'training_program_id'    => $validated['training_program_id'] ?? null,
-                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'training_program_id'    => $progId,
+                'training_program_otro'  => $progOtro,
                 'primer_nombre'          => $validated['primer_nombre'],
                 'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
                 'primer_apellido'        => $validated['primer_apellido'],
@@ -181,11 +184,14 @@ class AprendizController extends Controller
             ]);
 
             // Actualizar perfil de persona
+            $progId = $validated['training_program_id'] ?? null;
+            $progOtro = $progId ? null : ($validated['training_program_otro'] ?? null);
+
             $aprendiz->person->update([
                 'entity_position_id'     => $validated['entity_position_id'],
                 'linkage_type_id'        => $validated['linkage_type_id'],
-                'training_program_id'    => $validated['training_program_id'] ?? null,
-                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'training_program_id'    => $progId,
+                'training_program_otro'  => $progOtro,
                 'primer_nombre'          => $validated['primer_nombre'],
                 'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
                 'primer_apellido'        => $validated['primer_apellido'],

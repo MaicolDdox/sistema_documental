@@ -210,7 +210,7 @@
                         </div>
 
                         {{-- Input hidden con el id del programa --}}
-                        <input type="hidden" name="training_program_id" :value="esOtro ? null : programaSeleccionado">
+                        <input type="hidden" name="training_program_id" :value="esOtro ? '' : programaSeleccionado">
 
                         {{-- Campo de texto cuando se elige Otro --}}
                         <div x-show="esOtro" x-cloak class="mt-2">
