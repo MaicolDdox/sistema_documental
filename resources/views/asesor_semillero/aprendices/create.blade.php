@@ -23,7 +23,7 @@
         <form method="POST" action="{{ route('asesor.aprendices.store') }}" novalidate>
             @csrf
 
-            {{-- Datos personales --}}
+            {{-- ─── Datos personales ─── --}}
             <div class="mb-5">
                 <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">Datos personales</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -56,10 +56,10 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
                         <select name="tipo_documento" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('tipo_documento') border-red-400 @enderror">
                             <option value="">Seleccionar...</option>
-                            <option value="cedula ciudadana" {{ old('tipo_documento') == 'cedula ciudadana' ? 'selected' : '' }}>Cédula de Ciudadanía</option>
+                            <option value="cedula ciudadana"   {{ old('tipo_documento') == 'cedula ciudadana'   ? 'selected' : '' }}>Cédula de Ciudadanía</option>
                             <option value="documento identidad" {{ old('tipo_documento') == 'documento identidad' ? 'selected' : '' }}>Documento de Identidad</option>
-                            <option value="pasaporte" {{ old('tipo_documento') == 'pasaporte' ? 'selected' : '' }}>Pasaporte</option>
-                            <option value="cedula extrangera" {{ old('tipo_documento') == 'cedula extrangera' ? 'selected' : '' }}>Cédula Extranjera</option>
+                            <option value="pasaporte"          {{ old('tipo_documento') == 'pasaporte'          ? 'selected' : '' }}>Pasaporte</option>
+                            <option value="cedula extrangera"  {{ old('tipo_documento') == 'cedula extrangera'  ? 'selected' : '' }}>Cédula Extranjera</option>
                         </select>
                         @error('tipo_documento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -74,8 +74,8 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Género <span class="text-red-500">*</span></label>
                         <select name="genero" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('genero') border-red-400 @enderror">
                             <option value="">Seleccionar...</option>
-                            <option value="masculino" {{ old('genero') == 'masculino' ? 'selected' : '' }}>Masculino</option>
-                            <option value="femenino" {{ old('genero') == 'femenino' ? 'selected' : '' }}>Femenino</option>
+                            <option value="masculino"           {{ old('genero') == 'masculino'           ? 'selected' : '' }}>Masculino</option>
+                            <option value="femenino"            {{ old('genero') == 'femenino'            ? 'selected' : '' }}>Femenino</option>
                             <option value="prefiero no decirlo" {{ old('genero') == 'prefiero no decirlo' ? 'selected' : '' }}>Prefiero no decirlo</option>
                         </select>
                         @error('genero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -103,10 +103,12 @@
                 </div>
             </div>
 
-            {{-- Datos académicos --}}
+            {{-- ─── Datos académicos e institucionales ─── --}}
             <div class="mb-5">
                 <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">Datos académicos e institucionales</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    {{-- Correo --}}
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Correo institucional <span class="text-red-500">*</span></label>
                         <input type="email" name="email_institucional" value="{{ old('email_institucional') }}" placeholder="aprendiz@sena.edu.co"
@@ -114,44 +116,114 @@
                         @error('email_institucional') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
+                    {{-- Cargo / Rol --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Cargo / Rol <span class="text-red-500">*</span></label>
-                        <select name="entity_position_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('entity_position_id') border-red-400 @enderror">
+                        <select name="entity_position_id"
+                                class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('entity_position_id') border-red-400 @enderror">
                             <option value="">Seleccionar cargo...</option>
-                            @foreach($cargos as $grupo => $lista)
-                                <optgroup label="{{ $grupo }}">
-                                    @foreach($lista as $cargo)
-                                        <option value="{{ $cargo->id }}" {{ old('entity_position_id') == $cargo->id ? 'selected' : '' }}>{{ $cargo->nombre }}</option>
-                                    @endforeach
-                                </optgroup>
+                            @php
+                                $cargosPermitidos = ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'];
+                                $cargosFiltrados = $cargos->flatten()->filter(fn($c) => in_array($c->nombre, $cargosPermitidos));
+                            @endphp
+                            @foreach($cargosFiltrados as $cargo)
+                                <option value="{{ $cargo->id }}" {{ old('entity_position_id') == $cargo->id ? 'selected' : '' }}>
+                                    {{ $cargo->nombre }}
+                                </option>
                             @endforeach
                         </select>
                         @error('entity_position_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
+                    {{-- Tipo de Vinculación --}}
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de vinculación <span class="text-red-500">*</span></label>
-                        <select name="linkage_type_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('linkage_type_id') border-red-400 @enderror">
+                        <select name="linkage_type_id"
+                                class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('linkage_type_id') border-red-400 @enderror">
                             <option value="">Seleccionar...</option>
-                            @foreach($tiposVinculacion as $tv)
-                                <option value="{{ $tv->id }}" {{ old('linkage_type_id') == $tv->id ? 'selected' : '' }}>{{ $tv->nombre }}</option>
+                            @php
+                                $tiposPermitidos = ['Tecnólogo', 'Técnico', 'Cursos cortos'];
+                                $tiposFiltrados = $tiposVinculacion->filter(fn($t) => in_array($t->nombre, $tiposPermitidos));
+                            @endphp
+                            @foreach($tiposFiltrados as $tv)
+                                <option value="{{ $tv->id }}" {{ old('linkage_type_id') == $tv->id ? 'selected' : '' }}>
+                                    {{ $tv->nombre }}
+                                </option>
                             @endforeach
                         </select>
                         @error('linkage_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    <div class="sm:col-span-2">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Programa de formación <span class="text-red-500">*</span></label>
-                        <select name="training_program_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_id') border-red-400 @enderror">
-                            <option value="">Seleccionar programa...</option>
-                            @foreach($programasFormacion as $pf)
-                                <option value="{{ $pf->id }}" {{ old('training_program_id') == $pf->id ? 'selected' : '' }}>
-                                    {{ $pf->nombre }} @if($pf->trainingProgramType)({{ $pf->trainingProgramType->nombre }})@endif
-                                </option>
-                            @endforeach
-                        </select>
+                    {{-- Programa de Formación (buscable + Otro) --}}
+                    <div class="sm:col-span-2"
+                         x-data="{
+                            busqueda: '',
+                            esOtro: {{ old('training_program_id') === 'otro' ? 'true' : 'false' }},
+                            programaSeleccionado: '{{ old('training_program_id', '') }}',
+                            programas: {{ $programasFormacion->map(fn($p) => [
+                                'id'   => $p->id,
+                                'text' => $p->nombre . ($p->trainingProgramType ? ' (' . $p->trainingProgramType->nombre . ')' : ''),
+                            ])->values()->toJson() }},
+                            get filtrados() {
+                                if (!this.busqueda) return this.programas;
+                                const q = this.busqueda.toLowerCase();
+                                return this.programas.filter(p => p.text.toLowerCase().includes(q));
+                            },
+                            seleccionar(id) {
+                                this.programaSeleccionado = id;
+                                this.esOtro = (id === 'otro');
+                                if (!this.esOtro) this.busqueda = this.programas.find(p => p.id == id)?.text ?? '';
+                            }
+                         }"
+                         x-init="
+                            if (programaSeleccionado && programaSeleccionado !== 'otro') {
+                                busqueda = programas.find(p => p.id == programaSeleccionado)?.text ?? '';
+                            }
+                         ">
+
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Programa de Formación <span class="text-red-500">*</span></label>
+
+                        {{-- Input de búsqueda --}}
+                        <input type="text" x-model="busqueda" placeholder="Escribe para buscar un programa..."
+                               @focus="programaSeleccionado = ''; esOtro = false;"
+                               autocomplete="off"
+                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_id') border-red-400 @enderror">
+
+                        {{-- Dropdown de resultados --}}
+                        <div x-show="busqueda.length > 0 && !programaSeleccionado"
+                             class="mt-1 bg-white border border-slate-200 rounded-lg shadow-md max-h-48 overflow-y-auto z-10 relative">
+                            <template x-for="p in filtrados" :key="p.id">
+                                <div @click="seleccionar(p.id)"
+                                     class="px-3 py-2 text-sm text-slate-700 cursor-pointer hover:bg-[#39A900]/10 hover:text-[#39A900] transition-colors"
+                                     x-text="p.text">
+                                </div>
+                            </template>
+                            {{-- Opción Otro --}}
+                            <div @click="seleccionar('otro')"
+                                 class="px-3 py-2 text-sm text-slate-500 italic cursor-pointer hover:bg-slate-50 border-t border-slate-100 transition-colors">
+                                Otro (especificar)
+                            </div>
+                            <div x-show="filtrados.length === 0"
+                                 class="px-3 py-2 text-sm text-slate-400 italic">
+                                Sin coincidencias — elige "Otro" para especificar.
+                            </div>
+                        </div>
+
+                        {{-- Input hidden con el id del programa --}}
+                        <input type="hidden" name="training_program_id" :value="esOtro ? null : programaSeleccionado">
+
+                        {{-- Campo de texto cuando se elige Otro --}}
+                        <div x-show="esOtro" x-cloak class="mt-2">
+                            <input type="text" name="training_program_otro"
+                                   value="{{ old('training_program_otro') }}"
+                                   placeholder="Escribe el nombre del programa..."
+                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_otro') border-red-400 @enderror">
+                            @error('training_program_otro') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+
                         @error('training_program_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+
                 </div>
             </div>
 
@@ -169,4 +241,6 @@
         </form>
     </div>
 </div>
+
+<style>[x-cloak]{display:none!important}</style>
 </x-app-layout>

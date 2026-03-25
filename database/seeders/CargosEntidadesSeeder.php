@@ -27,6 +27,11 @@ class CargosEntidadesSeeder extends Seeder
             // Roles académicos
             ['nombre' => 'Instructor investigador', 'descripccion' => 'Roles académicos'],
             ['nombre' => 'Aprendiz semillero',      'descripccion' => 'Roles académicos'],
+            // Roles de aprendices (formulario asesor)
+            ['nombre' => 'Titulada',                  'descripccion' => 'Formación titulada del SENA.'],
+            ['nombre' => 'Externos',                  'descripccion' => 'Participantes externos a la institución.'],
+            ['nombre' => 'Tecno academia',            'descripccion' => 'Participantes de la Tecno academia SENA.'],
+            ['nombre' => 'Articulación con la media', 'descripccion' => 'Estudiantes en articulación con la educación media.'],
         ];
 
         foreach ($cargos as $cargo) {
