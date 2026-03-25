@@ -110,19 +110,20 @@ class AprendizController extends Controller
 
             // 2. Crear perfil extendido en personas
             Person::create([
-                'user_id'             => $user->id,
-                'entity_position_id'  => $validated['entity_position_id'],
-                'linkage_type_id'     => $validated['linkage_type_id'],
-                'training_program_id' => $validated['training_program_id'],
-                'primer_nombre'       => $validated['primer_nombre'],
-                'segundo_nombre'      => $validated['segundo_nombre'] ?? null,
-                'primer_apellido'     => $validated['primer_apellido'],
-                'segundo_apellido'    => $validated['segundo_apellido'] ?? null,
-                'genero'              => $validated['genero'],
-                'celular'             => $validated['celular'],
-                'telefono'            => $validated['telefono'] ?? null,
-                'eps'                 => $validated['eps'],
-                'email_institucional' => $validated['email_institucional'],
+                'user_id'                => $user->id,
+                'entity_position_id'     => $validated['entity_position_id'],
+                'linkage_type_id'        => $validated['linkage_type_id'],
+                'training_program_id'    => $validated['training_program_id'] ?? null,
+                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'primer_nombre'          => $validated['primer_nombre'],
+                'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
+                'primer_apellido'        => $validated['primer_apellido'],
+                'segundo_apellido'       => $validated['segundo_apellido'] ?? null,
+                'genero'                 => $validated['genero'],
+                'celular'                => $validated['celular'],
+                'telefono'               => $validated['telefono'] ?? null,
+                'eps'                    => $validated['eps'],
+                'email_institucional'    => $validated['email_institucional'],
             ]);
 
             // 3. Vincular al semillero
@@ -181,18 +182,19 @@ class AprendizController extends Controller
 
             // Actualizar perfil de persona
             $aprendiz->person->update([
-                'entity_position_id'  => $validated['entity_position_id'],
-                'linkage_type_id'     => $validated['linkage_type_id'],
-                'training_program_id' => $validated['training_program_id'],
-                'primer_nombre'       => $validated['primer_nombre'],
-                'segundo_nombre'      => $validated['segundo_nombre'] ?? null,
-                'primer_apellido'     => $validated['primer_apellido'],
-                'segundo_apellido'    => $validated['segundo_apellido'] ?? null,
-                'genero'              => $validated['genero'],
-                'celular'             => $validated['celular'],
-                'telefono'            => $validated['telefono'] ?? null,
-                'eps'                 => $validated['eps'],
-                'email_institucional' => $validated['email_institucional'],
+                'entity_position_id'     => $validated['entity_position_id'],
+                'linkage_type_id'        => $validated['linkage_type_id'],
+                'training_program_id'    => $validated['training_program_id'] ?? null,
+                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'primer_nombre'          => $validated['primer_nombre'],
+                'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
+                'primer_apellido'        => $validated['primer_apellido'],
+                'segundo_apellido'       => $validated['segundo_apellido'] ?? null,
+                'genero'                 => $validated['genero'],
+                'celular'                => $validated['celular'],
+                'telefono'               => $validated['telefono'] ?? null,
+                'eps'                    => $validated['eps'],
+                'email_institucional'    => $validated['email_institucional'],
             ]);
         });
 

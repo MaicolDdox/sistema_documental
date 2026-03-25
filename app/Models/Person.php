@@ -18,6 +18,7 @@ class Person extends Model
         'entity_position_id',
         'linkage_type_id',
         'training_program_id',
+        'training_program_otro',
         'primer_nombre',
         'segundo_nombre',
         'primer_apellido',

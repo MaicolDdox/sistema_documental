@@ -16,6 +16,9 @@ class LinkageTypesSeeder extends Seeder
             ['nombre' => 'Investigador externo',     'descripccion' => 'Investigador vinculado mediante convenio interinstitucional.'],
             ['nombre' => 'Instructor SENA',          'descripccion' => 'Instructor del SENA que participa como integrante.'],
             ['nombre' => 'Contrato de prestación de servicios', 'descripccion' => 'Vinculado mediante contrato de prestación de servicios.'],
+            ['nombre' => 'Tecnólogo',                'descripccion' => 'Aprendiz en programa de nivel Tecnólogo.'],
+            ['nombre' => 'Técnico',                  'descripccion' => 'Aprendiz en programa de nivel Técnico.'],
+            ['nombre' => 'Cursos cortos',            'descripccion' => 'Participante en cursos cortos complementarios.'],
         ];
 
         foreach ($tipos as $tipo) {

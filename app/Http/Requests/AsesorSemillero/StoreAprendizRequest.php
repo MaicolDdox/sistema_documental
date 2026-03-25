@@ -21,28 +21,30 @@ class StoreAprendizRequest extends FormRequest
             : null;
 
         return [
-            'primer_nombre'        => 'required|string|max:100',
-            'segundo_nombre'       => 'nullable|string|max:100',
-            'primer_apellido'      => 'required|string|max:100',
-            'segundo_apellido'     => 'nullable|string|max:100',
-            'tipo_documento'       => 'required|in:documento identidad,cedula ciudadana,pasaporte,cedula extrangera',
-            'numero_documento'     => [
+            'primer_nombre'           => 'required|string|max:100',
+            'segundo_nombre'          => 'nullable|string|max:100',
+            'primer_apellido'         => 'required|string|max:100',
+            'segundo_apellido'        => 'nullable|string|max:100',
+            'tipo_documento'          => 'required|in:documento identidad,cedula ciudadana,pasaporte,cedula extrangera',
+            'numero_documento'        => [
                 'required',
                 'integer',
                 Rule::unique('users', 'numero_documento')->ignore($userId),
             ],
-            'genero'               => 'required|in:masculino,femenino,prefiero no decirlo',
-            'celular'              => 'required|numeric|digits_between:7,10',
-            'telefono'             => 'nullable|numeric|digits_between:7,10',
-            'eps'                  => 'required|string|max:100',
-            'email_institucional'  => [
+            'genero'                  => 'required|in:masculino,femenino,prefiero no decirlo',
+            'celular'                 => 'required|numeric|digits_between:7,10',
+            'telefono'                => 'nullable|numeric|digits_between:7,10',
+            'eps'                     => 'required|string|max:100',
+            'email_institucional'     => [
                 'required',
                 'email',
                 Rule::unique('people', 'email_institucional')->ignore($personId),
             ],
-            'entity_position_id'   => 'required|exists:entity_positions,id',
-            'linkage_type_id'      => 'required|exists:linkage_types,id',
-            'training_program_id'  => 'required|exists:training_programs,id',
+            'entity_position_id'      => 'required|exists:entity_positions,id',
+            'linkage_type_id'         => 'required|exists:linkage_types,id',
+            // Si se seleccionó "otro", training_program_id puede ser nulo
+            'training_program_id'     => 'nullable|exists:training_programs,id',
+            'training_program_otro'   => 'nullable|string|max:200',
         ];
     }
 
