@@ -327,6 +327,46 @@ class ProductoController extends Controller
     }
 
     // ──────────────────────────────────────────────────
+    // ESTADO Y ELIMINACIÓN
+    // ──────────────────────────────────────────────────
+
+    /**
+     * Permiso: productos.editar
+     * Desactiva o activa el producto (toggle de estado).
+     */
+    public function deactivate(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        $nuevoEstado = $product->estado === EstadoEnum::Activo
+            ? EstadoEnum::Inactivo
+            : EstadoEnum::Activo;
+
+        $product->update(['estado' => $nuevoEstado]);
+
+        $msg = $nuevoEstado === EstadoEnum::Activo ? 'Producto activado correctamente.' : 'Producto desactivado correctamente.';
+        return redirect()->route('asesor.productos.index')->with('success', $msg);
+    }
+
+    /**
+     * Permiso: productos.editar
+     * Elimina permanentemente el producto y su archivo asociado si lo tiene.
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        // Eliminar archivo del sistema de archivos si existe
+        if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
+            Storage::disk('public')->delete($product->archivo);
+        }
+
+        $product->delete();
+
+        return redirect()->route('asesor.productos.index')->with('success', 'Producto eliminado correctamente.');
+    }
+
+    // ──────────────────────────────────────────────────
     // DOWNLOAD
     // ──────────────────────────────────────────────────
 

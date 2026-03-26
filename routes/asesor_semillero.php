@@ -92,6 +92,8 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         Route::middleware('can:productos.editar')->group(function () {
             Route::get('/productos/{id}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
             Route::put('/productos/{id}', [ProductoController::class, 'update'])->name('productos.update');
+            Route::patch('/productos/{id}/desactivar', [ProductoController::class, 'deactivate'])->name('productos.deactivate');
+            Route::delete('/productos/{id}', [ProductoController::class, 'destroy'])->name('productos.destroy');
         });
 
         // ─── AJAX / API helpers ────────────────────────────────────────────────
