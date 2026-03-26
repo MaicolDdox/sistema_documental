@@ -48,7 +48,10 @@ class ProductoController extends Controller
             ->where('seedling_id', $seedlingId)
             ->pluck('project_id');
 
-        return Project::whereIn('id', $projectIds)->orderBy('nombre')->get(['id', 'nombre']);
+        return Project::whereIn('id', $projectIds)
+            ->where('estado', EstadoEnum::Activo)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
     }
 
     private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
@@ -127,7 +130,10 @@ class ProductoController extends Controller
             $productos  = $query->paginate(10)->withQueryString();
 
             // Todos los proyectos de todos los semilleros del asesor
-            $proyectos = Project::whereIn('id', $projectIds)->orderBy('nombre')->get(['id', 'nombre']);
+            $proyectos = Project::whereIn('id', $projectIds)
+                ->where('estado', EstadoEnum::Activo)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre']);
         }
 
         return view('asesor_semillero.productos.index', compact('semilleros', 'productos', 'proyectos'));
@@ -252,6 +258,7 @@ class ProductoController extends Controller
 
         // Todos los proyectos del asesor (cualquier semillero) para el select principal
         $proyectos = Project::whereIn('id', $this->getAllProjectIdsDelAsesor())
+            ->where('estado', EstadoEnum::Activo)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
 

@@ -252,20 +252,53 @@
                 </div>
             </div>
 
-            {{-- Evidencias rápidas --}}
+            {{-- Evidencias --}}
             <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                     <h3 class="font-semibold text-slate-900">Evidencias</h3>
-                    @can('evidencias.listar')
+                    @can('evidencias.subir_producto')
                     <a href="{{ route('asesor.evidencias.producto.index', $product->id) }}"
-                       class="text-xs text-slate-500 hover:text-slate-700 transition-colors">Ver todas →</a>
+                       class="text-xs text-[#39A900] hover:underline font-medium">+ Subir evidencia</a>
                     @endcan
                 </div>
                 <div class="px-5 py-4">
                     @if($product->productEvidences->isEmpty())
-                        <p class="text-sm text-slate-400">Sin evidencias.</p>
+                        <p class="text-sm text-slate-400">Sin evidencias registradas.</p>
                     @else
-                        <p class="text-sm text-slate-700 font-medium">{{ $product->productEvidences->count() }} evidencia(s) registradas</p>
+                    <div class="space-y-3">
+                        @foreach($product->productEvidences as $ev)
+                        @php
+                            $evExt  = strtolower(pathinfo($ev->archivo ?? '', PATHINFO_EXTENSION));
+                            $evIcon = match($evExt) {
+                                'pdf'  => 'text-red-500',
+                                'docx','doc' => 'text-blue-600',
+                                'xlsx','xls' => 'text-green-600',
+                                'jpg','jpeg','png' => 'text-purple-500',
+                                default => 'text-slate-500',
+                            };
+                        @endphp
+                        <div class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0">
+                            <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 {{ $evIcon }}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-800 truncate">{{ $ev->nombre ?: basename($ev->archivo ?? 'Evidencia') }}</p>
+                                <p class="text-xs text-slate-400">{{ $ev->created_at?->format('d/m/Y') }} · {{ strtoupper($evExt) }}</p>
+                            </div>
+                            @if($ev->archivo)
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <button type="button"
+                                        @click="openPreview('{{ asset('storage/' . $ev->archivo) }}', '{{ basename($ev->archivo) }}', '{{ asset('storage/' . $ev->archivo) }}')"
+                                        class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Ver</button>
+                                <a href="{{ asset('storage/' . $ev->archivo) }}" download
+                                   class="text-xs px-2 py-1 rounded text-white transition-all hover:opacity-90" style="background:#39A900">Descargar</a>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
                     @endif
                 </div>
             </div>

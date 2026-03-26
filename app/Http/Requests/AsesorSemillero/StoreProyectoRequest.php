@@ -14,6 +14,7 @@ class StoreProyectoRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'seedling_id'            => 'required|exists:seedlings,id',
             'nombre'                 => 'required|string|max:255',
             'descripccion'           => 'nullable|string',
             'research_line_id'       => 'required|exists:research_lines,id',
@@ -32,6 +33,7 @@ class StoreProyectoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'seedling_id.required'         => 'Debe seleccionar un semillero.',
             'nombre.required'              => 'El nombre del proyecto es obligatorio.',
             'research_line_id.required'    => 'La línea de investigación es obligatoria.',
             'research_line_id.exists'      => 'La línea de investigación no es válida.',

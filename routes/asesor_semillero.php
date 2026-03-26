@@ -46,6 +46,7 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         Route::middleware('can:aprendices.editar')->group(function () {
             Route::get('/aprendices/{id}/edit', [AprendizController::class, 'edit'])->name('aprendices.edit');
             Route::put('/aprendices/{id}', [AprendizController::class, 'update'])->name('aprendices.update');
+            Route::patch('/aprendices/{id}/desactivar', [AprendizController::class, 'deactivate'])->name('aprendices.deactivate');
         });
 
         // ─── PROYECTOS ─────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ Route::middleware(['auth', 'role:asesor_semillero|lider_semillero|director_semil
         Route::middleware('can:proyectos.editar')->group(function () {
             Route::get('/proyectos/{id}/edit', [ProyectoController::class, 'edit'])->name('proyectos.edit');
             Route::put('/proyectos/{id}', [ProyectoController::class, 'update'])->name('proyectos.update');
+            Route::patch('/proyectos/{id}/desactivar', [ProyectoController::class, 'deactivate'])->name('proyectos.deactivate');
         });
 
         Route::middleware('can:proyectos.vincular_integrantes')->group(function () {

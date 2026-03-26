@@ -96,24 +96,71 @@
                         @error('email_institucional') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Cargo / Rol --}}
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Cargo / Rol <span class="text-red-500">*</span></label>
-                        <select name="entity_position_id"
-                                class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('entity_position_id') border-red-400 @enderror">
-                            <option value="">Seleccionar cargo...</option>
-                            @php
-                                $cargosPermitidos = ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'];
-                                $cargosFiltrados = $cargos->flatten()->filter(fn($c) => in_array($c->nombre, $cargosPermitidos));
-                            @endphp
-                            @foreach($cargosFiltrados as $cargo)
-                                <option value="{{ $cargo->id }}"
-                                    {{ old('entity_position_id', $aprendiz->person?->entity_position_id) == $cargo->id ? 'selected' : '' }}>
-                                    {{ $cargo->nombre }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('entity_position_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    {{-- Ficha de formación (buscable por código o programa) --}}
+                    @php
+                        $programaActual  = $aprendiz->person?->trainingProgram;
+                        $fichaActual     = $programaActual?->trainingRecord;
+                        $textoFichaActual = $fichaActual
+                            ? $fichaActual->codigo . ' — ' . ($programaActual->nombre ?? '')
+                            : '';
+                        $programaIdActual = old('training_program_id', $programaActual?->id ?? '');
+                    @endphp
+
+                    <div class="sm:col-span-2"
+                         x-data="{
+                            busqueda: '{{ addslashes($textoFichaActual) }}',
+                            fichaSeleccionada: '{{ $fichaActual?->id ?? '' }}',
+                            programaTexto: '{{ addslashes($programaActual?->nombre ?? '') }}',
+                            programaId: '{{ $programaIdActual }}',
+                            fichas: {{ $fichas->map(fn($f) => [
+                                'id'       => $f->id,
+                                'codigo'   => $f->codigo,
+                                'text'     => $f->codigo . ' — ' . ($f->trainingPrograms->first()?->nombre ?? 'Sin programa'),
+                                'programa' => $f->trainingPrograms->first()?->nombre ?? '',
+                                'programa_id' => $f->trainingPrograms->first()?->id ?? '',
+                            ])->values()->toJson() }},
+                            get filtrados() {
+                                if (!this.busqueda) return this.fichas;
+                                const q = this.busqueda.toLowerCase();
+                                return this.fichas.filter(f => f.text.toLowerCase().includes(q));
+                            },
+                            seleccionar(ficha) {
+                                this.fichaSeleccionada = ficha.id;
+                                this.busqueda = ficha.text;
+                                this.programaTexto = ficha.programa;
+                                this.programaId = ficha.programa_id;
+                            }
+                         }">
+
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Ficha de formación <span class="text-red-500">*</span></label>
+
+                        <input type="text" x-model="busqueda"
+                               placeholder="Escribe el número de ficha o nombre del programa..."
+                               @focus="fichaSeleccionada = ''; programaTexto = ''; programaId = '';"
+                               autocomplete="off"
+                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_id') border-red-400 @enderror">
+
+                        <div x-show="busqueda.length > 0 && !fichaSeleccionada"
+                             class="mt-1 bg-white border border-slate-200 rounded-lg shadow-md max-h-48 overflow-y-auto z-10 relative">
+                            <template x-for="f in filtrados" :key="f.id">
+                                <div @click="seleccionar(f)"
+                                     class="px-3 py-2 text-sm text-slate-700 cursor-pointer hover:bg-[#39A900]/10 hover:text-[#39A900] transition-colors">
+                                    <span class="font-mono font-semibold" x-text="f.codigo"></span>
+                                    <span class="text-slate-500" x-text="' — ' + f.programa"></span>
+                                </div>
+                            </template>
+                            <div x-show="filtrados.length === 0" class="px-3 py-2 text-sm text-slate-400 italic">
+                                Sin coincidencias.
+                            </div>
+                        </div>
+
+                        <div x-show="fichaSeleccionada && programaTexto" class="mt-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                            <span class="font-semibold">Programa asociado:</span> <span x-text="programaTexto"></span>
+                        </div>
+
+                        <input type="hidden" name="training_program_id" :value="programaId">
+
+                        @error('training_program_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     {{-- Tipo de Vinculación --}}
@@ -122,11 +169,7 @@
                         <select name="linkage_type_id"
                                 class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('linkage_type_id') border-red-400 @enderror">
                             <option value="">Seleccionar...</option>
-                            @php
-                                $tiposPermitidos = ['Tecnólogo', 'Técnico', 'Cursos cortos'];
-                                $tiposFiltrados = $tiposVinculacion->filter(fn($t) => in_array($t->nombre, $tiposPermitidos));
-                            @endphp
-                            @foreach($tiposFiltrados as $tv)
+                            @foreach($tiposVinculacion as $tv)
                                 <option value="{{ $tv->id }}"
                                     {{ old('linkage_type_id', $aprendiz->person?->linkage_type_id) == $tv->id ? 'selected' : '' }}>
                                     {{ $tv->nombre }}
@@ -134,78 +177,6 @@
                             @endforeach
                         </select>
                         @error('linkage_type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
-
-                    {{-- Programa de Formación buscable + Otro --}}
-                    @php
-                        $tieneOtro = old('training_program_id') === 'otro'
-                            || ($aprendiz->person?->training_program_otro && !$aprendiz->person?->training_program_id);
-                        $programaGuardado = old('training_program_id', $aprendiz->person?->training_program_id);
-                    @endphp
-
-                    <div class="sm:col-span-2"
-                         x-data="{
-                            busqueda: '',
-                            esOtro: {{ $tieneOtro ? 'true' : 'false' }},
-                            programaSeleccionado: '{{ $tieneOtro ? '' : $programaGuardado }}',
-                            programas: {{ $programasFormacion->map(fn($p) => [
-                                'id'   => $p->id,
-                                'text' => $p->nombre . ($p->trainingProgramType ? ' (' . $p->trainingProgramType->nombre . ')' : ''),
-                            ])->values()->toJson() }},
-                            get filtrados() {
-                                if (!this.busqueda) return this.programas;
-                                const q = this.busqueda.toLowerCase();
-                                return this.programas.filter(p => p.text.toLowerCase().includes(q));
-                            },
-                            seleccionar(id) {
-                                this.programaSeleccionado = id;
-                                this.esOtro = (id === 'otro');
-                                if (!this.esOtro) this.busqueda = this.programas.find(p => p.id == id)?.text ?? '';
-                            }
-                         }"
-                         x-init="
-                            if (programaSeleccionado && !esOtro) {
-                                busqueda = programas.find(p => p.id == programaSeleccionado)?.text ?? '';
-                            }
-                            if (esOtro) busqueda = 'Otro';
-                         ">
-
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Programa de Formación <span class="text-red-500">*</span></label>
-
-                        <input type="text" x-model="busqueda" placeholder="Escribe para buscar un programa..."
-                               @focus="if (!esOtro) { programaSeleccionado = ''; }"
-                               autocomplete="off"
-                               class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_id') border-red-400 @enderror">
-
-                        <div x-show="busqueda.length > 0 && !programaSeleccionado && !esOtro"
-                             class="mt-1 bg-white border border-slate-200 rounded-lg shadow-md max-h-48 overflow-y-auto z-10 relative">
-                            <template x-for="p in filtrados" :key="p.id">
-                                <div @click="seleccionar(p.id)"
-                                     class="px-3 py-2 text-sm text-slate-700 cursor-pointer hover:bg-[#39A900]/10 hover:text-[#39A900] transition-colors"
-                                     x-text="p.text">
-                                </div>
-                            </template>
-                            <div @click="seleccionar('otro')"
-                                 class="px-3 py-2 text-sm text-slate-500 italic cursor-pointer hover:bg-slate-50 border-t border-slate-100 transition-colors">
-                                Otro (especificar)
-                            </div>
-                            <div x-show="filtrados.length === 0"
-                                 class="px-3 py-2 text-sm text-slate-400 italic">
-                                Sin coincidencias — elige "Otro" para especificar.
-                            </div>
-                        </div>
-
-                        <input type="hidden" name="training_program_id" :value="esOtro ? '' : programaSeleccionado">
-
-                        <div x-show="esOtro" x-cloak class="mt-2">
-                            <input type="text" name="training_program_otro"
-                                   value="{{ old('training_program_otro', $aprendiz->person?->training_program_otro) }}"
-                                   placeholder="Escribe el nombre del programa..."
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('training_program_otro') border-red-400 @enderror">
-                            @error('training_program_otro') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        @error('training_program_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                 </div>

@@ -40,7 +40,6 @@ class StoreAprendizRequest extends FormRequest
                 'email',
                 Rule::unique('people', 'email_institucional')->ignore($personId),
             ],
-            'entity_position_id'      => 'required|exists:entity_positions,id',
             'linkage_type_id'         => 'required|exists:linkage_types,id',
             // Si se seleccionó "otro", training_program_id puede ser nulo
             'training_program_id'     => 'nullable|exists:training_programs,id',
@@ -62,11 +61,9 @@ class StoreAprendizRequest extends FormRequest
             'eps.required'                 => 'La EPS es obligatoria.',
             'email_institucional.required' => 'El correo institucional es obligatorio.',
             'email_institucional.unique'   => 'Ese correo institucional ya está registrado.',
-            'entity_position_id.required'  => 'El cargo/rol es obligatorio.',
-            'entity_position_id.exists'    => 'El cargo seleccionado no es válido.',
             'linkage_type_id.required'     => 'El tipo de vinculación es obligatorio.',
             'linkage_type_id.exists'       => 'El tipo de vinculación seleccionado no es válido.',
-            'training_program_id.required' => 'El programa de formación es obligatorio.',
+            'training_program_id.required' => 'La ficha / programa de formación es obligatorio.',
             'training_program_id.exists'   => 'El programa de formación seleccionado no es válido.',
         ];
     }
