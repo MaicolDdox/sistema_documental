@@ -13,6 +13,7 @@
         deleteTitle: '',
         askDelete(url, title) { this.deleteUrl = url; this.deleteTitle = title || ''; this.openDelete = true; },
         closeDelete() { this.openDelete = false; this.deleteUrl = null; this.deleteTitle = ''; },
+        init() { window.prodUI = this; }
     }"
     @keydown.escape.window="if (openModal) closeModal(); if (openDelete) closeDelete();"
 >
@@ -202,6 +203,7 @@
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Proyecto</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Autores</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Archivo / Enlace</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado revisión</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
             </tr>
@@ -318,43 +320,32 @@
                         {{ $label }}
                     </span>
                 </td>
+                {{-- Estado --}}
+                <td class="px-4 py-3 text-xs whitespace-nowrap">
+                    @if($product->estado?->value === 'activo')
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Activo</span>
+                    @else
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">Inactivo</span>
+                    @endif
+                </td>
                 {{-- Acciones --}}
-                <td class="px-4 py-3">
-                    <div class="flex items-center gap-2 whitespace-nowrap">
-                        @can('productos.ver_detalle')
-                        <button type="button"
-                           @click="openInModal('{{ route('asesor.productos.show', $product->id) }}', 'Ver producto: {{ e($product->nombre) }}')"
-                           class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
-                           title="Ver detalle">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
-                                <circle cx="12" cy="12" r="3.25" />
-                            </svg>
-                        </button>
-                        @endcan
-                        @can('productos.editar')
-                        <button type="button"
-                           @click="openInModal('{{ route('asesor.productos.edit', $product->id) }}', 'Editar producto: {{ e($product->nombre) }}')"
-                           class="inline-flex items-center justify-center w-9 h-9 rounded-full text-white transition-all hover:opacity-90"
-                           style="background:#39A900"
-                           title="Editar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.125L16.862 4.487" />
-                            </svg>
-                        </button>
-
-                        <button type="button"
-                                @click="askDelete('{{ route('asesor.productos.destroy', $product->id) }}', '{{ e($product->nombre) }}')"
-                                class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
-                                title="Eliminar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12M9 7.5V6a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 6v1.5m-7.5 0l.7 13.3A2.25 2.25 0 0010.44 23h3.12a2.25 2.25 0 002.24-2.2L16.5 7.5" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 11v8.5M13.5 11v8.5" />
-                            </svg>
-                        </button>
-                        @endcan
-                    </div>
+                <td class="px-4 py-3 text-center">
+                    <button
+                        onclick="toggleProdMenu(event, this)"
+                        data-nombre="{{ $product->nombre }}"
+                        data-ver="{{ route('asesor.productos.show', $product->id) }}"
+                        data-editar="{{ route('asesor.productos.edit', $product->id) }}"
+                        data-deactivate="{{ route('asesor.productos.deactivate', $product->id) }}"
+                        data-destroy="{{ route('asesor.productos.destroy', $product->id) }}"
+                        data-estado="{{ $product->estado?->value }}"
+                        data-can-ver="{{ auth()->user()->can('productos.ver_detalle') ? '1' : '0' }}"
+                        data-can-editar="{{ auth()->user()->can('productos.editar') ? '1' : '0' }}"
+                        class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-all"
+                        title="Acciones">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                    </button>
                 </td>
             </tr>
 
@@ -368,3 +359,111 @@
 @endif
 </div>
 </x-app-layout>
+
+{{-- Menú global de acciones (position:fixed, fuera del overflow de la tabla) --}}
+<div id="prod-actions-menu"
+     style="display:none; position:fixed; z-index:9999; min-width:176px;"
+     class="bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden py-1">
+
+    <a id="pam-ver" href="#"
+       class="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Ver detalle
+    </a>
+    <a id="pam-editar" href="#"
+       class="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+        Editar
+    </a>
+    <div id="pam-sep" class="border-t border-slate-100 mx-3 my-1"></div>
+    <button id="pam-deactivate" type="button" onclick="submitProdDeactivate()"
+            class="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors text-amber-600 hover:bg-amber-50">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        <span id="pam-deactivate-label">Desactivar</span>
+    </button>
+    <button id="pam-destroy" type="button" onclick="submitProdDestroy()"
+            class="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors text-red-600 hover:bg-red-50">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+        Eliminar
+    </button>
+</div>
+
+<form id="prod-action-form" method="POST" style="display:none">
+    @csrf
+    <input type="hidden" name="_method" id="prod-action-method" value="">
+</form>
+
+<script>
+let _prodPamUrl = '';
+let _prodPamEstado = '';
+let _prodPamMethod = '';
+
+function toggleProdMenu(e, btn) {
+    e.stopPropagation();
+    const menu = document.getElementById('prod-actions-menu');
+
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+
+    const ver         = btn.dataset.ver;
+    const editar      = btn.dataset.editar;
+    const canVer      = btn.dataset.canVer === '1';
+    const canEdit     = btn.dataset.canEditar === '1';
+    const nombre      = btn.dataset.nombre;
+    
+    _prodPamEstado = btn.dataset.estado;
+
+    const pamVer = document.getElementById('pam-ver');
+    pamVer.onclick = (ev) => { ev.preventDefault(); window.prodUI.openInModal(ver, 'Ver producto: ' + nombre); menu.style.display = 'none'; };
+    pamVer.style.display = canVer ? 'flex' : 'none';
+
+    const pamEdit = document.getElementById('pam-editar');
+    pamEdit.onclick = (ev) => { ev.preventDefault(); window.prodUI.openInModal(editar, 'Editar producto: ' + nombre); menu.style.display = 'none'; };
+    pamEdit.style.display = canEdit ? 'flex' : 'none';
+
+    const pamDea  = document.getElementById('pam-deactivate');
+    const pamDest = document.getElementById('pam-destroy');
+    const pamSep  = document.getElementById('pam-sep');
+    const pamLabel = document.getElementById('pam-deactivate-label');
+    
+    if (canEdit) {
+        pamLabel.textContent = _prodPamEstado === 'activo' ? 'Desactivar' : 'Activar';
+        pamDea.className = 'flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ' +
+            (_prodPamEstado === 'activo' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50');
+        pamDea.style.display = 'flex';
+        pamDest.style.display = 'flex';
+        pamSep.style.display = 'block';
+        
+        // Asignamos las URLs a los botones como data atributes para poder extraerlas on click
+        pamDea.dataset.actionUrl = btn.dataset.deactivate;
+        pamDest.onclick = (ev) => { ev.preventDefault(); window.prodUI.askDelete(btn.dataset.destroy, nombre); menu.style.display = 'none'; };
+    } else {
+        pamDea.style.display = 'none';
+        pamDest.style.display = 'none';
+        pamSep.style.display = 'none';
+    }
+
+    const r = btn.getBoundingClientRect();
+    menu.style.top  = (r.bottom + 4) + 'px';
+    menu.style.left = (r.right - 176) + 'px';
+    menu.style.display = 'block';
+}
+
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('prod-actions-menu');
+    // Si el clic no fue dentro del menú, lo cerramos
+    if (menu && menu.style.display === 'block' && !menu.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+function submitProdDeactivate() {
+    const btn = document.getElementById('pam-deactivate');
+    if(confirm('¿Confirmas cambiar el estado de este producto?')) {
+        const form = document.getElementById('prod-action-form');
+        form.action = btn.dataset.actionUrl;
+        document.getElementById('prod-action-method').value = 'PATCH';
+        form.submit();
+    }
+}
+
+</script>

@@ -68,7 +68,7 @@
 @if($proyectos->isEmpty())
 <div class="bg-white rounded-xl border border-slate-200 p-10 text-center">
     <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
-    <p class="text-slate-500 text-sm">No hay proyectos registrados en tu semillero.</p>
+    <p class="text-slate-500 text-sm">No hay proyectos registrados en tus semilleros.</p>
     @can('proyectos.crear_semillero')
         <a href="{{ route('asesor.proyectos.create') }}" class="mt-3 inline-block text-sm font-medium" style="color:#39A900">Crear el primer proyecto →</a>
     @endcan
@@ -79,6 +79,7 @@
         <thead>
             <tr class="border-b border-slate-100 bg-slate-50">
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nombre del proyecto</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Semillero</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Descripción</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Línea investigación</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Línea tecnológica</th>
@@ -91,6 +92,7 @@
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Macroproyecto</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Autores</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Productos</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
             </tr>
         </thead>
@@ -102,6 +104,12 @@
                     <p class="font-semibold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="{{ $proyecto->nombre }}">
                         {{ $proyecto->nombre }}
                     </p>
+                </td>
+                {{-- Semillero --}}
+                <td class="px-4 py-3 text-xs whitespace-nowrap">
+                    @if($proyecto->seedlings->isNotEmpty())
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{{ $proyecto->seedlings->first()?->nombre }}</span>
+                    @else <span class="text-slate-400">—</span> @endif
                 </td>
                 {{-- Descripción --}}
                 <td class="px-4 py-3 text-slate-500 text-xs max-w-[160px]">
@@ -172,26 +180,32 @@
                         {{ $proyecto->products->count() }} producto(s)
                     </span>
                 </td>
+                {{-- Estado --}}
+                <td class="px-4 py-3 text-xs whitespace-nowrap">
+                    @if($proyecto->estado?->value === 'activo')
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Activo</span>
+                    @else
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">Inactivo</span>
+                    @endif
+                </td>
                 {{-- Acciones --}}
-                <td class="px-4 py-3">
-                    <div class="flex items-center gap-1.5 whitespace-nowrap">
-                        @can('proyectos.ver_detalle')
-                        <a href="{{ route('asesor.proyectos.show', $proyecto->id) }}"
-                           class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Ver</a>
-                        @endcan
-                        @can('proyectos.vincular_integrantes')
-                        <a href="{{ route('asesor.proyectos.integrantes', $proyecto->id) }}"
-                           class="text-xs px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Integrantes</a>
-                        @endcan
-                        @can('productos.registrar')
-                        <a href="{{ route('asesor.productos.create', ['proyecto_id' => $proyecto->id]) }}"
-                           class="text-xs px-2 py-1 rounded text-white transition-all hover:opacity-90" style="background:#39A900">+Producto</a>
-                        @endcan
-                        @can('proyectos.editar')
-                        <a href="{{ route('asesor.proyectos.edit', $proyecto->id) }}"
-                           class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition-all">Editar</a>
-                        @endcan
-                    </div>
+                <td class="px-4 py-3 text-center">
+                    <button
+                        onclick="toggleProjMenu(event, this)"
+                        data-ver="{{ route('asesor.proyectos.show', $proyecto->id) }}"
+                        data-integrantes="{{ route('asesor.proyectos.integrantes', $proyecto->id) }}"
+                        data-editar="{{ route('asesor.proyectos.edit', $proyecto->id) }}"
+                        data-deactivate="{{ route('asesor.proyectos.deactivate', $proyecto->id) }}"
+                        data-estado="{{ $proyecto->estado?->value }}"
+                        data-can-ver="{{ auth()->user()->can('proyectos.ver_detalle') ? '1' : '0' }}"
+                        data-can-integrantes="{{ auth()->user()->can('proyectos.vincular_integrantes') ? '1' : '0' }}"
+                        data-can-editar="{{ auth()->user()->can('proyectos.editar') ? '1' : '0' }}"
+                        class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 transition-all"
+                        title="Acciones">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                    </button>
                 </td>
             </tr>
             @endforeach
@@ -203,4 +217,109 @@
 <div class="mt-4">{{ $proyectos->links() }}</div>
 @endif
 @endif
+
+{{-- Menú global de acciones (position:fixed, fuera del overflow de la tabla) --}}
+<div id="proj-actions-menu"
+     style="display:none; position:fixed; z-index:9999; min-width:176px;"
+     class="bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden py-1">
+
+    <a id="pam-ver" href="#"
+       class="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Ver detalle
+    </a>
+    <a id="pam-integrantes" href="#"
+       class="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+        Integrantes
+    </a>
+    <a id="pam-editar" href="#"
+       class="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+        Editar
+    </a>
+    <div id="pam-sep" class="border-t border-slate-100 mx-3 my-1"></div>
+    <button id="pam-deactivate" type="button" onclick="submitDeactivate()"
+            class="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors text-red-600 hover:bg-red-50">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        <span id="pam-deactivate-label">Desactivar</span>
+    </button>
+</div>
+
+<form id="proj-deactivate-form" method="POST" style="display:none">
+    @csrf
+    @method('PATCH')
+</form>
+
+<script>
+let _pamUrl = '';
+let _pamEstado = '';
+
+function toggleProjMenu(e, btn) {
+    e.stopPropagation();
+    const menu = document.getElementById('proj-actions-menu');
+
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+
+    const ver         = btn.dataset.ver;
+    const integrantes = btn.dataset.integrantes;
+    const editar      = btn.dataset.editar;
+    const canVer      = btn.dataset.canVer === '1';
+    const canInt      = btn.dataset.canIntegrantes === '1';
+    const canEdit     = btn.dataset.canEditar === '1';
+    _pamUrl    = btn.dataset.deactivate;
+    _pamEstado = btn.dataset.estado;
+
+    const pamVer = document.getElementById('pam-ver');
+    pamVer.href = ver;
+    pamVer.style.display = canVer ? 'flex' : 'none';
+
+    const pamInt = document.getElementById('pam-integrantes');
+    pamInt.href = integrantes;
+    pamInt.style.display = canInt ? 'flex' : 'none';
+
+    const pamEdit = document.getElementById('pam-editar');
+    pamEdit.href = editar;
+    pamEdit.style.display = canEdit ? 'flex' : 'none';
+
+    const pamDea  = document.getElementById('pam-deactivate');
+    const pamSep  = document.getElementById('pam-sep');
+    const pamLabel = document.getElementById('pam-deactivate-label');
+    if (canEdit) {
+        pamLabel.textContent = _pamEstado === 'activo' ? 'Desactivar' : 'Activar';
+        pamDea.className = 'flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ' +
+            (_pamEstado === 'activo' ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50');
+        pamDea.style.display = 'flex';
+        pamSep.style.display = 'block';
+    } else {
+        pamDea.style.display = 'none';
+        pamSep.style.display = 'none';
+    }
+
+    const r = btn.getBoundingClientRect();
+    menu.style.top  = (r.bottom + 4) + 'px';
+    menu.style.left = Math.max(8, r.right - 176) + 'px';
+    menu.style.display = 'block';
+}
+
+function submitDeactivate() {
+    const msg = _pamEstado === 'activo' ? '¿Desactivar este proyecto?' : '¿Activar este proyecto?';
+    if (!confirm(msg)) return;
+    const form = document.getElementById('proj-deactivate-form');
+    form.action = _pamUrl;
+    form.submit();
+}
+
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('proj-actions-menu');
+    if (menu && !menu.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+window.addEventListener('scroll', function() {
+    document.getElementById('proj-actions-menu').style.display = 'none';
+}, true);
+</script>
+
 </x-app-layout>

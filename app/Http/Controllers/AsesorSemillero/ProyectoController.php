@@ -24,34 +24,50 @@ use Illuminate\View\View;
 class ProyectoController extends Controller
 {
     /**
-     * Obtiene el semillero del asesor autenticado.
+     * Obtiene todos los semilleros del asesor autenticado con research_group_id.
      */
-    private function getSemilleroDelAsesor(): ?Seedling
+    private function getSemillerosDelAsesor(): \Illuminate\Database\Eloquent\Collection
     {
-        return \App\Support\AsesorSemilleroContext::semilleroActivo();
+        return \App\Support\AsesorSemilleroContext::semillerosDelUsuarioAutenticado();
     }
 
     /**
-     * Obtiene los IDs de proyectos del semillero del asesor.
+     * Obtiene los IDs de los proyectos de todos los semilleros del asesor.
      */
-    private function getProjectIdsDelSemillero(int $seedlingId): \Illuminate\Support\Collection
+    private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
     {
+        $semilleroIds = $this->getSemillerosDelAsesor()->pluck('id');
         return DB::table('project_seedlings')
-            ->where('seedling_id', $seedlingId)
-            ->pluck('project_id');
+            ->whereIn('seedling_id', $semilleroIds)
+            ->pluck('project_id')
+            ->unique();
+    }
+
+    /**
+     * Busca un proyecto verificando que pertenezca a algún semillero del asesor.
+     */
+    private function findProyectoDelSemillero(int $projectId): Project
+    {
+        $projectIds = $this->getAllProjectIdsDelAsesor();
+
+        if (!$projectIds->contains($projectId)) {
+            abort(403, 'Este proyecto no pertenece a tus semilleros.');
+        }
+
+        return Project::findOrFail($projectId);
     }
 
     /**
      * Permiso: proyectos.listar_semillero
-     * Lista proyectos del semillero del asesor.
+     * Lista proyectos de todos los semilleros del asesor.
      */
     public function index(Request $request): View
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        $proyectos = collect();
+        $semilleros = $this->getSemillerosDelAsesor();
+        $proyectos  = collect();
 
-        if ($semillero) {
-            $projectIds = $this->getProjectIdsDelSemillero($semillero->id);
+        if ($semilleros->isNotEmpty()) {
+            $projectIds = $this->getAllProjectIdsDelAsesor();
 
             $query = Project::with([
                 'researchLine',
@@ -62,6 +78,7 @@ class ProyectoController extends Controller
                 'projectAuthors',
                 'products',
                 'macroProject',
+                'seedlings'
             ])->whereIn('id', $projectIds);
 
             if ($request->filled('buscar')) {
@@ -71,7 +88,7 @@ class ProyectoController extends Controller
             $proyectos = $query->orderByDesc('created_at')->paginate(10)->withQueryString();
         }
 
-        return view('asesor_semillero.proyectos.index', compact('semillero', 'proyectos'));
+        return view('asesor_semillero.proyectos.index', compact('semilleros', 'proyectos'));
     }
 
     /**
@@ -80,8 +97,8 @@ class ProyectoController extends Controller
      */
     public function create(): View
     {
-        $semillero        = $this->getSemilleroDelAsesor();
-        if (! $semillero) {
+        $semilleros = $this->getSemillerosDelAsesor();
+        if ($semilleros->isEmpty()) {
             abort(403, 'No tienes un semillero asignado.');
         }
         $lineasInves      = ResearchLine::orderBy('nombre')->get();
@@ -89,13 +106,15 @@ class ProyectoController extends Controller
         $areasTematicas   = ThematicArea::orderBy('nombre')->get();
         $modalidades      = ProjectModality::orderBy('nombre')->get();
         $tiposInves       = InvestigationType::orderBy('nombre')->get();
-        $macroProyectos   = MacroProject::where('research_group_id', $semillero->research_group_id)
+        
+        $group_ids        = $semilleros->pluck('research_group_id')->filter()->unique();
+        $macroProyectos   = MacroProject::whereIn('research_group_id', $group_ids)
             ->where('estado', 'activo')
             ->orderBy('nombre')
             ->get();
 
         return view('asesor_semillero.proyectos.create', compact(
-            'semillero', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves', 'macroProyectos'
+            'semilleros', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'tiposInves', 'macroProyectos'
         ));
     }
 
@@ -105,20 +124,26 @@ class ProyectoController extends Controller
      */
     public function store(StoreProyectoRequest $request): RedirectResponse
     {
-        $semillero = $this->getSemilleroDelAsesor();
-        if (!$semillero) {
+        $semilleros = $this->getSemillerosDelAsesor();
+        if ($semilleros->isEmpty()) {
             return redirect()->back()->with('error', 'No tienes un semillero asignado.');
         }
 
         $validated = $request->validated();
+        
+        // El semillero_id viene validado, buscamos su research_group_id
+        $selectedSeedling = $semilleros->firstWhere('id', $validated['seedling_id']);
+        if (!$selectedSeedling) {
+            return redirect()->back()->with('error', 'Semillero inválido.');
+        }
 
         if ($validated['tiene_macroproyecto']) {
             $request->validate([
                 'macro_project_id' => [
                     'required',
-                    function ($attribute, $value, $fail) use ($semillero) {
+                    function ($attribute, $value, $fail) use ($selectedSeedling) {
                         $exists = MacroProject::where('id', $value)
-                            ->where('research_group_id', $semillero->research_group_id)
+                            ->where('research_group_id', $selectedSeedling->research_group_id)
                             ->exists();
                         if (!$exists) {
                             $fail('El macroproyecto seleccionado no es válido para el grupo de investigación de este semillero.');
@@ -128,7 +153,7 @@ class ProyectoController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($validated, $semillero, $request) {
+        DB::transaction(function () use ($validated, $request) {
             // 1. Crear el proyecto
             $proyecto = Project::create([
                 'project_creator_id'    => Auth::id(),
@@ -147,10 +172,10 @@ class ProyectoController extends Controller
                 'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
             ]);
 
-            // 2. Vincular proyecto al semillero
+            // 2. Vincular proyecto al semillero seleccionado
             DB::table('project_seedlings')->insert([
                 'project_id'  => $proyecto->id,
-                'seedling_id' => $semillero->id,
+                'seedling_id' => $validated['seedling_id'],
                 'created_at'  => now(),
                 'updated_at'  => now(),
             ]);
@@ -173,10 +198,6 @@ class ProyectoController extends Controller
      */
     public function show(int $id): View
     {
-        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
         $proyecto  = $this->findProyectoDelAsesor($id);
 
         $autores   = ProjectAuthor::with('user.person')->where('project_id', $id)->where('activo', true)->get();
@@ -185,7 +206,7 @@ class ProyectoController extends Controller
         $macro     = $proyecto->macroProject;
 
         return view('asesor_semillero.proyectos.show', compact(
-            'proyecto', 'autores', 'productos', 'evidencias', 'macro', 'semillero'
+            'proyecto', 'autores', 'productos', 'evidencias', 'macro'
         ));
     }
 
@@ -195,22 +216,23 @@ class ProyectoController extends Controller
      */
     public function edit(int $id): View
     {
-        $semillero      = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
+        $semilleros     = $this->getSemillerosDelAsesor();
         $proyecto       = $this->findProyectoDelAsesor($id);
         $lineasInves    = ResearchLine::orderBy('nombre')->get();
         $lineasTec      = TechnologicalLine::orderBy('nombre')->get();
         $areasTematicas = ThematicArea::orderBy('nombre')->get();
         $modalidades    = ProjectModality::orderBy('nombre')->get();
-        $macroProyectos = MacroProject::where('research_group_id', $semillero->research_group_id)
+        
+        $group_ids      = $semilleros->pluck('research_group_id')->filter()->unique();
+        $macroProyectos = MacroProject::whereIn('research_group_id', $group_ids)
             ->where('estado', 'activo')
             ->orderBy('nombre')
             ->get();
+            
+        $proyecto_semillero_id = DB::table('project_seedlings')->where('project_id', $id)->value('seedling_id');
 
         return view('asesor_semillero.proyectos.edit', compact(
-            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macroProyectos'
+            'proyecto', 'lineasInves', 'lineasTec', 'areasTematicas', 'modalidades', 'macroProyectos', 'semilleros', 'proyecto_semillero_id'
         ));
     }
 
@@ -220,14 +242,33 @@ class ProyectoController extends Controller
      */
     public function update(StoreProyectoRequest $request, int $id): RedirectResponse
     {
-        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
         $proyecto  = $this->findProyectoDelAsesor($id);
         $validated = $request->validated();
+        
+        // El semillero_id viene validado, buscamos su research_group_id
+        $semilleros = $this->getSemillerosDelAsesor();
+        $selectedSeedling = $semilleros->firstWhere('id', $validated['seedling_id']);
+        if (!$selectedSeedling) {
+            return redirect()->back()->with('error', 'Semillero inválido.');
+        }
 
-        DB::transaction(function () use ($proyecto, $validated, $semillero, $request) {
+        if ($validated['tiene_macroproyecto']) {
+            $request->validate([
+                'macro_project_id' => [
+                    'required',
+                    function ($attribute, $value, $fail) use ($selectedSeedling) {
+                        $exists = MacroProject::where('id', $value)
+                            ->where('research_group_id', $selectedSeedling->research_group_id)
+                            ->exists();
+                        if (!$exists) {
+                            $fail('El macroproyecto seleccionado no es válido para el grupo de investigación de este semillero.');
+                        }
+                    },
+                ],
+            ]);
+        }
+
+        DB::transaction(function () use ($proyecto, $validated, $selectedSeedling, $request) {
             // Actualizar proyecto — SE IGNORA investigation_type_id (bloqueado post-creación)
             $proyecto->update([
                 'research_line_id'      => $validated['research_line_id'],
@@ -242,6 +283,12 @@ class ProyectoController extends Controller
                 'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
                 'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
             ]);
+            
+            // Actualizar vinculación de semillero
+            DB::table('project_seedlings')->where('project_id', $proyecto->id)->update([
+                'seedling_id' => $validated['seedling_id'],
+                'updated_at'  => now(),
+            ]);
         });
 
         return redirect()->route('asesor.proyectos.show', $proyecto->id)
@@ -254,11 +301,9 @@ class ProyectoController extends Controller
      */
     public function integrantes(int $id): View
     {
-        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
-        $proyecto  = $this->findProyectoDelAsesor($id);
+        $proyecto     = $this->findProyectoDelAsesor($id);
+        $semillero_id = DB::table('project_seedlings')->where('project_id', $proyecto->id)->value('seedling_id');
+        $semillero    = Seedling::find($semillero_id);
 
         // Autores actuales del proyecto
         $autoresActuales = ProjectAuthor::with('user.person')
@@ -276,7 +321,7 @@ class ProyectoController extends Controller
             ->get();
 
         // Alerta: miembros del semillero sin ningún proyecto
-        $projectIds = $this->getProjectIdsDelSemillero($semillero->id);
+        $projectIds = DB::table('project_seedlings')->where('seedling_id', $semillero->id)->pluck('project_id');
         $miembrosConProyecto = ProjectAuthor::whereIn('project_id', $projectIds)
             ->where('activo', true)
             ->pluck('user_id');
@@ -299,11 +344,9 @@ class ProyectoController extends Controller
     {
         $request->validate(['user_id' => 'required|exists:users,id']);
 
-        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
-        $proyecto  = $this->findProyectoDelAsesor($id);
+        $proyecto     = $this->findProyectoDelAsesor($id);
+        $semillero_id = DB::table('project_seedlings')->where('project_id', $proyecto->id)->value('seedling_id');
+        $semillero    = Seedling::find($semillero_id);
 
         // Verificar que el usuario es miembro del semillero
         if (!$semillero->members()->where('users.id', $request->user_id)->exists()) {
@@ -325,11 +368,7 @@ class ProyectoController extends Controller
      */
     public function desvincularIntegrante(Request $request, int $id, int $user_id): RedirectResponse
     {
-        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($id);
-        if (! $semillero) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
-        $this->findProyectoDelAsesor($id);
+        $proyecto = $this->findProyectoDelAsesor($id);
 
         if ($user_id === Auth::id()) {
             return redirect()->back()->with('error', 'No puedes desvincularte a ti mismo del proyecto.');
@@ -350,10 +389,25 @@ class ProyectoController extends Controller
         if (! AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($projectId)) {
             abort(403, 'Este proyecto no pertenece a tus semilleros.');
         }
-
-        return Project::with([
-            'researchLine', 'technologicalLine', 'thematicArea',
-            'projectModality', 'investigationType',
-        ])->findOrFail($projectId);
+        return Project::findOrFail($projectId);
     }
+
+    /**
+     * Permiso: proyectos.editar
+     * Desactiva/activa el proyecto (toggle de estado).
+     */
+    public function deactivate(int $id): RedirectResponse
+    {
+        $proyecto  = $this->findProyectoDelAsesor($id);
+
+        $nuevoEstado = $proyecto->estado === EstadoEnum::Activo
+            ? EstadoEnum::Inactivo
+            : EstadoEnum::Activo;
+
+        $proyecto->update(['estado' => $nuevoEstado]);
+
+        $msg = $nuevoEstado === EstadoEnum::Activo ? 'Proyecto activado correctamente.' : 'Proyecto desactivado correctamente.';
+        return redirect()->route('asesor.proyectos.index')->with('success', $msg);
+    }
+
 }

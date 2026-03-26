@@ -49,6 +49,7 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
         Route::middleware('can:aprendices.editar')->group(function () {
             Route::get('/aprendices/{id}/edit', [AprendizController::class, 'edit'])->name('aprendices.edit');
             Route::put('/aprendices/{id}', [AprendizController::class, 'update'])->name('aprendices.update');
+            Route::patch('/aprendices/{id}/desactivar', [AprendizController::class, 'deactivate'])->name('aprendices.deactivate');
         });
 
         // ─── PROYECTOS ─────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
         Route::middleware('can:proyectos.editar')->group(function () {
             Route::get('/proyectos/{id}/edit', [ProyectoController::class, 'edit'])->name('proyectos.edit');
             Route::put('/proyectos/{id}', [ProyectoController::class, 'update'])->name('proyectos.update');
+            Route::patch('/proyectos/{id}/desactivar', [ProyectoController::class, 'deactivate'])->name('proyectos.deactivate');
         });
 
         Route::middleware('can:proyectos.vincular_integrantes')->group(function () {
@@ -93,6 +95,7 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
         Route::middleware('can:productos.editar')->group(function () {
             Route::get('/productos/{id}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
             Route::put('/productos/{id}', [ProductoController::class, 'update'])->name('productos.update');
+            Route::patch('/productos/{id}/desactivar', [ProductoController::class, 'deactivate'])->name('productos.deactivate');
             Route::delete('/productos/{id}', [ProductoController::class, 'destroy'])->name('productos.destroy');
         });
 

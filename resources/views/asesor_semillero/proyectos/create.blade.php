@@ -1,7 +1,18 @@
 <x-app-layout>
 <x-slot name="header">Crear Nuevo Proyecto</x-slot>
 
-<div class="max-w-3xl" x-data="{ tienesMacro: {{ old('tiene_macroproyecto', '0') }} == 1 }">
+<div class="max-w-3xl" x-data="{
+    semilleroId: '{{ old('seedling_id', '') }}',
+    tienesMacro: {{ old('tiene_macroproyecto', '0') }} == 1,
+    semilleros: {{ $semilleros->toJson() }},
+    todasMacros: {{ $macroProyectos->toJson() }},
+    get macrosFiltradas() {
+        if (!this.semilleroId) return [];
+        const sem = this.semilleros.find(s => s.id == this.semilleroId);
+        if (!sem) return [];
+        return this.todasMacros.filter(m => m.research_group_id == sem.research_group_id);
+    }
+}">
     <div class="bg-white rounded-xl border border-slate-200 p-6">
         <form method="POST" action="{{ route('asesor.proyectos.store') }}" novalidate>
             @csrf
@@ -10,6 +21,17 @@
             <div class="mb-5">
                 <h3 class="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 pb-2 border-b border-slate-100">Información básica</h3>
                 <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Semillero al que pertenece <span class="text-red-500">*</span></label>
+                        <select name="seedling_id" x-model="semilleroId"
+                                class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('seedling_id') border-red-400 @enderror">
+                            <option value="">Seleccionar semillero...</option>
+                            <template x-for="sem in semilleros" :key="sem.id">
+                                <option :value="sem.id" x-text="sem.nombre" :selected="sem.id == semilleroId"></option>
+                            </template>
+                        </select>
+                        @error('seedling_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Nombre del proyecto <span class="text-red-500">*</span></label>
                         <input type="text" name="nombre" value="{{ old('nombre') }}"
@@ -125,11 +147,9 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1">Seleccionar Macroproyecto <span class="text-red-500">*</span></label>
                         <select name="macro_project_id" class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('macro_project_id') border-red-400 @enderror">
                             <option value="">Seleccione un macroproyecto...</option>
-                            @foreach($macroProyectos as $mp)
-                                <option value="{{ $mp->id }}" {{ old('macro_project_id') == $mp->id ? 'selected' : '' }}>
-                                    [{{ $mp->codigo }}] {{ $mp->nombre }}
-                                </option>
-                            @endforeach
+                            <template x-for="mp in macrosFiltradas" :key="mp.id">
+                                <option :value="mp.id" x-text="'[' + mp.codigo + '] ' + mp.nombre" :selected="mp.id == '{{ old('macro_project_id') }}'"></option>
+                            </template>
                         </select>
                         @error('macro_project_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>

@@ -90,9 +90,9 @@
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Teléfono</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Correo institucional</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">EPS</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Cargo / Rol</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ficha / Programa</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo vinculación</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Programa de formación</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                 <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
             </tr>
         </thead>
@@ -141,10 +141,18 @@
                 </td>
                 {{-- EPS --}}
                 <td class="px-4 py-3 text-slate-600 text-xs whitespace-nowrap">{{ $p?->eps ?? '—' }}</td>
-                {{-- Cargo/Rol --}}
+                {{-- Ficha / Programa --}}
                 <td class="px-4 py-3 text-xs whitespace-nowrap">
-                    @if($p?->entityPosition)
-                        <span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-700">{{ $p->entityPosition->nombre }}</span>
+                    @if($p?->trainingProgram)
+                        @php $ficha = $p->trainingProgram->trainingRecord; @endphp
+                        @if($ficha)
+                            <span class="font-mono font-semibold text-slate-800">{{ $ficha->codigo }}</span>
+                            <span class="block text-slate-500 text-xs">{{ $p->trainingProgram->nombre }}</span>
+                        @else
+                            <span class="text-slate-700">{{ $p->trainingProgram->nombre }}</span>
+                        @endif
+                    @elseif($p?->training_program_otro)
+                        <span class="text-slate-500 italic">{{ $p->training_program_otro }}</span>
                     @else
                         <span class="text-slate-400">—</span>
                     @endif
@@ -157,24 +165,17 @@
                         <span class="text-slate-400">—</span>
                     @endif
                 </td>
-                {{-- Programa de formación --}}
+                {{-- Estado --}}
                 <td class="px-4 py-3 text-xs whitespace-nowrap">
-                    @if($p?->trainingProgram)
-                        <span class="text-slate-700">{{ $p->trainingProgram->nombre }}</span>
-                        @if($p->trainingProgram->trainingProgramType)
-                            <span class="block text-slate-400">({{ $p->trainingProgram->trainingProgramType->nombre }})</span>
-                        @endif
+                    @if($ap->estado?->value === 'activo')
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Activo</span>
                     @else
-                        <span class="text-slate-400">—</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">Inactivo</span>
                     @endif
                 </td>
                 {{-- Acciones --}}
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-2 whitespace-nowrap">
-                        @can('aprendices.ver_detalle')
-                        <a href="{{ route('asesor.aprendices.show', $ap->id) }}"
-                           class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">Ver</a>
-                        @endcan
                         @can('aprendices.editar')
                         <a href="{{ route('asesor.aprendices.edit', $ap->id) }}"
                            class="text-xs px-2.5 py-1.5 rounded-lg text-white transition-all hover:opacity-90" style="background:#39A900">Editar</a>

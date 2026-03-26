@@ -5,11 +5,11 @@ namespace App\Http\Controllers\AsesorSemillero;
 use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AsesorSemillero\StoreAprendizRequest;
-use App\Models\EntityPosition;
 use App\Models\LinkageType;
 use App\Models\Person;
 use App\Models\Seedling;
 use App\Models\TrainingProgram;
+use App\Models\TrainingRecord;
 use App\Models\User;
 use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\RedirectResponse;
@@ -40,8 +40,7 @@ class AprendizController extends Controller
         if ($semillero) {
             $query = $semillero->members()
                 ->with([
-                    'person.trainingProgram.trainingProgramType',
-                    'person.entityPosition',
+                    'person.trainingProgram.trainingRecord',
                     'person.linkageType',
                 ])
                 ->where('users.id', '!=', Auth::id()); // no mostrar al propio asesor
@@ -70,11 +69,11 @@ class AprendizController extends Controller
      */
     public function create(): View
     {
-        $cargos        = EntityPosition::all()->groupBy('descripccion');
-        $tiposVinculacion = LinkageType::orderBy('nombre')->get();
+        $fichas           = TrainingRecord::with('trainingPrograms')->orderBy('codigo')->get();
+        $tiposVinculacion = LinkageType::whereIn('nombre', ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'])->orderBy('nombre')->get();
         $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
 
-        return view('asesor_semillero.aprendices.create', compact('cargos', 'tiposVinculacion', 'programasFormacion'));
+        return view('asesor_semillero.aprendices.create', compact('fichas', 'tiposVinculacion', 'programasFormacion'));
     }
 
     /**
@@ -102,12 +101,14 @@ class AprendizController extends Controller
             ]);
 
             // 2. Crear perfil extendido en personas
+            $progId = $validated['training_program_id'] ?? null;
+            $progOtro = $progId ? null : ($validated['training_program_otro'] ?? null);
+
             Person::create([
                 'user_id'                => $user->id,
-                'entity_position_id'     => $validated['entity_position_id'],
                 'linkage_type_id'        => $validated['linkage_type_id'],
-                'training_program_id'    => $validated['training_program_id'] ?? null,
-                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'training_program_id'    => $progId,
+                'training_program_otro'  => $progOtro,
                 'primer_nombre'          => $validated['primer_nombre'],
                 'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
                 'primer_apellido'        => $validated['primer_apellido'],
@@ -145,14 +146,14 @@ class AprendizController extends Controller
      */
     public function edit(int $id): View
     {
-        $semillero  = $this->getSemilleroDelAsesor();
-        $aprendiz   = $this->findAprendizEnSemillero($id, $semillero);
-        $cargos     = EntityPosition::all()->groupBy('descripccion');
-        $tiposVinculacion   = LinkageType::orderBy('nombre')->get();
+        $semillero          = $this->getSemilleroDelAsesor();
+        $aprendiz           = $this->findAprendizEnSemillero($id, $semillero);
+        $fichas             = TrainingRecord::with('trainingPrograms')->orderBy('codigo')->get();
+        $tiposVinculacion   = LinkageType::whereIn('nombre', ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'])->orderBy('nombre')->get();
         $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
 
         return view('asesor_semillero.aprendices.edit', compact(
-            'aprendiz', 'cargos', 'tiposVinculacion', 'programasFormacion'
+            'aprendiz', 'fichas', 'tiposVinculacion', 'programasFormacion'
         ));
     }
 
@@ -174,11 +175,13 @@ class AprendizController extends Controller
             ]);
 
             // Actualizar perfil de persona
+            $progId = $validated['training_program_id'] ?? null;
+            $progOtro = $progId ? null : ($validated['training_program_otro'] ?? null);
+
             $aprendiz->person->update([
-                'entity_position_id'     => $validated['entity_position_id'],
                 'linkage_type_id'        => $validated['linkage_type_id'],
-                'training_program_id'    => $validated['training_program_id'] ?? null,
-                'training_program_otro'  => $validated['training_program_otro'] ?? null,
+                'training_program_id'    => $progId,
+                'training_program_otro'  => $progOtro,
                 'primer_nombre'          => $validated['primer_nombre'],
                 'segundo_nombre'         => $validated['segundo_nombre'] ?? null,
                 'primer_apellido'        => $validated['primer_apellido'],
@@ -196,6 +199,25 @@ class AprendizController extends Controller
     }
 
     /**
+     * Permiso: aprendices.editar
+     * Desactiva/activa el aprendiz (toggle de estado).
+     */
+    public function deactivate(int $id): RedirectResponse
+    {
+        $semillero = $this->getSemilleroDelAsesor();
+        $aprendiz  = $this->findAprendizEnSemillero($id, $semillero);
+
+        $nuevoEstado = $aprendiz->estado === EstadoEnum::Activo
+            ? EstadoEnum::Inactivo
+            : EstadoEnum::Activo;
+
+        $aprendiz->update(['estado' => $nuevoEstado]);
+
+        $msg = $nuevoEstado === EstadoEnum::Activo ? 'Aprendiz activado correctamente.' : 'Aprendiz desactivado correctamente.';
+        return redirect()->route('asesor.aprendices.index')->with('success', $msg);
+    }
+
+    /**
      * Busca un aprendiz verificando que pertenezca al semillero del asesor.
      */
     private function findAprendizEnSemillero(int $userId, ?Seedling $semillero): User
@@ -205,7 +227,7 @@ class AprendizController extends Controller
         }
 
         $aprendiz = $semillero->members()
-            ->with(['person.trainingProgram', 'person.entityPosition', 'person.linkageType'])
+            ->with(['person.trainingProgram.trainingRecord', 'person.linkageType'])
             ->where('users.id', $userId)
             ->firstOrFail();
 

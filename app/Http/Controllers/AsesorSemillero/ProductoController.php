@@ -40,7 +40,10 @@ class ProductoController extends Controller
             ->where('seedling_id', $seedlingId)
             ->pluck('project_id');
 
-        return Project::whereIn('id', $projectIds)->orderBy('nombre')->get(['id', 'nombre']);
+        return Project::whereIn('id', $projectIds)
+            ->where('estado', EstadoEnum::Activo)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
     }
 
     private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
@@ -119,7 +122,10 @@ class ProductoController extends Controller
             $productos  = $query->paginate(10)->withQueryString();
 
             // Todos los proyectos de todos los semilleros del asesor
-            $proyectos = Project::whereIn('id', $projectIds)->orderBy('nombre')->get(['id', 'nombre']);
+            $proyectos = Project::whereIn('id', $projectIds)
+                ->where('estado', EstadoEnum::Activo)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre']);
         }
 
         return view('asesor_semillero.productos.index', compact('semilleros', 'productos', 'proyectos'));
@@ -244,6 +250,7 @@ class ProductoController extends Controller
 
         // Todos los proyectos del asesor (cualquier semillero) para el select principal
         $proyectos = Project::whereIn('id', $this->getAllProjectIdsDelAsesor())
+            ->where('estado', EstadoEnum::Activo)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
 
@@ -309,6 +316,46 @@ class ProductoController extends Controller
 
         return redirect()->route('asesor.productos.show', $id)
             ->with('success', 'Producto actualizado correctamente.');
+    }
+
+    // ──────────────────────────────────────────────────
+    // ESTADO Y ELIMINACIÓN
+    // ──────────────────────────────────────────────────
+
+    /**
+     * Permiso: productos.editar
+     * Desactiva o activa el producto (toggle de estado).
+     */
+    public function deactivate(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        $nuevoEstado = $product->estado === EstadoEnum::Activo
+            ? EstadoEnum::Inactivo
+            : EstadoEnum::Activo;
+
+        $product->update(['estado' => $nuevoEstado]);
+
+        $msg = $nuevoEstado === EstadoEnum::Activo ? 'Producto activado correctamente.' : 'Producto desactivado correctamente.';
+        return redirect()->route('asesor.productos.index')->with('success', $msg);
+    }
+
+    /**
+     * Permiso: productos.editar
+     * Elimina permanentemente el producto y su archivo asociado si lo tiene.
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        $product = $this->findProductoDelAsesor($id);
+
+        // Eliminar archivo del sistema de archivos si existe
+        if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
+            Storage::disk('public')->delete($product->archivo);
+        }
+
+        $product->delete();
+
+        return redirect()->route('asesor.productos.index')->with('success', 'Producto eliminado correctamente.');
     }
 
     // ──────────────────────────────────────────────────
