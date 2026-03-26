@@ -112,4 +112,26 @@ class EvidenciaController extends Controller
 
         return back()->with('success', 'Evidencia de proyecto eliminada.');
     }
+
+    /**
+     * Descarga una evidencia de proyecto.
+     */
+    public function downloadProyecto(ProjectEvidence $evidencia): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+    {
+        // Solo el creador del proyecto o quien subió la evidencia puede descargarla
+        $proyecto = $evidencia->project;
+        abort_unless(
+            $proyecto->project_creator_id === Auth::id() || $evidencia->uploaded_by === Auth::id(),
+            403
+        );
+
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($evidencia->archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download(
+            $evidencia->archivo,
+            $evidencia->nombre ?? basename($evidencia->archivo)
+        );
+    }
 }
