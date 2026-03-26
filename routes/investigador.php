@@ -45,6 +45,12 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:investigado
 
             // ── Evidencias de proyecto ────────────────────────────────
             Route::post('/{proyecto}/evidencias', [EvidenciaController::class, 'storeProyecto'])->name('evidencias.store');
+
+            // ── Finalizar proyecto ────────────────────────────────────
+            Route::patch('/{proyecto}/finalizar', [ProyectoController::class, 'finalizar'])->name('finalizar');
+
+            // ── Descargar evidencia de proyecto ───────────────────────
+            Route::get('/evidencias/{evidencia}/download', [EvidenciaController::class, 'downloadProyecto'])->name('evidencias.download');
         });
 
         // ── Productos (GroupProducts) ─────────────────────────────────

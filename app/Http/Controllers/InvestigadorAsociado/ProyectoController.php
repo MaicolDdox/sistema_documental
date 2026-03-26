@@ -190,4 +190,21 @@ class ProyectoController extends Controller
 
         return response()->json($autores);
     }
+
+    /**
+     * Finaliza el proyecto estableciendo la fecha_fin a hoy.
+     * Esto lo hace elegible para convertirse en producto del grupo.
+     */
+    public function finalizar(Project $proyecto): RedirectResponse
+    {
+        $this->authorize('update', $proyecto);
+
+        if ($proyecto->fecha_fin && $proyecto->fecha_fin <= now()) {
+            return back()->with('success', 'El proyecto ya estaba marcado como finalizado.');
+        }
+
+        $proyecto->update(['fecha_fin' => now()->toDateString()]);
+
+        return back()->with('success', "¡Proyecto «{$proyecto->nombre}» finalizado. Cuando quieras, regístralo como producto final del grupo.");
+    }
 }
