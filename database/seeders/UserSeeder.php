@@ -47,7 +47,7 @@ class UserSeeder extends Seeder
             ],
             [
                 // Director semilleros del Centro de Formación Agroindustrial (Campoalegre / sede distinta a Industria-Neiva)
-                'training_center_id' => $centroAgroindustrial->id,
+                'training_center_id' => $centroIndustria->id,
                 'email' => 'dirsemillero@sena.edu.co',
                 'tipo_documento' => 'cedula ciudadana',
                 'numero_documento' => 52345678,
@@ -59,6 +59,14 @@ class UserSeeder extends Seeder
                 'email' => 'lidersem@sena.edu.co',
                 'tipo_documento' => 'cedula ciudadana',
                 'numero_documento' => 87654321,
+                'password' => Hash::make('Password123!'),
+                'estado' => 'activo',
+            ],
+            [
+                'training_center_id' => $centroIndustria->id,
+                'email' => 'liderIndustrialsem@sena.edu.co',
+                'tipo_documento' => 'cedula ciudadana',
+                'numero_documento' => 103049521,
                 'password' => Hash::make('Password123!'),
                 'estado' => 'activo',
             ],
@@ -98,6 +106,16 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('Password123!'),
                 'estado' => 'activo',
             ],
+            [
+
+            'training_center_id' => $centroIndustria->id,
+                'email' => 'investigadorIndu@sena.edu.co',
+                'tipo_documento' => 'cedula ciudadana',
+                'numero_documento' => 33333334,
+                'password' => Hash::make('Password123!'),
+                'estado' => 'activo',
+
+            ],
             // Super administrador (vista global / todos los permisos web)
             [
                 'training_center_id' => $centroAgroindustrial->id,
@@ -115,10 +133,12 @@ class UserSeeder extends Seeder
             'directorsem@sena.edu.co' => 'director_semilleros',
             'dirsemillero@sena.edu.co' => 'director_semilleros',
             'lidersem@sena.edu.co' => 'lider_semillero',
+            'liderIndustrialsem@sena.edu.co' => 'lider_semillero',
             'asesorsem@sena.edu.co' => 'asesor_semillero',
             'dirgrupo1@sena.edu.co' => 'director_investigacion',
             'dirgrupo2@sena.edu.co' => 'director_investigacion',
             'investigador@sena.edu.co' => 'investigador_asociado',
+            'investigadorIndu@sena.edu.co' => 'investigador_asociado',
             'superadmin@sena.edu.co' => 'super_administrador',
         ];
 
@@ -139,7 +159,8 @@ class UserSeeder extends Seeder
         }
 
         // firstOrCreate no actualiza sede si el usuario ya existía: alinear centros de prueba
-        User::where('email', 'dirsemillero@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
+        User::where('email', 'directorsem@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
+        User::where('email', 'dirsemillero@sena.edu.co')->update(['training_center_id' => $centroIndustria->id]);
         User::where('email', 'dirgrupo1@sena.edu.co')->update(['training_center_id' => $centroIndustria->id]);
         User::where('email', 'dirgrupo2@sena.edu.co')->update(['training_center_id' => $centroAgroindustrial->id]);
 
@@ -178,6 +199,15 @@ class UserSeeder extends Seeder
             );
         }
 
+        // Vincular investigadorIndu al grupo del centro Industria
+        $investigadorIndu = User::where('email', 'investigadorIndu@sena.edu.co')->first();
+        if ($investigadorIndu && $grupoIndustria) {
+            ResearchGroupUser::firstOrCreate(
+                ['research_group_id' => $grupoIndustria->id, 'user_id' => $investigadorIndu->id],
+                ['rol' => RolGrupoEnum::InvestigadorAsociado]
+            );
+        }
+
         // Vincular asesor de semillero al único semillero existente
         $asesorSem = User::where('email', 'asesorsem@sena.edu.co')->first();
         $semilleroUnico = Seedling::first();
@@ -204,16 +234,18 @@ class UserSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Usuarios creados:');
+        $this->command->info('Usuarios creados:');
         $this->command->info('   ydmoreno@sena.edu.co       → Password123! (administrador)');
         $this->command->info('   jovalenciap@sena.edu.co    → Password123! (administrador)');
         $this->command->info('   directorsem@sena.edu.co    → Password123! (director semilleros)');
         $this->command->info('   dirsemillero@sena.edu.co   → Password123! (director semilleros)');
         $this->command->info('   lidersem@sena.edu.co       → Password123! (líder de semillero)');
+        $this->command->info('   liderIndustrialsem@sena.edu.co       → Password123! (líder de semillero)');
         $this->command->info('   asesorsem@sena.edu.co      → Password123! (asesor de semillero)');
         $this->command->info('   dirgrupo1@sena.edu.co      → Password123! (director inv. — grupo Industria 9527)');
         $this->command->info('   dirgrupo2@sena.edu.co      → Password123! (director inv. — grupo Agroindustrial 9116)');
-        $this->command->info('   investigador@sena.edu.co   → Password123! (investigador asociado - grupo 1)');
+        $this->command->info('   investigador@sena.edu.co   → Password123! (investigador asociado - grupo 2)');
+        $this->command->info('   investigadorIndu@sena.edu.co   → Password123! (investigador asociado - grupo 1)');
         $this->command->info('   superadmin@sena.edu.co     → Password123! (super administrador — CC 900000001)');
     }
 }

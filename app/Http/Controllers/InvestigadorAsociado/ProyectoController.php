@@ -29,7 +29,7 @@ class ProyectoController extends Controller
      */
     public function index(): View
     {
-        $proyectos = Project::with(['researchLine', 'projectAuthors.user.person', 'products'])
+        $proyectos = Project::with(['researchLine', 'projectAuthors.user.person', 'products', 'projectEvidences'])
             ->where('project_creator_id', Auth::id())
             ->latest()
             ->paginate(15);

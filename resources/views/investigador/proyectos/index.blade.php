@@ -76,6 +76,7 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2 justify-end">
+                                {{-- Ver detalle --}}
                                 <button type="button"
                                    @click="detailUrl = '{{ route('investigador.proyectos.show', $proyecto) }}?embedded=1'; detailOpen = true;"
                                    class="text-slate-400 hover:text-[#39A900] transition-colors" title="Ver detalle">
@@ -84,6 +85,19 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                     </svg>
                                 </button>
+                                {{-- Botón Evidencias --}}
+                                <button type="button"
+                                   @click="detailUrl = '{{ route('investigador.proyectos.show', $proyecto) }}?embedded=1'; detailOpen = true;"
+                                   class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors" title="Subir evidencias del proyecto">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+                                    </svg>
+                                    Evidencias
+                                    @if($proyecto->projectEvidences->count() > 0)
+                                        <span class="ml-0.5 bg-amber-600 text-white rounded-full px-1.5 py-0.5 text-[10px] leading-none">{{ $proyecto->projectEvidences->count() }}</span>
+                                    @endif
+                                </button>
+                                {{-- Editar --}}
                                 <button type="button"
                                    @click="editUrl = '{{ route('investigador.proyectos.edit', $proyecto) }}?embedded=1'; editOpen = true;"
                                    class="text-slate-400 hover:text-[#39A900] transition-colors" title="Editar">

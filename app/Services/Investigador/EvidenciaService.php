@@ -49,6 +49,7 @@ class EvidenciaService
             'archivo'     => $path,
             'nombre'      => $file->getClientOriginalName(),
             'uploaded_by' => $userId,
+            'descripccion' => null,
         ]);
     }
 

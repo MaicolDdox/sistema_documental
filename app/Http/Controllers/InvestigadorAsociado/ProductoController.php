@@ -118,7 +118,12 @@ class ProductoController extends Controller
      */
     public function create(Request $request): View
     {
+        // Solo proyectos finalizados (fecha_fin pasó) o vinculados a un semillero
         $proyectos = Project::where('project_creator_id', Auth::id())
+            ->where(function ($q) {
+                $q->where('fecha_fin', '<', now())  // Proyecto cuya fecha de fin ya pasó
+                  ->orWhereHas('seedlings');         // O viene de un semillero
+            })
             ->orderBy('nombre')
             ->get();
             
