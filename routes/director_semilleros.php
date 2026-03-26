@@ -6,6 +6,7 @@ use App\Http\Controllers\DirectorSemilleros\DocumentoSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\LiderSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\ReporteSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\SemilleroController;
+use App\Http\Controllers\DirectorSemilleros\VinculacionSemilleroLiderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +40,8 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_se
         Route::put('lideres/{lider}', [LiderSemilleroController::class, 'update'])->name('lideres.update');
         Route::post('lideres/{lider}/toggle-estado', [LiderSemilleroController::class, 'toggleEstado'])->name('lideres.toggle-estado');
         Route::delete('lideres/{lider}', [LiderSemilleroController::class, 'destroy'])->name('lideres.destroy');
+        Route::get('vinculaciones', [VinculacionSemilleroLiderController::class, 'index'])->name('vinculaciones.index');
+        Route::put('vinculaciones/{semillero}', [VinculacionSemilleroLiderController::class, 'update'])->name('vinculaciones.update');
 
         // Módulo Documentos Institucionales
         Route::resource('documentos', DocumentoSemilleroController::class)->only(['index', 'create', 'store', 'destroy']);

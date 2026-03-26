@@ -147,7 +147,11 @@ class LiderSemilleroController extends Controller
         }
 
         $redirect = redirect()->route('dir-sem.lideres.index')
-            ->with('success', 'Líder de semillero creado exitosamente.');
+            ->with('success', 'Líder de semillero creado exitosamente.')
+            ->with('credenciales', [
+                'email' => $newUser->email,
+                'password' => $password,
+            ]);
 
         if ($advertenciaMail !== null) {
             $redirect->with('warning', $advertenciaMail);

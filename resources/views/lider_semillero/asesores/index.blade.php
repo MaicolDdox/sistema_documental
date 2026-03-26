@@ -46,7 +46,7 @@
 <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
 @endif
 
-<div class="mb-4" x-data="{ modalNuevoAsesor: {{ $errors->hasAny(['nombre_completo','email','numero_documento']) ? 'true' : 'false' }}, crearCuenta: {{ old('crear_cuenta') ? 'true' : 'false' }} }">
+<div class="mb-4" x-data="{ modalNuevoAsesor: {{ $errors->hasAny(['nombre_completo','email','numero_documento']) ? 'true' : 'false' }}, crearCuenta: {{ old('crear_cuenta') ? 'true' : 'false' }}, asesorExistenteId: '{{ old('external_advisor_id', '') }}' }">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h2 class="text-base font-semibold text-slate-900">Asesores del Semillero</h2>
@@ -76,7 +76,7 @@
                     <div class="p-4 bg-slate-50 border border-slate-100 rounded-lg">
                         <label for="external_advisor_id" class="block text-sm font-medium text-slate-700 mb-1">Vincular asesor existente (opcional)</label>
                         <p class="text-xs text-slate-500 mb-2">Si ya existe en el sistema, selecciónalo aquí para solo vincularlo a tu semillero (puede estar en varios).</p>
-                        <select name="external_advisor_id" id="external_advisor_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <select name="external_advisor_id" id="external_advisor_id" x-model="asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             <option value="">— Selecciona un asesor —</option>
                             @foreach(($asesoresDisponibles ?? []) as $adv)
                                 <option value="{{ $adv->id }}" {{ old('external_advisor_id') == $adv->id ? 'selected' : '' }}>
@@ -89,30 +89,30 @@
                     </div>
 
                     <div>
-                        <label for="nombre_completo" class="block text-sm font-medium text-slate-700 mb-1">Nombre completo <span class="text-red-500">*</span></label>
-                        <input type="text" name="nombre_completo" id="nombre_completo" value="{{ old('nombre_completo') }}" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="nombre_completo" class="block text-sm font-medium text-slate-700 mb-1">Nombre completo <span x-show="!asesorExistenteId" class="text-red-500">*</span></label>
+                        <input type="text" name="nombre_completo" id="nombre_completo" value="{{ old('nombre_completo') }}" :required="!asesorExistenteId" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400">
                         @error('nombre_completo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label for="email_asesor" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                        <input type="email" name="email" id="email_asesor" value="{{ old('email') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10" placeholder="Requerido si creas cuenta">
+                        <input type="email" name="email" id="email_asesor" value="{{ old('email') }}" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400" placeholder="Requerido si creas cuenta">
                         @error('email') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label for="telefono_asesor" class="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
-                        <input type="text" name="telefono" id="telefono_asesor" value="{{ old('telefono') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <input type="text" name="telefono" id="telefono_asesor" value="{{ old('telefono') }}" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400">
                     </div>
                     <div>
                         <label for="institucion_asesor" class="block text-sm font-medium text-slate-700 mb-1">Institución / Especialidad</label>
-                        <input type="text" name="institucion" id="institucion_asesor" value="{{ old('institucion') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <input type="text" name="institucion" id="institucion_asesor" value="{{ old('institucion') }}" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400">
                     </div>
                     <div class="flex items-start gap-3 p-4 bg-slate-50 border border-slate-100 rounded-lg">
-                        <input type="checkbox" name="crear_cuenta" id="crear_cuenta" value="1" x-model="crearCuenta" class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
+                        <input type="checkbox" name="crear_cuenta" id="crear_cuenta" value="1" x-model="crearCuenta" :disabled="!!asesorExistenteId" class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900] disabled:opacity-50">
                         <label for="crear_cuenta" class="text-sm text-slate-700">Crear cuenta en el sistema para que pueda ingresar con rol <strong>Asesor de Semillero</strong></label>
                     </div>
-                    <div x-show="crearCuenta" x-cloak>
+                    <div x-show="crearCuenta && !asesorExistenteId" x-cloak>
                         <label for="numero_documento_asesor" class="block text-sm font-medium text-slate-700 mb-1">N.º de documento <span class="text-red-500">*</span></label>
-                        <input type="text" name="numero_documento" id="numero_documento_asesor" value="{{ old('numero_documento') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10" placeholder="Requerido para la cuenta">
+                        <input type="text" name="numero_documento" id="numero_documento_asesor" value="{{ old('numero_documento') }}" :required="crearCuenta && !asesorExistenteId" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400" placeholder="Requerido para la cuenta">
                         @error('numero_documento') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">

@@ -27,6 +27,15 @@
 <h2 class="text-xl font-bold text-slate-900 mb-1">Líderes de Semillero</h2>
 <p class="text-sm text-slate-500 mb-4">Solo usuarios con rol Líder de Semillero de tu centro de formación.</p>
 
+@if(session('credenciales'))
+@php $credenciales = session('credenciales'); @endphp
+<div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
+    <p class="font-medium text-amber-900 mb-1">Credenciales del nuevo líder:</p>
+    <p class="text-amber-800"><strong>Correo:</strong> {{ $credenciales['email'] ?? '-' }}</p>
+    <p class="text-amber-800"><strong>Contraseña temporal:</strong> <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono">{{ $credenciales['password'] ?? '-' }}</code></p>
+    <p class="text-amber-700 text-xs mt-1">Guárdalas antes de cerrar esta alerta.</p>
+</div>
+@endif
 {{-- Barra: búsqueda + botón --}}
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <form method="GET" action="{{ route('dir-sem.lideres.index') }}" class="flex gap-2 flex-1 max-w-md">
@@ -454,3 +463,8 @@
     @endcan
 </div>
 @endsection
+
+
+
+
+

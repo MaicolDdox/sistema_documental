@@ -35,10 +35,11 @@
 
                 <!-- Líder -->
                 <div>
-                    <label for="lider_id" class="block text-sm font-medium text-slate-700 mb-1.5">Líder Asignado <span class="text-red-500">*</span></label>
+                    <label for="lider_id" class="block text-sm font-medium text-slate-700 mb-1.5">Líder Asignado (opcional)</label>
                     <div class="relative">
-                        <select name="lider_id" id="lider_id" required
+                        <select name="lider_id" id="lider_id"
                                 class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all appearance-none pr-10">
+                            <option value="">Sin líder asignado</option>
                             @foreach($lideres as $lider)
                                 <option value="{{ $lider->id }}" {{ old('lider_id', $semillero->leader_id) == $lider->id ? 'selected' : '' }}>
                                     {{ $lider->person->primer_nombre ?? '' }} {{ $lider->person->primer_apellido ?? '' }} ({{ $lider->email }})

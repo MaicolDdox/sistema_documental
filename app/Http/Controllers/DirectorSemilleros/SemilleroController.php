@@ -24,10 +24,14 @@ class SemilleroController extends Controller
 
         $user = Auth::user();
 
-        $query = Seedling::with(['leader.person', 'members', 'researchGroup'])
-            ->whereHas('leader', function ($q) use ($user) {
+        $query = Seedling::with(['leader.person', 'members', 'researchGroup', 'creator'])
+            ->where(function ($q) use ($user) {
                 if ($user->training_center_id) {
-                    $q->where('training_center_id', $user->training_center_id);
+                    $q->whereHas('leader', function ($leaderQuery) use ($user) {
+                        $leaderQuery->where('training_center_id', $user->training_center_id);
+                    })->orWhereHas('creator', function ($creatorQuery) use ($user) {
+                        $creatorQuery->where('training_center_id', $user->training_center_id);
+                    });
                 }
             });
 
@@ -51,6 +55,7 @@ class SemilleroController extends Controller
         $lideres = User::role('lider_semillero')
             ->with('person')
             ->where('training_center_id', $user->training_center_id)
+            ->whereDoesntHave('ledSeedlings')
             ->active()
             ->orderBy('email')
             ->get();
@@ -78,6 +83,7 @@ class SemilleroController extends Controller
         $lideres = User::role('lider_semillero')
             ->with('person')
             ->where('training_center_id', $user->training_center_id)
+            ->whereDoesntHave('ledSeedlings')
             ->active()
             ->orderBy('email')
             ->get();
@@ -109,16 +115,21 @@ class SemilleroController extends Controller
             'nombre'               => 'required|string|max:150',
             'codigo'               => 'nullable|integer|min:1',
             'descripcion'          => 'nullable|string',
-            'lider_id'             => 'required|exists:users,id',
+            'lider_id'             => 'nullable|exists:users,id',
             'research_group_id'    => 'nullable|exists:research_groups,id',
         ]);
 
-        $lider = User::findOrFail($validated['lider_id']);
-        if (! $lider->hasRole('lider_semillero')) {
-            return back()->withErrors(['lider_id' => 'El usuario seleccionado no es líder de semillero.'])->withInput();
-        }
-        if ((int) $lider->training_center_id !== (int) Auth::user()->training_center_id) {
-            return back()->withErrors(['lider_id' => 'El líder debe pertenecer a tu centro de formación.'])->withInput();
+        if (! empty($validated['lider_id'])) {
+            $lider = User::findOrFail($validated['lider_id']);
+            if (! $lider->hasRole('lider_semillero')) {
+                return back()->withErrors(['lider_id' => 'El usuario seleccionado no es líder de semillero.'])->withInput();
+            }
+            if ((int) $lider->training_center_id !== (int) Auth::user()->training_center_id) {
+                return back()->withErrors(['lider_id' => 'El líder debe pertenecer a tu centro de formación.'])->withInput();
+            }
+            if (Seedling::where('leader_id', $lider->id)->exists()) {
+                return back()->withErrors(['lider_id' => 'Este líder ya está vinculado a otro semillero.'])->withInput();
+            }
         }
         if (! empty($validated['research_group_id'])) {
             $grupo = ResearchGroup::find($validated['research_group_id']);
@@ -131,7 +142,7 @@ class SemilleroController extends Controller
 
         Seedling::create([
             'creator_id'         => Auth::id(),
-            'leader_id'          => $validated['lider_id'],
+            'leader_id'          => $validated['lider_id'] ?? null,
             'research_group_id'  => $validated['research_group_id'] ?? null,
             'nombre'             => $validated['nombre'],
             'codigo'             => $codigo,
@@ -171,6 +182,10 @@ class SemilleroController extends Controller
         
         $lideres = User::role('lider_semillero')
             ->where('training_center_id', $user->training_center_id)
+            ->where(function ($q) use ($semillero) {
+                $q->whereDoesntHave('ledSeedlings')
+                    ->orWhereKey($semillero->leader_id);
+            })
             ->active()
             ->get();
 
@@ -188,21 +203,26 @@ class SemilleroController extends Controller
         $validated = $request->validate([
             'nombre'      => 'required|string|max:150',
             'descripcion' => 'nullable|string',
-            'lider_id'    => 'required|exists:users,id',
+            'lider_id'    => 'nullable|exists:users,id',
         ]);
 
-        $lider = User::findOrFail($validated['lider_id']);
-        if (! $lider->hasRole('lider_semillero')) {
-            return back()->withErrors(['lider_id' => 'El usuario seleccionado no es líder de semillero.'])->withInput();
-        }
-        if ((int) $lider->training_center_id !== (int) Auth::user()->training_center_id) {
-            return back()->withErrors(['lider_id' => 'El líder debe pertenecer a tu centro de formación.'])->withInput();
+        if (! empty($validated['lider_id'])) {
+            $lider = User::findOrFail($validated['lider_id']);
+            if (! $lider->hasRole('lider_semillero')) {
+                return back()->withErrors(['lider_id' => 'El usuario seleccionado no es líder de semillero.'])->withInput();
+            }
+            if ((int) $lider->training_center_id !== (int) Auth::user()->training_center_id) {
+                return back()->withErrors(['lider_id' => 'El líder debe pertenecer a tu centro de formación.'])->withInput();
+            }
+            if (Seedling::where('leader_id', $lider->id)->whereKeyNot($semillero->id)->exists()) {
+                return back()->withErrors(['lider_id' => 'Este líder ya está vinculado a otro semillero.'])->withInput();
+            }
         }
 
         $semillero->update([
             'nombre'       => $validated['nombre'],
             'descripccion' => $validated['descripcion'] ?? $semillero->descripccion,
-            'leader_id'    => $validated['lider_id'],
+            'leader_id'    => $validated['lider_id'] ?? null,
         ]);
 
         return redirect()->route('dir-sem.semilleros.index')
@@ -229,6 +249,9 @@ class SemilleroController extends Controller
 
         if ($nuevoLider->training_center_id !== Auth::user()->training_center_id) {
             return redirect()->back()->with('error', 'El líder pertenece a otro centro de formación.');
+        }
+        if (Seedling::where('leader_id', $nuevoLider->id)->whereKeyNot($semillero->id)->exists()) {
+            return redirect()->back()->with('error', 'Este líder ya está vinculado a otro semillero.');
         }
 
         $semillero->update([
@@ -282,7 +305,13 @@ class SemilleroController extends Controller
     private function checkCentroFormacion(Seedling $semillero)
     {
         $user = Auth::user();
-        if ($semillero->leader && $semillero->leader->training_center_id !== $user->training_center_id) {
+        $leaderCenterId = $semillero->leader?->training_center_id;
+        $creatorCenterId = $semillero->creator?->training_center_id;
+
+        if (
+            ($leaderCenterId !== null && $leaderCenterId !== $user->training_center_id)
+            || ($leaderCenterId === null && $creatorCenterId !== null && $creatorCenterId !== $user->training_center_id)
+        ) {
             abort(403, 'No tienes permiso para gestionar semilleros de otros centros de formación.');
         }
     }

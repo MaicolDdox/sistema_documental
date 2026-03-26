@@ -256,8 +256,10 @@
                     <td style="font-size: 10px;">{{ $prod->project?->nombre ?? '—' }}</td>
                     <td class="text-center">
                         @php
-                            $estado = $prod->estado_revision ?? 'pendiente';
-                            $clase = $estado == 'aprobado' ? 'badge-green' : ($estado == 'rechazado' ? 'badge-red' : 'badge-amber');
+                            $estado = $prod->estado_revision instanceof \BackedEnum
+                                ? $prod->estado_revision->value
+                                : ((string) ($prod->estado_revision ?? 'pendiente'));
+                            $clase = $estado === 'aprobado' ? 'badge-green' : ($estado === 'rechazado' ? 'badge-red' : 'badge-amber');
                         @endphp
                         <span class="badge {{ $clase }}">{{ ucfirst($estado) }}</span>
                     </td>

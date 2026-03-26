@@ -235,9 +235,9 @@
                             </div>
                         </div>
                         <div>
-                            <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado <span class="text-red-500">*</span></label>
-                            <select name="lider_id" id="modal_lider_id" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('lider_id') border-red-300 @enderror">
-                                <option value="">Selecciona un líder...</option>
+                            <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado (opcional)</label>
+                            <select name="lider_id" id="modal_lider_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('lider_id') border-red-300 @enderror">
+                                <option value="">Sin líder asignado</option>
                                 @foreach($lideres ?? [] as $lider)
                                     @php
                                         $nombreLider = $lider->person ? trim(($lider->person->primer_nombre ?? '') . ' ' . ($lider->person->primer_apellido ?? '')) : $lider->email;
