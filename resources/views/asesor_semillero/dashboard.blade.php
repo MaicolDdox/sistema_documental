@@ -75,7 +75,7 @@
             </div>
         </div>
         <p class="text-3xl font-outfit font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{{ $totalAprendices }}</p>
-        <p class="text-xs text-slate-400 mt-1">En tus semilleros</p>
+        <p class="text-xs text-slate-400 mt-1">En tus proyectos</p>
     </a>
 
     {{-- Proyectos --}}
@@ -99,8 +99,7 @@
             </div>
         </div>
         <p class="text-3xl font-outfit font-bold text-slate-900 group-hover:text-amber-600 transition-colors">{{ $totalProductos }}</p>
-        <p class="text-xs text-slate-400 mt-1 mb-2">En tus semilleros</p>
-        <div class="flex gap-1.5 flex-wrap">
+        <div class="flex gap-1.5 mt-2 flex-wrap">
             <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{{ $pendienteCount }} pend.</span>
             <span class="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">{{ $aprobadoCount }} apro.</span>
             @if($rechazadoCount > 0)<span class="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">{{ $rechazadoCount }} rech.</span>@endif

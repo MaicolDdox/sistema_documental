@@ -29,9 +29,9 @@ class DashboardController extends Controller
 
         $totalProyectos = $allProjectIds->count();
 
-        // Aprendices (miembros vinculados a todos los semilleros del asesor)
-        $totalAprendices = DB::table('seedling_users')
-            ->whereIn('seedling_id', $semilleros->pluck('id'))
+        // Aprendices (autores activos en esos proyectos, excluyendo al asesor)
+        $totalAprendices = ProjectAuthor::whereIn('project_id', $allProjectIds)
+            ->where('activo', true)
             ->where('user_id', '!=', auth()->id())
             ->distinct('user_id')
             ->count('user_id');
