@@ -27,7 +27,7 @@ trait InvestigadorContext
         }
 
         $pivot = ResearchGroupUser::where('user_id', Auth::id())
-            ->whereIn('rol', ['investigador_asociado', 'investigador_lider', 'integrante', 'investigador'])
+            ->whereIn('rol', ['investigador_asociado', 'investigador_lider', 'integrante', 'investigador', 'director'])
             ->first();
 
         abort_unless($pivot !== null, 403, 'No tienes un grupo de investigación asignado.');

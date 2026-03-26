@@ -43,7 +43,7 @@
         </div>
         @endif
 
-        <form method="POST"
+        <form method="POST" enctype="multipart/form-data"
               action="{{ $groupProduct ? route('investigador.productos.update', $groupProduct) : route('investigador.productos.store') }}">
             @csrf
             @if($groupProduct) @method('PUT') @endif
@@ -67,10 +67,10 @@
                         </div>
                     @elseif(!isset($groupProduct) || !$groupProduct)
                     <div x-data="autoresLoader('{{ old('project_id', $proyectoSeleccionado ?? '') }}')" x-init="init()">
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Proyecto asociado <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Proyecto asociado <span class="text-xs text-slate-400 font-normal">(Opcional)</span></label>
                         <select name="project_id" x-model="proyectoId" @change="cargarAutores($event.target.value)"
-                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all" required>
-                            <option value="">Selecciona un proyecto...</option>
+                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                            <option value="">Ninguno (Producto Independiente)</option>
                             @foreach($proyectos as $proyecto)
                                 <option value="{{ $proyecto->id }}" data-url="{{ route('investigador.proyectos.autores', $proyecto) }}">
                                     {{ $proyecto->nombre }}
@@ -80,10 +80,10 @@
                         @if($proyectos->isEmpty())
                             <div class="mt-1 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
                                 <svg class="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
-                                <p class="text-xs text-amber-700">No tienes proyectos disponibles para registrar un producto. Solo se permiten proyectos <strong>finalizados</strong> (fecha de fin pasada) o proyectos que <strong>vienen de semillero</strong>.</p>
+                                <p class="text-xs text-amber-700">Actualmente no estás vinculado a ningún proyecto. Puedes guardar este registro como un producto independiente seleccionando "Ninguno".</p>
                             </div>
                         @endif
-                        <p class="text-xs text-slate-400 mt-1">Solo aparecen proyectos finalizados o vinculados a un semillero.</p>
+                        <p class="text-xs text-slate-400 mt-1">Aparecen todos los proyectos en donde eres creador, autor o líder de semillero.</p>
 
                         {{-- Autores dinámicos --}}
                         <div x-show="autores.length > 0" x-transition class="mt-3">
@@ -253,7 +253,29 @@
                                placeholder="https://repositorio.sena.edu.co/..."
                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                     </div>
-                    <label class="flex items-center gap-3 cursor-pointer">
+                    
+                    {{-- Evidencia si no tiene repositorio --}}
+                    <div x-show="!tieneRepo" x-transition>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Documento de Evidencia <span class="text-red-500">*</span></label>
+                        <input type="file" name="archivo_evidencia" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip,.rar"
+                               class="w-full border border-slate-200 bg-white rounded-lg px-3 py-2 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[#39A900]/10 file:text-[#39A900] hover:file:bg-[#39A900]/20 transition-all"
+                               :required="!tieneRepo && !'{{ $groupProduct?->evidencia ?? '' }}'">
+                        
+                        @if($groupProduct && $groupProduct->evidencia)
+                            <p class="text-xs text-[#39A900] mt-1 font-medium flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                Ya existe un archivo subido. Sube uno nuevo solo si deseas reemplazarlo.
+                            </p>
+                        @else
+                            <p class="text-xs text-slate-500 mt-1">Al no contar con repositorio, es obligatorio subir un archivo que lo evidencie (PDF, Word, imagen o ZIP).</p>
+                        @endif
+                        
+                        @error('archivo_evidencia')
+                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <label class="flex items-center gap-3 cursor-pointer mt-4">
                         <input type="checkbox" name="autoriza_datos" value="1"
                                class="w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-[#39A900]"
                                {{ old('autoriza_datos', $groupProduct?->autoriza_datos) ? 'checked' : '' }}>

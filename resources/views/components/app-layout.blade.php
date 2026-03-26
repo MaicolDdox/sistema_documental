@@ -133,6 +133,10 @@
             $showInvestigador = $sidebarUser && $sidebarUser->hasRole('investigador_asociado') && $menuContext === 'investigador_asociado';
             $showAsesor = $sidebarUser && $sidebarUser->hasRole('asesor_semillero') && $menuContext === 'asesor_semillero';
 
+            $currentContextLabel = $menuContext 
+                ? \App\Support\RoleModuleLinks::labelForRoleName($menuContext) 
+                : $roleLabel;
+
             $isDashboardActive = request()->routeIs('dashboard')
                 || request()->routeIs('super-admin.dashboard')
                 || request()->routeIs('admin.dashboard')
@@ -173,33 +177,7 @@
                 Dashboard
             </a>
 
-            @if(!empty($sidebarRoleModuleLinks))
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Roles y módulos</p>
-                <p class="px-3 text-[11px] text-slate-500 leading-snug mb-2">
-                    <span class="font-medium text-slate-700">Rol principal</span> (prioridad al iniciar sesión):
-                    <span class="text-slate-800">{{ $roleLabel }}</span>.
-                    Abre otro panel con los enlaces de abajo.
-                </p>
-                <div class="px-3 space-y-1 mb-2">
-                    @foreach($sidebarRoleModuleLinks as $rl)
-                        @if(!empty($rl['url']))
-                            <a href="{{ $rl['url'] }}"
-                               class="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-xs font-medium border transition-colors
-                                      {{ !empty($rl['is_primary']) ? 'border-[#39A900]/40 bg-[#39A900]/5 text-[#1f6b00]' : 'border-slate-100 bg-slate-50/80 text-slate-700 hover:bg-slate-100' }}">
-                                <span class="truncate">{{ $rl['label'] }}</span>
-                                @if(!empty($rl['is_primary']))
-                                    <span class="shrink-0 text-[10px] uppercase tracking-wide text-[#39A900]">Principal</span>
-                                @else
-                                    <span class="flex items-center gap-0.5 shrink-0 text-slate-400" title="Abrir panel de este rol">
-                                        <span class="text-[10px] text-slate-500">Ir</span>
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-                                    </span>
-                                @endif
-                            </a>
-                        @endif
-                    @endforeach
-                </div>
-            @endif
+
 
             @if($showSuperAdmin)
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
@@ -716,7 +694,68 @@
         @unless(request()->has('embedded'))
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30">
             <div></div>
-            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+                
+                <!-- SELECTOR DE ROLES (DROPDOWN) -->
+                @if(!empty($sidebarRoleModuleLinks))
+                <div x-data="{ openRoles: false }" class="relative">
+                    <button @click="openRoles = !openRoles" @click.away="openRoles = false"
+                            class="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#39A900]/50">
+                        <span class="truncate max-w-[150px]">{{ $currentContextLabel }}</span>
+                        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="openRoles ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    
+                    <div x-show="openRoles" x-cloak
+                         x-transition:enter="transition ease-out duration-100"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-75"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
+                        
+                        <div class="p-3 bg-slate-50 border-b border-slate-100">
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Roles y Módulos</p>
+                            <p class="text-[10px] text-slate-500 leading-snug">
+                                Rol principal: <span class="font-medium text-slate-700">{{ $roleLabel }}</span>.
+                            </p>
+                        </div>
+                        
+                        <div class="py-1 max-h-64 overflow-y-auto">
+                            <!-- ROL PRINCIPAL -->
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Principal</div>
+                            @foreach($sidebarRoleModuleLinks as $rl)
+                                @if(!empty($rl['url']) && !empty($rl['is_primary']))
+                                    <a href="{{ $rl['url'] }}"
+                                       class="group flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#1f6b00] bg-[#39A900]/5 border border-[#39A900]/30 hover:bg-[#39A900]/10 mx-2 mb-2 transition-colors">
+                                        <span class="truncate">{{ $rl['label'] }}</span>
+                                        <span class="shrink-0 text-[9px] uppercase tracking-wide text-[#39A900]">Activo al inicio</span>
+                                    </a>
+                                @endif
+                            @endforeach
+                            
+                            <!-- PANELES ALTERNOS (PERMISOS) -->
+                            <div class="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100">Paneles / Permisos Alternos</div>
+                            @foreach($sidebarRoleModuleLinks as $rl)
+                                @if(!empty($rl['url']) && empty($rl['is_primary']))
+                                    <a href="{{ $rl['url'] }}"
+                                       class="group flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-transparent hover:bg-slate-50 hover:border-slate-200 mx-2 mb-1 transition-colors">
+                                        <span class="truncate">{{ $rl['label'] }}</span>
+                                        <span class="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-500">
+                                            <span class="text-[10px]">Ir</span>
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                        </span>
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @endif
+                <!-- FIN SELECTOR DE ROLES -->
+
                 <div class="hidden sm:flex items-center gap-2 min-w-0">
                     <div class="w-2 h-2 rounded-full bg-[#39A900] shrink-0"></div>
                     <span class="text-xs text-slate-500 truncate max-w-[140px] md:max-w-[220px]">

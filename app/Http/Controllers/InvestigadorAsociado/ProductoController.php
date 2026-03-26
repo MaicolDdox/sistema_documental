@@ -118,11 +118,15 @@ class ProductoController extends Controller
      */
     public function create(Request $request): View
     {
-        // Solo proyectos finalizados (fecha_fin pasó) o vinculados a un semillero
-        $proyectos = Project::where('project_creator_id', Auth::id())
-            ->where(function ($q) {
-                $q->where('fecha_fin', '<', now())  // Proyecto cuya fecha de fin ya pasó
-                  ->orWhereHas('seedlings');         // O viene de un semillero
+        // Obtener los proyectos donde el usuario tiene permisos para registrar productos:
+        // Creador, Autor, o Líder del Semillero al que pertenece el proyecto.
+        $userId = Auth::id();
+        $proyectos = Project::where('project_creator_id', $userId)
+            ->orWhereHas('projectAuthors', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->orWhereHas('seedlings', function ($q) use ($userId) {
+                $q->where('leader_id', $userId);
             })
             ->orderBy('nombre')
             ->get();
@@ -154,7 +158,7 @@ class ProductoController extends Controller
         $grupoId = $this->getGrupoId();
 
         $validated = $request->validate([
-            'project_id'                       => ['required', 'exists:projects,id'],
+            'project_id'                       => ['nullable', 'exists:projects,id'],
             'product_base_id'                  => ['nullable', 'exists:products,id'],
             'titulo'                           => ['required', 'string', 'max:500'],
             'descripccion'                     => ['nullable', 'string'],
@@ -169,6 +173,7 @@ class ProductoController extends Controller
             'knowledge_area_id'                => ['nullable', 'exists:knowledge_areas,id'],
             'tiene_repositorio'                => ['boolean'],
             'url_repositorio'                  => ['nullable', 'url', 'max:500'],
+            'archivo_evidencia'                => ['exclude_if:tiene_repositorio,1', 'required_without:tiene_repositorio', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,zip,rar'],
             'autoriza_datos'                   => ['boolean'],
             'autores'                          => ['nullable', 'array'],
             'autores.*'                        => ['exists:users,id'],
@@ -246,6 +251,7 @@ class ProductoController extends Controller
             'knowledge_area_id'          => ['nullable', 'exists:knowledge_areas,id'],
             'tiene_repositorio'          => ['boolean'],
             'url_repositorio'            => ['nullable', 'url', 'max:500'],
+            'archivo_evidencia'          => ['exclude_if:tiene_repositorio,1', 'nullable', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,zip,rar'],
         ]);
 
         try {

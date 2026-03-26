@@ -24,39 +24,42 @@ class ProductoService
      */
     public function registrar(array $data, int $userId, int $grupoId): GroupProduct
     {
-        $proyecto = Project::where('id', $data['project_id'])->firstOrFail();
+        $proyecto = null;
+        if (!empty($data['project_id'])) {
+            $proyecto = Project::where('id', $data['project_id'])->firstOrFail();
 
-        $productBase = ! empty($data['product_base_id'])
-            ? Product::find($data['product_base_id'])
-            : null;
-        $esAsignadoPorLider = $productBase
-            && (int) $productBase->assigned_investigator_user_id === $userId;
+            $productBase = ! empty($data['product_base_id'])
+                ? Product::find($data['product_base_id'])
+                : null;
+            $esAsignadoPorLider = $productBase
+                && (int) $productBase->assigned_investigator_user_id === $userId;
 
-        $esAutor = ProjectAuthor::where('project_id', $proyecto->id)
-            ->where('user_id', $userId)
-            ->exists();
-        $esCreador = $proyecto->project_creator_id === $userId;
+            $esAutor = ProjectAuthor::where('project_id', $proyecto->id)
+                ->where('user_id', $userId)
+                ->exists();
+            $esCreador = $proyecto->project_creator_id === $userId;
 
-        $esLiderDeProyecto = DB::table('project_seedlings')
-            ->join('seedlings', 'project_seedlings.seedling_id', '=', 'seedlings.id')
-            ->where('project_seedlings.project_id', $proyecto->id)
-            ->where('seedlings.leader_id', $userId)
-            ->exists();
+            $esLiderDeProyecto = DB::table('project_seedlings')
+                ->join('seedlings', 'project_seedlings.seedling_id', '=', 'seedlings.id')
+                ->where('project_seedlings.project_id', $proyecto->id)
+                ->where('seedlings.leader_id', $userId)
+                ->exists();
 
-        if (! ($esAutor || $esCreador || $esAsignadoPorLider || $esLiderDeProyecto)) {
-            throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor ni eres el líder del semillero.');
-        }
+            if (! ($esAutor || $esCreador || $esAsignadoPorLider || $esLiderDeProyecto)) {
+                throw new RuntimeException('No puedes registrar productos en este proyecto porque no estás vinculado como autor ni eres el líder del semillero.');
+            }
 
-        $autoresProyecto = ProjectAuthor::where('project_id', $proyecto->id)
-            ->pluck('user_id')
-            ->toArray();
-        $autoresProducto = $data['autores'] ?? [];
-        if (! empty($autoresProducto)) {
-            $invalidos = array_diff($autoresProducto, $autoresProyecto);
-            if (! empty($invalidos)) {
-                throw new RuntimeException(
-                    'Uno o más autores del producto no son autores del proyecto seleccionado.'
-                );
+            $autoresProyecto = ProjectAuthor::where('project_id', $proyecto->id)
+                ->pluck('user_id')
+                ->toArray();
+            $autoresProducto = $data['autores'] ?? [];
+            if (! empty($autoresProducto)) {
+                $invalidos = array_diff($autoresProducto, $autoresProyecto);
+                if (! empty($invalidos)) {
+                    throw new RuntimeException(
+                        'Uno o más autores del producto no son autores del proyecto seleccionado.'
+                    );
+                }
             }
         }
 
@@ -68,7 +71,7 @@ class ProductoService
                 ]);
             } else {
                 $product = Product::create([
-                    'project_id'        => $proyecto->id,
+                    'project_id'        => $proyecto?->id,
                     'nombre'            => $data['titulo'],
                     'estado'            => EstadoEnum::Activo,
                     'estado_revision'   => EstadoRevisionEnum::Pendiente,
@@ -78,9 +81,14 @@ class ProductoService
 
             $tieneRepo = (bool) ($data['tiene_repositorio'] ?? false);
             $evidenciaGp = null;
-            if (! $tieneRepo && filled($product->archivo)) {
+            
+            if (isset($data['archivo_evidencia']) && $data['archivo_evidencia'] instanceof \Illuminate\Http\UploadedFile) {
+                $filename = time() . '_' . $data['archivo_evidencia']->getClientOriginalName();
+                $evidenciaGp = $data['archivo_evidencia']->storeAs('productos/evidencias', $filename, 'public');
+            } elseif (! $tieneRepo && filled($product->archivo)) {
                 $evidenciaGp = $product->archivo;
             }
+            
             $urlRepoGp = $tieneRepo ? ($data['url_repositorio'] ?? $product->url_repositorio) : null;
 
             $groupProduct = GroupProduct::create([
@@ -135,8 +143,15 @@ class ProductoService
         }
 
         DB::transaction(function () use ($groupProduct, $data) {
+            $evidenciaGp = $groupProduct->evidencia;
+            if (isset($data['archivo_evidencia']) && $data['archivo_evidencia'] instanceof \Illuminate\Http\UploadedFile) {
+                $filename = time() . '_' . $data['archivo_evidencia']->getClientOriginalName();
+                $evidenciaGp = $data['archivo_evidencia']->storeAs('productos/evidencias', $filename, 'public');
+            }
+
             $groupProduct->update([
                 'tipo_proyecto_origen'      => $data['tipo_proyecto_origen'] ?? $groupProduct->tipo_proyecto_origen,
+                'evidencia'                 => $evidenciaGp,
                 'campo_otro'                => $data['campo_otro'] ?? $groupProduct->campo_otro,
                 'codigo_proyecto_origen'    => $data['codigo_proyecto_origen'] ?? $groupProduct->codigo_proyecto_origen,
                 'titulo'                    => $data['titulo'] ?? $groupProduct->titulo,
