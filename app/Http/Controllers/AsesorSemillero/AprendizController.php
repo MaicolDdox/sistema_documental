@@ -70,6 +70,7 @@ class AprendizController extends Controller
     public function create(): View
     {
         $fichas           = TrainingRecord::with('trainingPrograms')->orderBy('codigo')->get();
+        // Cargar exactamente los 4 tipos permitidos para el Asesor Semillero
         $tiposVinculacion = LinkageType::whereIn('nombre', ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'])->orderBy('nombre')->get();
         $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
 
@@ -149,6 +150,7 @@ class AprendizController extends Controller
         $semillero          = $this->getSemilleroDelAsesor();
         $aprendiz           = $this->findAprendizEnSemillero($id, $semillero);
         $fichas             = TrainingRecord::with('trainingPrograms')->orderBy('codigo')->get();
+        // Cargar exactamente los 4 tipos permitidos para el Asesor Semillero
         $tiposVinculacion   = LinkageType::whereIn('nombre', ['Titulada', 'Externos', 'Tecno academia', 'Articulación con la media'])->orderBy('nombre')->get();
         $programasFormacion = TrainingProgram::with('trainingProgramType')->orderBy('nombre')->get();
 

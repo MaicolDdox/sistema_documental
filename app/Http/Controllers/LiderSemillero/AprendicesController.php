@@ -133,10 +133,14 @@ class AprendicesController extends Controller
             return redirect()->route('lider-sem.aprendices')->with('error', 'Sin semillero asignado.');
         }
 
-        $user = User::where('numero_documento', $request->numero_documento)->first();
+        $centroId = Auth::user()->training_center_id;
+        $user = User::where('numero_documento', $request->numero_documento)
+            ->where('training_center_id', $centroId)
+            ->first();
+
         if (!$user) {
             return redirect()->route('lider-sem.aprendices')
-                ->with('error', 'No se encontró un usuario con ese número de documento.')
+                ->with('error', 'No se encontró un usuario con ese número de documento en tu sede.')
                 ->withInput();
         }
 

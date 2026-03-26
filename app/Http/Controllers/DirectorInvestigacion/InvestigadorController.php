@@ -62,7 +62,7 @@ class InvestigadorController extends Controller
             'segundo_nombre'        => ['nullable', 'string', 'max:100'],
             'primer_apellido'       => ['required', 'string', 'max:100'],
             'segundo_apellido'      => ['nullable', 'string', 'max:100'],
-            'cvlac_link'            => ['nullable', 'string', 'max:500'],
+            'cvlac_link'            => ['required', 'string', 'max:500'],
             'password'              => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 

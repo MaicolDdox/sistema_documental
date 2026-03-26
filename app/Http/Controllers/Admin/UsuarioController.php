@@ -193,13 +193,14 @@ class UsuarioController extends Controller
         $hadRoles = $usuario->roles()->exists();
         RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($validated['rol']);
+        $this->autoAssignResearchGroup($usuario, $validated['rol']);
         if (! $hadRoles) {
             $usuario->refresh();
             $usuario->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
         }
 
         if ($request->input('_from') === 'usuarios_con_rol') {
-            return redirect()->route('admin.usuarios.usuarios_con_rol')->with('success', 'Rol agregado correctamente.');
+            return redirect()->route('admin.usuarios.usuarios_con_rol')->with('success', 'Rol agregado y vinculado al grupo de investigación (si aplica).');
         }
         return redirect()->route('admin.usuarios.asignar_roles')->with('success', 'Rol asignado correctamente.');
     }
@@ -293,6 +294,7 @@ class UsuarioController extends Controller
         // Asignar rol solo si se envió
         if (! empty($validated['rol'])) {
             $user->assignRole($validated['rol']);
+            $this->autoAssignResearchGroup($user, $validated['rol']);
             $user->refresh();
             $user->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
         }
@@ -409,6 +411,7 @@ class UsuarioController extends Controller
         if (! $usuario->hasRole($validated['rol'])) {
             $usuario->assignRole($validated['rol']);
         }
+        $this->autoAssignResearchGroup($usuario, $validated['rol']);
         $usuario->primary_role_name = $validated['rol'];
         $usuario->save();
 
@@ -478,12 +481,13 @@ class UsuarioController extends Controller
         $hadRoles = $usuario->roles()->exists();
         RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($request->rol);
+        $this->autoAssignResearchGroup($usuario, $request->rol);
         if (! $hadRoles) {
             $usuario->refresh();
             $usuario->forceFill(['primary_role_name' => $request->rol])->saveQuietly();
         }
 
-        return redirect()->back()->with('success', 'Rol asignado correctamente.');
+        return redirect()->back()->with('success', 'Rol asignado exitosamente y grupo vinculado.');
     }
 
     /**
@@ -531,5 +535,38 @@ class UsuarioController extends Controller
         $usuario->delete();
 
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado correctamente.');
+    }
+
+    /**
+     * Autovincula al usuario al grupo de investigación de su centro si adquiere rol investigativo.
+     */
+    private function autoAssignResearchGroup(User $usuario, string $rol): void
+    {
+        if (!in_array($rol, ['director_investigacion', 'investigador_asociado'], true)) {
+            return;
+        }
+
+        if (!$usuario->training_center_id) {
+            return;
+        }
+
+        $researchGroup = \App\Models\ResearchGroup::where('training_center_id', $usuario->training_center_id)->first();
+        if (!$researchGroup) {
+            return;
+        }
+
+        $rolGrupo = $rol === 'director_investigacion'
+            ? \App\Enums\RolGrupoEnum::Director
+            : \App\Enums\RolGrupoEnum::InvestigadorAsociado;
+
+        \App\Models\ResearchGroupUser::firstOrCreate(
+            [
+                'research_group_id' => $researchGroup->id,
+                'user_id' => $usuario->id,
+            ],
+            [
+                'rol' => $rolGrupo,
+            ]
+        );
     }
 }

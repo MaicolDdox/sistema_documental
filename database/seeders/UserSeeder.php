@@ -78,6 +78,14 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('Password123!'),
                 'estado' => 'activo',
             ],
+            [
+                'training_center_id' => $centroIndustria->id,
+                'email' => 'asesorIndu@sena.edu.co',
+                'tipo_documento' => 'cedula ciudadana',
+                'numero_documento' => 55114456,
+                'password' => Hash::make('Password123!'),
+                'estado' => 'activo',
+            ],
             // Directores de Grupo de Investigación (datos de prueba)
             [
                 // Director de investigación del grupo GIDESTH Industria (centro Neiva / 9527)
@@ -135,6 +143,7 @@ class UserSeeder extends Seeder
             'lidersem@sena.edu.co' => 'lider_semillero',
             'liderIndustrialsem@sena.edu.co' => 'lider_semillero',
             'asesorsem@sena.edu.co' => 'asesor_semillero',
+            'asesorIndu@sena.edu.co' => 'asesor_semillero',
             'dirgrupo1@sena.edu.co' => 'director_investigacion',
             'dirgrupo2@sena.edu.co' => 'director_investigacion',
             'investigador@sena.edu.co' => 'investigador_asociado',
@@ -234,18 +243,43 @@ class UserSeeder extends Seeder
             );
         }
 
+        // Vincular asesorIndu al semillero del grupo de Industria
+        $asesorIndu = User::where('email', 'asesorIndu@sena.edu.co')->first();
+        $semilleroIndustria = Seedling::where('research_group_id', $grupoIndustria?->id)->first();
+        if ($asesorIndu && $semilleroIndustria) {
+            $externalIndu = ExternalAdvisor::firstOrCreate(
+                ['user_id' => $asesorIndu->id],
+                [
+                    'nombre_completo' => $asesorIndu->person?->primer_nombre
+                        ? trim($asesorIndu->person->primer_nombre . ' ' . $asesorIndu->person->primer_apellido)
+                        : $asesorIndu->email,
+                    'email'       => $asesorIndu->email,
+                    'telefono'    => '',
+                    'institucion' => 'SENA',
+                ]
+            );
+            SeedlingAdvisor::firstOrCreate(
+                [
+                    'seedling_id'         => $semilleroIndustria->id,
+                    'external_advisor_id' => $externalIndu->id,
+                ],
+                ['activo' => true]
+            );
+        }
+
         $this->command->info('Usuarios creados:');
         $this->command->info('   ydmoreno@sena.edu.co       → Password123! (administrador)');
         $this->command->info('   jovalenciap@sena.edu.co    → Password123! (administrador)');
         $this->command->info('   directorsem@sena.edu.co    → Password123! (director semilleros)');
         $this->command->info('   dirsemillero@sena.edu.co   → Password123! (director semilleros)');
-        $this->command->info('   lidersem@sena.edu.co       → Password123! (líder de semillero)');
-        $this->command->info('   liderIndustrialsem@sena.edu.co       → Password123! (líder de semillero)');
-        $this->command->info('   asesorsem@sena.edu.co      → Password123! (asesor de semillero)');
+        $this->command->info('   lidersem@sena.edu.co       → Password123! (líder de semillero - Agroindustrial)');
+        $this->command->info('   liderIndustrialsem@sena.edu.co → Password123! (líder de semillero - Industria)');
+        $this->command->info('   asesorsem@sena.edu.co      → Password123! (asesor semillero - Agroindustrial 9116)');
+        $this->command->info('   asesorIndu@sena.edu.co     → Password123! (asesor semillero - Industria 9527)');
         $this->command->info('   dirgrupo1@sena.edu.co      → Password123! (director inv. — grupo Industria 9527)');
         $this->command->info('   dirgrupo2@sena.edu.co      → Password123! (director inv. — grupo Agroindustrial 9116)');
         $this->command->info('   investigador@sena.edu.co   → Password123! (investigador asociado - grupo 2)');
-        $this->command->info('   investigadorIndu@sena.edu.co   → Password123! (investigador asociado - grupo 1)');
+        $this->command->info('   investigadorIndu@sena.edu.co → Password123! (investigador asociado - grupo 1)');
         $this->command->info('   superadmin@sena.edu.co     → Password123! (super administrador — CC 900000001)');
     }
 }
