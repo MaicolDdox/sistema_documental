@@ -6,6 +6,9 @@
 @section('content')
 <div class="mb-6">
     <h1 class="text-2xl font-bold text-slate-900">Archivos del Semillero</h1>
+    @if($semillero)
+    <p class="text-sm text-slate-500 mt-0.5">Repositorio general de archivos del semillero {{ $semillero->nombre }}</p>
+    @endif
 </div>
 
 @if(!$semillero)
@@ -20,13 +23,6 @@
     </div>
 </div>
 @else
-@if(session('success'))
-<div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
-@endif
-
 <form action="{{ route('lider-sem.archivos.store') }}" method="post" enctype="multipart/form-data" class="mb-6" id="form-archivo-semillero">
     @csrf
     <label class="block border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#39A900]/50 hover:bg-slate-50/50 transition-colors">
@@ -41,6 +37,21 @@
     @error('archivo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
 </form>
 
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Total archivos</p>
+        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $archivos->count() }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Subidos por ti</p>
+        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $archivos->where('subido_por_mi', true)->count() }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Última carga</p>
+        <p class="text-sm font-semibold text-slate-900 mt-2">{{ optional($archivos->first()?->created_at)->format('Y-m-d H:i') ?? '—' }}</p>
+    </div>
+</div>
+
 <div class="space-y-3">
     @forelse($archivos as $f)
     @php
@@ -48,7 +59,6 @@
         $sizeB = $f->size_bytes ?? 0;
         $sizeStr = $sizeB >= 1048576 ? round($sizeB / 1048576, 1) . ' MB' : ($sizeB >= 1024 ? round($sizeB / 1024) . ' KB' : $sizeB . ' B');
         $ext = strtolower(pathinfo($f->archivo ?? '', PATHINFO_EXTENSION));
-        $url = $f->url_archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($f->url_archivo) : '#';
     @endphp
     <div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between px-5 py-4">
         <div class="flex items-center gap-3 min-w-0">
@@ -76,6 +86,12 @@
             </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ route('lider-sem.archivos.ver', $f) }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900">
+                Ver
+            </a>
+            <a href="{{ route('lider-sem.archivos.descargar', $f) }}" class="inline-flex items-center gap-1 text-xs font-medium text-[#2d7d00] hover:text-[#39A900]">
+                Descargar
+            </a>
             @if($f->subido_por_mi ?? false)
             <form action="{{ route('lider-sem.archivos.destroy', $f) }}" method="post" onsubmit="return confirm('¿Eliminar este archivo?');">
                 @csrf

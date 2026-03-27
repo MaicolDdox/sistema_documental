@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Enums\EstadoEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class SemilleroController extends Controller
 {
@@ -117,6 +118,7 @@ class SemilleroController extends Controller
             'descripcion'          => 'nullable|string',
             'lider_id'             => 'nullable|exists:users,id',
             'research_group_id'    => 'nullable|exists:research_groups,id',
+            'logo'                 => 'nullable|image|mimes:jpeg,png,gif,webp|max:2048',
         ]);
 
         if (! empty($validated['lider_id'])) {
@@ -140,13 +142,18 @@ class SemilleroController extends Controller
 
         $codigo = !empty($validated['codigo']) ? (int) $validated['codigo'] : (int) Seedling::max('codigo') + 1;
 
+        $logoPath = '';
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('semilleros/logos', 'public');
+        }
+
         Seedling::create([
             'creator_id'         => Auth::id(),
             'leader_id'          => $validated['lider_id'] ?? null,
             'research_group_id'  => $validated['research_group_id'] ?? null,
             'nombre'             => $validated['nombre'],
             'codigo'             => $codigo,
-            'logo'               => '',
+            'logo'               => $logoPath,
             'descripccion'       => $validated['descripcion'] ?? null,
             'estado'             => EstadoEnum::Activo,
         ]);
@@ -204,6 +211,7 @@ class SemilleroController extends Controller
             'nombre'      => 'required|string|max:150',
             'descripcion' => 'nullable|string',
             'lider_id'    => 'nullable|exists:users,id',
+            'logo'        => 'nullable|image|mimes:jpeg,png,gif,webp|max:2048',
         ]);
 
         if (! empty($validated['lider_id'])) {
@@ -219,10 +227,19 @@ class SemilleroController extends Controller
             }
         }
 
+        $logoPath = $semillero->logo;
+        if ($request->hasFile('logo')) {
+            if (!empty($semillero->logo)) {
+                Storage::disk('public')->delete($semillero->logo);
+            }
+            $logoPath = $request->file('logo')->store('semilleros/logos', 'public');
+        }
+
         $semillero->update([
             'nombre'       => $validated['nombre'],
             'descripccion' => $validated['descripcion'] ?? $semillero->descripccion,
             'leader_id'    => $validated['lider_id'] ?? null,
+            'logo'         => $logoPath,
         ]);
 
         return redirect()->route('dir-sem.semilleros.index')

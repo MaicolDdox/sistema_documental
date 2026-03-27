@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class ArchivosSemilleroController extends Controller
@@ -49,6 +50,46 @@ class ArchivosSemilleroController extends Controller
             'semillero' => $semillero,
             'archivos'  => $archivos,
         ]);
+    }
+
+    /**
+     * Visualiza el archivo (inline) desde backend para evitar fallos por URL pública.
+     */
+    public function ver(SeedlingFile $archivo): StreamedResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (! $semillero || $archivo->seedling_id !== $semillero->id) {
+            abort(403, 'No puedes ver este archivo.');
+        }
+
+        if (!Storage::disk('public')->exists($archivo->url_archivo)) {
+            abort(404, 'El archivo no existe.');
+        }
+
+        return Storage::disk('public')->response(
+            $archivo->url_archivo,
+            $archivo->archivo ?? basename($archivo->url_archivo)
+        );
+    }
+
+    /**
+     * Descarga el archivo.
+     */
+    public function descargar(SeedlingFile $archivo): StreamedResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (! $semillero || $archivo->seedling_id !== $semillero->id) {
+            abort(403, 'No puedes descargar este archivo.');
+        }
+
+        if (!Storage::disk('public')->exists($archivo->url_archivo)) {
+            abort(404, 'El archivo no existe.');
+        }
+
+        return Storage::disk('public')->download(
+            $archivo->url_archivo,
+            $archivo->archivo ?? basename($archivo->url_archivo)
+        );
     }
 
     /**

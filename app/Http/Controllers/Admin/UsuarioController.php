@@ -99,11 +99,12 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.asignar_rol');
 
-        $usuarios = TrainingCenterAccess::scopeUserQueryForList(
-            User::with('person'),
-            auth()->user()
+        $usuarios = $this->scopeUsuariosElegiblesParaAsignarRol(
+            TrainingCenterAccess::scopeUserQueryForList(
+                User::with('person'),
+                auth()->user()
+            )
         )
-            ->whereDoesntHave('roles')
             ->orderBy('numero_documento')
             ->get();
         $roles = Role::with('permissions')->orderBy('name')->get();
@@ -188,6 +189,12 @@ class UsuarioController extends Controller
 
         $usuario = TrainingCenterAccess::scopeUserQueryForList(User::query(), auth()->user())
             ->findOrFail($validated['user_id']);
+
+        // Regla de negocio: los aprendices (miembros de semillero sin rol) no son candidatos a asignación de rol.
+        if (! $usuario->roles()->exists() && $usuario->seedlings()->exists()) {
+            return redirect()->back()->with('error', 'No se puede asignar rol a aprendices registrados por asesor.');
+        }
+
         TrainingCenterAccess::validateCentroBoundRoleAssignment($usuario, $validated['rol'], auth()->user());
 
         $hadRoles = $usuario->roles()->exists();
@@ -478,6 +485,9 @@ class UsuarioController extends Controller
         $request->validate(['rol' => 'required|exists:roles,name']);
 
         $usuario = $this->findUserScoped((int) $id);
+        if (! $usuario->roles()->exists() && $usuario->seedlings()->exists()) {
+            return redirect()->back()->with('error', 'No se puede asignar rol a aprendices registrados por asesor.');
+        }
         $hadRoles = $usuario->roles()->exists();
         RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($request->rol);
@@ -568,5 +578,17 @@ class UsuarioController extends Controller
                 'rol' => $rolGrupo,
             ]
         );
+    }
+
+    /**
+     * Candidatos válidos para asignar rol:
+     * - sin roles actuales
+     * - excluye aprendices del semillero (usuarios vinculados como miembros).
+     */
+    private function scopeUsuariosElegiblesParaAsignarRol(Builder $query): Builder
+    {
+        return $query
+            ->whereDoesntHave('roles')
+            ->whereDoesntHave('seedlings');
     }
 }

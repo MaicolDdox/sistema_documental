@@ -41,9 +41,7 @@
     <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <p class="text-xs font-medium text-slate-500 mb-1">Proyectos activos</p>
         <p class="text-2xl font-bold text-slate-900">{{ $metricas['proyectos_activos'] }}</p>
-        @if($metricas['proyectos_activos_texto'])
         <p class="text-xs text-slate-500 mt-1">{{ $metricas['proyectos_activos_texto'] }}</p>
-        @endif
     </div>
     <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <p class="text-xs font-medium text-slate-500 mb-1">Sin proyecto activo</p>
@@ -77,14 +75,20 @@
                     <tbody>
                         @forelse(($proyectosDelSemillero ?? []) as $p)
                         @php
-                            $estado = $p->estado?->value ?? (string) ($p->estado ?? '');
-                            $estadoLabel = $estado === 'activo' ? 'Activo' : ($estado === 'inactivo' ? 'Inactivo' : ($estado ?: '—'));
+                            $estado = $p->estado_tablero ?? ($p->estado?->value ?? (string) ($p->estado ?? ''));
+                            $estadoLabel = $estado === 'activo'
+                                ? 'Activo'
+                                : ($estado === 'inactivo'
+                                    ? 'Inactivo'
+                                    : ($estado === 'finalizado' ? 'Finalizado' : ($estado ?: '—')));
                         @endphp
                         <tr>
                             <td class="px-5 py-3 font-medium text-slate-800">{{ $p->nombre }}</td>
                             <td class="px-5 py-3">
                                 @if($estado === 'activo')
                                     <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Activo</span>
+                                @elseif($estado === 'finalizado')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Finalizado</span>
                                 @elseif($estado === 'inactivo')
                                     <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">Inactivo</span>
                                 @else
@@ -253,11 +257,7 @@
                 </a>
                 <a href="{{ route('lider-sem.proyectos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
-                    Nuevo Proyecto
-                </a>
-                <a href="{{ route('lider-sem.aprendices') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.479-2.72m.94 3.198a6 6 0 01-.939 3.801M6 18.72a6 6 0 01-.939-3.801m12 0c.076.417.124.845.124 1.281 0 2.36-2.773 4.281-6.181 4.281S5.819 19.642 5.819 17.28c0-.436.048-.864.124-1.281M6 18.72a9 9 0 0112 0"/></svg>
-                    Reg. Aprendiz
+                    Ver proyectos
                 </a>
                 <a href="{{ route('lider-sem.archivos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
@@ -292,7 +292,7 @@
                 @endif
             </div>
             <div class="p-4 pt-0">
-                <a href="{{ route('lider-sem.info-semillero') }}" class="sgd-btn-secondary block w-full text-center px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700">Editar información</a>
+                <a href="{{ route('lider-sem.info-semillero') }}" class="sgd-btn-secondary block w-full text-center px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700">Ver información</a>
             </div>
         </div>
         @endif

@@ -41,7 +41,13 @@ class ProductosController extends Controller
                 ->where('seedling_id', $semillero->id)
                 ->pluck('project_id');
 
-            $productos = Product::with(['project', 'productAuthors.projectAuthor.user.person', 'groupProducts', 'assignedInvestigator.person'])
+            $productos = Product::with([
+                    'project',
+                    'productAuthors.projectAuthor.user.person',
+                    'productEvidences.uploadedBy.person',
+                    'groupProducts',
+                    'assignedInvestigator.person',
+                ])
                 ->whereIn('project_id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()

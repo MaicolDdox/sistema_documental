@@ -23,13 +23,14 @@ class ProyectosController extends Controller
                 ->where('seedling_id', $semillero->id)
                 ->pluck('project_id');
 
-            $proyectos = Project::with(['projectCreator.person', 'projectAuthors'])
+            $proyectos = Project::with(['projectCreator.person'])
+                ->withCount(['projectAuthors as integrantes_count', 'products as productos_count'])
                 ->whereIn('id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()
                 ->map(function ($project) {
-                    $project->integrantes_count = $project->projectAuthors()->count();
                     $project->avance = $this->calcularAvance($project);
+                    $project->avance_label = $this->etiquetaAvance($project->avance);
                     return $project;
                 });
         }
@@ -60,5 +61,26 @@ class ProyectosController extends Controller
         }
         $pct = (int) round(($transcurrido / $total) * 100);
         return min(100, max(0, $pct));
+    }
+
+    /**
+     * Etiqueta visual para el avance calculado.
+     */
+    private function etiquetaAvance(int $avance): string
+    {
+        if ($avance >= 100) {
+            return 'Finalizado';
+        }
+        if ($avance >= 75) {
+            return 'Alto';
+        }
+        if ($avance >= 40) {
+            return 'Medio';
+        }
+        if ($avance > 0) {
+            return 'Inicial';
+        }
+
+        return 'Sin iniciar';
     }
 }

@@ -115,7 +115,6 @@ class LiderSemilleroController extends Controller
             $semillero->update(['leader_id' => $newUser->id]);
         }
 
-        $advertenciaMail = null;
         $quiereCorreo = $request->boolean('enviar_credenciales');
         $puedeEnviarCorreo = $quiereCorreo && (
             Auth::user()->can('usuarios.asignar_credenciales')
@@ -123,12 +122,6 @@ class LiderSemilleroController extends Controller
         );
 
         if ($puedeEnviarCorreo) {
-            $mailer = (string) config('mail.default');
-            if (in_array($mailer, ['log', 'array'], true)) {
-                $advertenciaMail = "El líder se registró correctamente, pero el correo NO se enviará porque el sistema está configurado con MAIL_MAILER={$mailer}. "
-                    . "En ambiente local las credenciales se escriben en el log. Revisa `storage/logs/laravel.log` o configura SMTP (MAIL_MAILER=smtp, MAIL_HOST, etc.).";
-            }
-
             try {
                 Mail::raw(
                     "Bienvenido al sistema GIDESTH.\n\nTus credenciales de acceso:\n\nCorreo: {$newUser->email}\nContraseña temporal: {$password}\n\nPor favor cambia tu contraseña al ingresar por primera vez.",
@@ -142,7 +135,6 @@ class LiderSemilleroController extends Controller
                     'email' => $newUser->email,
                     'error' => $e->getMessage(),
                 ]);
-                $advertenciaMail = 'El líder se registró correctamente, pero no se pudo enviar el correo con la contraseña. Revise la configuración de correo (MAIL_*) en el servidor o consulte al administrador.';
             }
         }
 
@@ -152,10 +144,6 @@ class LiderSemilleroController extends Controller
                 'email' => $newUser->email,
                 'password' => $password,
             ]);
-
-        if ($advertenciaMail !== null) {
-            $redirect->with('warning', $advertenciaMail);
-        }
 
         return $redirect;
     }

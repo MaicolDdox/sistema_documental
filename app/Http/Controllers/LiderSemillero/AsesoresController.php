@@ -96,10 +96,11 @@ class AsesoresController extends Controller
             'email'           => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
             'telefono'        => 'nullable|string|max:50',
             'institucion'     => 'nullable|string|max:255',
+            'cvlac_link'      => 'required|url|max:500',
             'crear_cuenta'    => 'nullable|boolean',
         ];
         if ($crearCuenta) {
-            $rules['numero_documento'] = 'required|numeric';
+            $rules['numero_documento'] = 'required|string|max:20';
         }
         $validated = $request->validate($rules);
 
@@ -125,8 +126,12 @@ class AsesoresController extends Controller
                         'email'           => $validated['email'],
                         'telefono'        => $validated['telefono'] ?? null,
                         'institucion'     => $validated['institucion'] ?? null,
+                        'cvlac_link'      => $validated['cvlac_link'] ?? null,
                     ]
                 );
+                if (empty($advisor->cvlac_link) && !empty($validated['cvlac_link'])) {
+                    $advisor->forceFill(['cvlac_link' => $validated['cvlac_link']])->save();
+                }
             } else {
                 // Usuario nuevo: validar documento único y crear todo
                 $request->validate(['numero_documento' => 'unique:users,numero_documento']);
@@ -135,7 +140,7 @@ class AsesoresController extends Controller
                 $newUser = User::create([
                     'training_center_id' => $leader->training_center_id,
                     'email'              => $validated['email'],
-                    'numero_documento'   => (int) $validated['numero_documento'],
+                    'numero_documento'   => $validated['numero_documento'],
                     'tipo_documento'     => TipoDocumentoEnum::CedulaCiudadana,
                     'password'           => Hash::make($passwordTemporal),
                     'estado'             => EstadoEnum::Activo,
@@ -146,6 +151,7 @@ class AsesoresController extends Controller
                     'primer_apellido'     => $nombrePartes[1] ?? '',
                     'segundo_apellido'    => '',
                     'email_institucional' => $validated['email'],
+                    'cvlac_link'          => $validated['cvlac_link'] ?? null,
                     'genero'               => 'prefiero no decirlo',
                     'celular'             => 0,
                     'eps'                 => '',
@@ -159,6 +165,7 @@ class AsesoresController extends Controller
                     'email'           => $validated['email'],
                     'telefono'        => $validated['telefono'] ?? null,
                     'institucion'     => $validated['institucion'] ?? null,
+                    'cvlac_link'      => $validated['cvlac_link'] ?? null,
                 ]);
             }
         } else {
@@ -173,6 +180,7 @@ class AsesoresController extends Controller
                     'email'           => $validated['email'] ?? null,
                     'telefono'        => $validated['telefono'] ?? null,
                     'institucion'     => $validated['institucion'] ?? null,
+                    'cvlac_link'      => $validated['cvlac_link'] ?? null,
                 ]);
             }
         }
@@ -245,6 +253,7 @@ class AsesoresController extends Controller
             'email'           => 'nullable|email|max:255',
             'telefono'        => 'nullable|string|max:50',
             'institucion'     => 'nullable|string|max:255',
+            'cvlac_link'      => 'required|url|max:500',
         ]);
 
         $advisor->update($validated);

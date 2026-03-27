@@ -27,9 +27,6 @@
     </div>
 </div>
 @else
-@if(session('success'))
-<div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
-@endif
 @if(session('credenciales'))
 @php $credenciales = session('credenciales'); @endphp
 <div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
@@ -39,14 +36,8 @@
     <p class="text-amber-700 text-xs mt-2">El asesor puede cambiar su contraseña después de ingresar al sistema.</p>
 </div>
 @endif
-@if(session('warning'))
-<div class="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">{{ session('warning') }}</div>
-@endif
-@if(session('error'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
-@endif
 
-<div class="mb-4" x-data="{ modalNuevoAsesor: {{ $errors->hasAny(['nombre_completo','email','numero_documento']) ? 'true' : 'false' }}, crearCuenta: {{ old('crear_cuenta') ? 'true' : 'false' }}, asesorExistenteId: '{{ old('external_advisor_id', '') }}' }">
+<div class="mb-4" x-data="{ modalNuevoAsesor: {{ $errors->hasAny(['nombre_completo','email','numero_documento','cvlac_link']) ? 'true' : 'false' }}, crearCuenta: {{ old('crear_cuenta') ? 'true' : 'false' }}, asesorExistenteId: '{{ old('external_advisor_id', '') }}' }">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
             <h2 class="text-base font-semibold text-slate-900">Asesores del Semillero</h2>
@@ -105,6 +96,26 @@
                     <div>
                         <label for="institucion_asesor" class="block text-sm font-medium text-slate-700 mb-1">Institución / Especialidad</label>
                         <input type="text" name="institucion" id="institucion_asesor" value="{{ old('institucion') }}" :disabled="!!asesorExistenteId" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400">
+                    </div>
+                    <div>
+                        <label for="cvlac_link_asesor" class="block text-sm font-medium text-slate-700 mb-1">Link CvLAC <span x-show="!asesorExistenteId" class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+                                </svg>
+                            </div>
+                            <input type="url"
+                                   name="cvlac_link"
+                                   id="cvlac_link_asesor"
+                                   value="{{ old('cvlac_link') }}"
+                                   :required="!asesorExistenteId"
+                                   :disabled="!!asesorExistenteId"
+                                   placeholder="https://scienti.minciencias.gov.co/cvlac/..."
+                                   class="w-full border border-slate-200 rounded-lg pl-10 pr-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 disabled:bg-slate-100 disabled:text-slate-400">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Enlace al perfil CvLAC del asesor en Minciencias.</p>
+                        @error('cvlac_link') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div class="flex items-start gap-3 p-4 bg-slate-50 border border-slate-100 rounded-lg">
                         <input type="checkbox" name="crear_cuenta" id="crear_cuenta" value="1" x-model="crearCuenta" :disabled="!!asesorExistenteId" class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900] disabled:opacity-50">
@@ -166,6 +177,7 @@
                         'email' => $a->email ?? '',
                         'telefono' => $a->telefono ?? '',
                         'institucion' => $a->institucion ?? '',
+                        'cvlac_link' => $a->cvlac_link ?? '',
                         'tipo' => $tipo,
                         'tieneCuenta' => $tiene_cuenta,
                         'activo' => $activo,
@@ -285,6 +297,7 @@
                     <p><span class="font-medium text-slate-500">Email:</span> <span x-text="selectedAsesor?.email || '—'"></span></p>
                     <p><span class="font-medium text-slate-500">Teléfono:</span> <span x-text="selectedAsesor?.telefono || '—'"></span></p>
                     <p><span class="font-medium text-slate-500">Institución / Especialidad:</span> <span x-text="selectedAsesor?.institucion || '—'"></span></p>
+                    <p><span class="font-medium text-slate-500">Link CvLAC:</span> <a :href="selectedAsesor?.cvlac_link || '#'" x-text="selectedAsesor?.cvlac_link || '—'" class="text-[#2d7d00] hover:underline break-all" target="_blank" rel="noopener"></a></p>
                     <p><span class="font-medium text-slate-500">Tipo:</span> <span x-text="selectedAsesor?.tipo === 'interno' ? 'Interno' : 'Externo'"></span></p>
                     <p><span class="font-medium text-slate-500">Cuenta en sistema:</span> <span x-text="selectedAsesor?.tieneCuenta ? 'Sí (Activo)' : 'Sin cuenta'"></span></p>
                     <p><span class="font-medium text-slate-500">Estado en semillero:</span> <span x-text="selectedAsesor?.activo ? 'Activo' : 'Inactivo'"></span></p>
@@ -325,6 +338,10 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Institución / Especialidad</label>
                                 <input type="text" name="institucion" :value="selectedAsesor.institucion" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Link CvLAC <span class="text-red-500">*</span></label>
+                                <input type="url" name="cvlac_link" :value="selectedAsesor.cvlac_link" required placeholder="https://scienti.minciencias.gov.co/cvlac/..." class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                             </div>
                         </div>
                         <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">

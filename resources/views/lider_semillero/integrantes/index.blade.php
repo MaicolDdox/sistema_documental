@@ -50,6 +50,7 @@
             $nombre = $integrante->person?->nombre_completo ?? $integrante->email ?? 'Sin nombre';
             $iniciales = $integrante->initials();
             $doc = $integrante->numero_documento ?? '—';
+            $roles = $integrante->roles_texto ?? 'Sin rol asignado';
         @endphp
         <div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-5 hover:border-[#39A900]/30 transition-colors">
             <div class="flex flex-col items-center text-center">
@@ -58,6 +59,9 @@
                 </div>
                 <h3 class="font-semibold text-slate-900 mb-1">{{ $nombre }}</h3>
                 <p class="text-xs text-slate-500 mb-3">Doc: {{ $doc }}</p>
+                <p class="text-xs text-slate-600 mb-3">
+                    <span class="font-semibold">Rol:</span> {{ $roles }}
+                </p>
                 @if($integrante->con_proyecto ?? false)
                 <p class="flex items-center justify-center gap-1.5 text-sm text-green-700 mb-4">
                     <svg class="w-4 h-4 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -99,6 +103,7 @@
                     $doc = $integrante->numero_documento ?? '—';
                     $email = $integrante->email ?? '—';
                     $telefono = $p?->telefono ?? '—';
+                    $roles = $integrante->roles_texto ?? 'Sin rol asignado';
                 @endphp
                 <div x-show="showDetailId === {{ $integrante->id }}" x-cloak class="space-y-4">
                     <div class="flex items-center gap-3">
@@ -119,6 +124,10 @@
                             <p class="text-xs text-slate-400 mb-0.5">Teléfono</p>
                             <p class="text-sm font-medium text-slate-700">{{ $telefono }}</p>
                         </div>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-3">
+                        <p class="text-xs text-slate-400 mb-0.5">Rol en el sistema</p>
+                        <p class="text-sm font-medium text-slate-700">{{ $roles }}</p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-3">
                         <p class="text-xs text-slate-400 mb-0.5">Estado en el semillero</p>
