@@ -33,6 +33,7 @@
     <p class="font-medium text-amber-900 mb-1">Credenciales del nuevo líder:</p>
     <p class="text-amber-800"><strong>Correo:</strong> {{ $credenciales['email'] ?? '-' }}</p>
     <p class="text-amber-800"><strong>Contraseña temporal:</strong> <code class="bg-amber-100 px-1.5 py-0.5 rounded font-mono">{{ $credenciales['password'] ?? '-' }}</code></p>
+    <p class="text-amber-700 text-xs mt-1">Entrégalas al líder y pídele que la cambie en su panel (Configuración &gt; Contraseña) al primer ingreso.</p>
     <p class="text-amber-700 text-xs mt-1">Guárdalas antes de cerrar esta alerta.</p>
 </div>
 @endif
@@ -286,7 +287,7 @@
                     </div>
                     @canany(['usuarios.crear_lider_semillero', 'usuarios.asignar_credenciales'])
                     <div class="mb-5 p-4 bg-green-50 border border-green-100 rounded-lg flex items-start gap-3">
-                        <input type="checkbox" name="enviar_credenciales" id="modal_enviar_credenciales" value="1" {{ old('enviar_credenciales', true) ? 'checked' : '' }} class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
+                        <input type="checkbox" name="enviar_credenciales" id="modal_enviar_credenciales" value="1" {{ old('enviar_credenciales', false) ? 'checked' : '' }} class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
                         <label for="modal_enviar_credenciales" class="text-sm text-slate-700">Enviar credenciales por correo al líder.</label>
                     </div>
                     @endcanany

@@ -67,11 +67,8 @@ class ProductoController extends Controller
             ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado)
             ->whereDoesntHave('groupProducts')
             ->whereIn('project_id', $proyectoIds)
-            ->where(function ($q) use ($uid) {
-                // Mostrar si fue asignado explícitamente a este investigador, O si no tiene asignación específica
-                $q->where('assigned_investigator_user_id', $uid)
-                  ->orWhereNull('assigned_investigator_user_id');
-            })
+            // Solo productos enviados explícitamente a este investigador.
+            ->where('assigned_investigator_user_id', $uid)
             ->latest()
             ->paginate(15);
 
@@ -83,17 +80,11 @@ class ProductoController extends Controller
      */
     public function formalizarSemillero(\App\Models\Product $producto): View
     {
-        $soyAutor = \App\Models\ProjectAuthor::where('user_id', Auth::id())
-            ->where('project_id', $producto->project_id)->exists();
-        if ($producto->assigned_investigator_user_id !== null) {
-            abort_unless(
-                (int) $producto->assigned_investigator_user_id === (int) Auth::id(),
-                403,
-                'Este producto fue enviado a otro investigador asociado.'
-            );
-        } else {
-            abort_unless($soyAutor, 403, 'No estás autorizado para formalizar este producto.');
-        }
+        abort_unless(
+            (int) $producto->assigned_investigator_user_id === (int) Auth::id(),
+            403,
+            'Este producto no ha sido enviado a tu bandeja por un líder de semillero.'
+        );
 
         $proyectos = Project::where('id', $producto->project_id)->get();
 

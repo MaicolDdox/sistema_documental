@@ -279,23 +279,26 @@
                 @foreach($productos as $gp)
                 @php
                     $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
-                    $tipoNombre = $gp->mincienciasTypology?->nombre ?? '—';
-                    $autorNombre = $gp->author?->person?->nombre_completo ?? $gp->author?->email ?? '—';
-                    $proyectoNombre = $gp->product?->project?->nombre ?? '—';
-                    $repositorio = $gp->url_repositorio ? $gp->url_repositorio : ($gp->evidencia ? 'Archivo adjunto' : '—');
+                    $proyectoNombre = $gp->project?->nombre ?? '—';
+                    $autores = $gp->productAuthors
+                        ->map(fn($pa) => $pa->projectAuthor?->user?->person?->nombre_completo ?? $pa->projectAuthor?->user?->email)
+                        ->filter()
+                        ->values();
+                    $autorNombre = $autores->first() ?? '—';
+                    $evidencias = $gp->productEvidences ?? collect();
                 @endphp
                 <div x-show="detalleId === {{ $gp->id }}" x-cloak class="space-y-4">
                     <div>
-                        <h4 class="text-xl font-bold text-slate-900 mb-1">{{ $gp->titulo ?? 'Sin título' }}</h4>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">{{ $gp->nombre ?? 'Sin título' }}</h4>
                         <p class="text-xs text-slate-500">Proyecto: {{ $proyectoNombre }}</p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Tipo de producto</p>
-                            <p class="text-sm font-medium text-slate-800">{{ $tipoNombre }}</p>
+                            <p class="text-xs text-slate-400 mb-0.5">Nombre del producto</p>
+                            <p class="text-sm font-medium text-slate-800">{{ $gp->nombre ?? '—' }}</p>
                         </div>
                         <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Autor</p>
+                            <p class="text-xs text-slate-400 mb-0.5">Autor principal</p>
                             <p class="text-sm font-medium text-slate-800">{{ $autorNombre }}</p>
                         </div>
                         <div class="bg-slate-50 rounded-lg p-3">
@@ -305,18 +308,55 @@
                             </p>
                         </div>
                         <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Repositorio / evidencia</p>
+                            <p class="text-xs text-slate-400 mb-0.5">Repositorio / archivo principal</p>
                             @if($gp->url_repositorio)
                                 <a href="{{ $gp->url_repositorio }}" target="_blank" class="text-sm text-sky-600 hover:underline break-all">
                                     {{ $gp->url_repositorio }}
                                 </a>
-                            @elseif($gp->evidencia)
-                                <p class="text-sm text-slate-700">Archivo cargado en el sistema.</p>
+                            @elseif($gp->archivo)
+                                <p class="text-sm text-slate-700">{{ $gp->archivo_nombre ?: basename($gp->archivo) }}</p>
                             @else
                                 <p class="text-sm text-slate-400">No se registró archivo ni URL.</p>
                             @endif
                         </div>
                     </div>
+                    <div class="bg-slate-50 rounded-lg p-3">
+                        <p class="text-xs text-slate-400 mb-1">Autores enviados por el asesor</p>
+                        @if($autores->isNotEmpty())
+                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
+                                @foreach($autores as $autor)
+                                    <li>{{ $autor }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">Sin autores registrados.</p>
+                        @endif
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-3">
+                        <p class="text-xs text-slate-400 mb-1">Evidencias subidas</p>
+                        @if($evidencias->isNotEmpty())
+                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
+                                @foreach($evidencias as $ev)
+                                    <li>
+                                        {{ $ev->nombre ?: 'Evidencia' }}
+                                        @if($ev->url_archivo)
+                                            — <a href="{{ $ev->url_archivo }}" target="_blank" class="text-sky-600 hover:underline">ver enlace</a>
+                                        @elseif($ev->archivo)
+                                            — archivo cargado
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">Sin evidencias adicionales.</p>
+                        @endif
+                    </div>
+                    @if(!empty($gp->observacion_revision))
+                    <div class="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                        <p class="text-xs text-amber-700 mb-0.5">Observación de revisión</p>
+                        <p class="text-sm text-amber-900">{{ $gp->observacion_revision }}</p>
+                    </div>
+                    @endif
                 </div>
                 @endforeach
             </div>

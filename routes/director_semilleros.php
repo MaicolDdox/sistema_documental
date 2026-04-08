@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\DirectorSemilleros\AsignarRolController;
 use App\Http\Controllers\DirectorSemilleros\DashboardController;
 use App\Http\Controllers\DirectorSemilleros\DocumentoSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\LiderSemilleroController;
@@ -26,10 +25,6 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_se
         Route::resource('semilleros', SemilleroController::class);
         Route::post('semilleros/{semillero}/toggle-estado', [SemilleroController::class, 'toggleEstado'])->name('semilleros.toggle-estado');
         Route::post('semilleros/{semillero}/reasignar-lider', [SemilleroController::class, 'reasignarLider'])->name('semilleros.reasignar-lider');
-
-        // Asignar Roles (vista reutilizada, solo Líder de Semillero)
-        Route::get('asignar-roles', [AsignarRolController::class, 'index'])->name('asignar-roles.index');
-        Route::post('asignar-roles', [AsignarRolController::class, 'store'])->name('asignar-roles.store');
 
         // Módulo Líderes de Semillero
         Route::get('lideres', [LiderSemilleroController::class, 'index'])->name('lideres.index');

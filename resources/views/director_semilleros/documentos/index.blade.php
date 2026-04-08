@@ -11,10 +11,6 @@
         deleteUrl: '',
         deleteName: ''
     }">
-@if(session('success'))
-<div class="mb-4 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">{{ session('success') }}</div>
-@endif
-
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
         <h2 class="text-sm font-semibold text-slate-800">Documentos del Centro</h2>

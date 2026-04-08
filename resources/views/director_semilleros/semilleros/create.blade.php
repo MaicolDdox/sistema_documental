@@ -23,7 +23,7 @@
             <p class="text-xs text-slate-500 mt-1">Los campos marcados con <span class="text-red-500">*</span> son obligatorios.</p>
         </div>
 
-        <form action="{{ route('dir-sem.semilleros.store') }}" method="POST" class="p-6">
+        <form action="{{ route('dir-sem.semilleros.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
             @csrf
 
             <div class="space-y-5">
@@ -67,6 +67,17 @@
                             <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
+                </div>
+
+                {{-- Logo --}}
+                <div>
+                    <label for="logo" class="block text-sm font-medium text-slate-700 mb-1.5">Logo del semillero (opcional)</label>
+                    <input type="file" name="logo" id="logo" accept="image/jpeg,image/png,image/gif,image/webp"
+                           class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('logo') border-red-300 @enderror">
+                    <p class="text-xs text-slate-500 mt-1">Formatos: JPG, PNG, GIF o WebP. Tamaño máximo: 2 MB.</p>
+                    @error('logo')
+                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Líder --}}

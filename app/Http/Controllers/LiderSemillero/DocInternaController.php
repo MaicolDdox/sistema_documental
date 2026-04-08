@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class DocInternaController extends Controller
@@ -32,6 +33,10 @@ class DocInternaController extends Controller
                 ->map(function ($doc) {
                     $doc->subido_por_mi = $doc->user_id === Auth::id();
                     $doc->subido_por_nombre = $doc->user?->person?->nombre_completo ?? $doc->user?->email ?? '—';
+                    $doc->size_bytes = Storage::disk('public')->exists($doc->url_archivo)
+                        ? Storage::disk('public')->size($doc->url_archivo)
+                        : 0;
+                    $doc->archivo_nombre = basename((string) $doc->url_archivo);
                     return $doc;
                 });
         }
@@ -70,6 +75,38 @@ class DocInternaController extends Controller
         ]);
 
         return redirect()->route('lider-sem.doc-interna')->with('success', 'Documento subido correctamente.');
+    }
+
+    public function ver(SeedlingInternalDocument $documento): StreamedResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (! $semillero || $documento->seedling_id !== $semillero->id) {
+            abort(403, 'No puedes ver este documento.');
+        }
+        if (!Storage::disk('public')->exists($documento->url_archivo)) {
+            abort(404, 'El archivo no existe.');
+        }
+
+        return Storage::disk('public')->response(
+            $documento->url_archivo,
+            basename((string) $documento->url_archivo)
+        );
+    }
+
+    public function descargar(SeedlingInternalDocument $documento): StreamedResponse
+    {
+        $semillero = Auth::user()->ledSeedlings()->first();
+        if (! $semillero || $documento->seedling_id !== $semillero->id) {
+            abort(403, 'No puedes descargar este documento.');
+        }
+        if (!Storage::disk('public')->exists($documento->url_archivo)) {
+            abort(404, 'El archivo no existe.');
+        }
+
+        return Storage::disk('public')->download(
+            $documento->url_archivo,
+            basename((string) $documento->url_archivo)
+        );
     }
 
     public function destroy(SeedlingInternalDocument $documento): RedirectResponse

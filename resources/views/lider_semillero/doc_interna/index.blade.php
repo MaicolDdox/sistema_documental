@@ -31,12 +31,20 @@
         + Subir documento
     </button>
 </div>
-@if(session('success'))
-<div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
-@endif
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Total documentos</p>
+        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $documentos->count() }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Subidos por ti</p>
+        <p class="text-2xl font-bold text-slate-900 mt-1">{{ $documentos->where('subido_por_mi', true)->count() }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Última carga</p>
+        <p class="text-sm font-semibold text-slate-900 mt-2">{{ optional($documentos->first()?->created_at)->format('Y-m-d H:i') ?? '—' }}</p>
+    </div>
+</div>
 
 <div class="sgd-table-card bg-white overflow-hidden">
     <div class="overflow-x-auto">
@@ -45,6 +53,8 @@
                 <tr>
                     <th class="text-left">Documento</th>
                     <th class="text-left">Tipo</th>
+                    <th class="text-left">Archivo</th>
+                    <th class="text-left">Peso</th>
                     <th class="text-left">Subido por</th>
                     <th class="text-left">Fecha</th>
                     <th class="text-left">Acciones</th>
@@ -53,8 +63,9 @@
             <tbody>
                 @forelse($documentos as $doc)
                 @php
-                    $url = $doc->url_archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($doc->url_archivo) : '#';
                     $tipoLabel = $tipos[$doc->tipo ?? 'otro'] ?? 'Otro';
+                    $sizeB = $doc->size_bytes ?? 0;
+                    $sizeStr = $sizeB >= 1048576 ? round($sizeB / 1048576, 1) . ' MB' : ($sizeB >= 1024 ? round($sizeB / 1024) . ' KB' : $sizeB . ' B');
                 @endphp
                 <tr>
                     <td class="px-5 py-3 font-medium text-slate-800">{{ $doc->titulo ?? '—' }}</td>
@@ -67,6 +78,8 @@
                         <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $tipoLabel }}</span>
                         @endif
                     </td>
+                    <td class="px-5 py-3 text-slate-600 text-xs">{{ $doc->archivo_nombre ?? '—' }}</td>
+                    <td class="px-5 py-3 text-slate-600">{{ $sizeStr }}</td>
                     <td class="px-5 py-3 text-slate-600">
                         {{ $doc->subido_por_nombre ?? '—' }}{{ $doc->subido_por_mi ? ' (tú)' : '' }}
                     </td>
@@ -87,7 +100,7 @@
                                  x-cloak
                                  @click.away="open = false"
                                  class="absolute left-0 mt-2 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
-                                <a href="{{ $url }}"
+                                <a href="{{ route('lider-sem.doc-interna.ver', $doc) }}"
                                    target="_blank"
                                    rel="noopener"
                                    @click="open = false"
@@ -96,6 +109,14 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h9.75A2.25 2.25 0 0019.5 18.75V12M12 9l3-3m0 0l3 3m-3-3v12" />
                                     </svg>
                                     <span>Ver documento</span>
+                                </a>
+                                <a href="{{ route('lider-sem.doc-interna.descargar', $doc) }}"
+                                   @click="open = false"
+                                   class="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 20.25h15m-7.5-16.5v12m0 0l-4.5-4.5m4.5 4.5l4.5-4.5" />
+                                    </svg>
+                                    <span>Descargar</span>
                                 </a>
                                 @if($doc->subido_por_mi ?? false)
                                 <form action="{{ route('lider-sem.doc-interna.destroy', $doc) }}"
@@ -120,7 +141,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-5 py-10 text-center text-slate-500">Aún no hay documentos internos.</td>
+                    <td colspan="7" class="px-5 py-10 text-center text-slate-500">Aún no hay documentos internos.</td>
                 </tr>
                 @endforelse
             </tbody>

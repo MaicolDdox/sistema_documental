@@ -85,12 +85,13 @@
             @canany(['usuarios.crear_lider_semillero', 'usuarios.asignar_credenciales'])
             <div class="mb-6 p-4 bg-green-50 border border-green-100 rounded-lg flex items-start gap-3">
                 <div class="mt-0.5">
-                    <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales" value="1" checked
+                    <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales" value="1"
+                           {{ old('enviar_credenciales', false) ? 'checked' : '' }}
                            class="w-4 h-4 text-[#39A900] bg-white border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
                 </div>
                 <div class="text-sm">
                     <label for="enviar_credenciales" class="font-medium text-slate-800 cursor-pointer">Enviar credenciales por correo electrónico</label>
-                    <p class="text-slate-500 mt-0.5">Al activarse, el sistema enviará un correo con la contraseña temporal autogenerada al líder seleccionado.</p>
+                    <p class="text-slate-500 mt-0.5">La contraseña temporal siempre se genera para entregarla manualmente al líder. Si activas esta opción, además se enviará por correo.</p>
                 </div>
             </div>
             @endcanany

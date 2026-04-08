@@ -365,7 +365,7 @@
                     </div>
                 </div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">USUARIOS</p>
-                <div x-data="{ openUsuarios: {{ request()->routeIs('dir-sem.lideres.*', 'dir-sem.asignar-roles.*', 'dir-sem.vinculaciones.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openUsuarios: {{ request()->routeIs('dir-sem.lideres.*', 'dir-sem.vinculaciones.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button type="button" @click="openUsuarios = !openUsuarios" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 4.5v15m7.5-7.5h-15"/></svg>
@@ -377,10 +377,6 @@
                         <a href="{{ route('dir-sem.lideres.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.lideres.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
                             Líderes de Semillero
-                        </a>
-                        <a href="{{ route('dir-sem.asignar-roles.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.asignar-roles.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0121.75 12.75a3 3 0 01-3 3z"/></svg>
-                            Asignar Roles
                         </a>
                         <a href="{{ route('dir-sem.vinculaciones.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.vinculaciones.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75v10.5m-10.5-10.5v10.5M3.75 12h16.5"/></svg>
@@ -453,10 +449,6 @@
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
                     Productos
                     @if($lidPendingCount > 0)<span class="ml-auto bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $lidPendingCount }}</span>@endif
-                </a>
-                <a href="{{ route('lider-sem.aprendices') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.aprendices') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342 50.645 50.645 0 010 2.676A50.697 50.697 0 0112 13.489z"/></svg>
-                    Aprendices
                 </a>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">DOCUMENTACIÓN</p>
                 <a href="{{ route('lider-sem.archivos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.archivos') ? 'nav-item-active' : '' }}">

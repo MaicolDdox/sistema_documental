@@ -64,6 +64,24 @@ class DashboardController extends Controller
 
         $misSemilleros = (clone $semillerosQuery)->with(['leader.person', 'members'])->orderBy('nombre')->take(6)->get();
 
+        $chartResumenLabels = collect([
+            'Semilleros activos',
+            'Líderes',
+            'Integrantes',
+            'Asesores',
+        ]);
+        $chartResumenSeries = collect([
+            $semillerosActivos,
+            $totalLideres,
+            $integrantesTotales,
+            $asesoresVinculados,
+        ]);
+        $chartEstadoSemillerosLabels = collect(['Activos', 'Inactivos']);
+        $chartEstadoSemillerosSeries = collect([
+            $semillerosActivos,
+            max($totalSemilleros - $semillerosActivos, 0),
+        ]);
+
         return view('director_semilleros.dashboard', [
             'totalSemilleros'     => $totalSemilleros,
             'semillerosActivos'   => $semillerosActivos,
@@ -74,6 +92,10 @@ class DashboardController extends Controller
             'asesoresVinculados'  => $asesoresVinculados,
             'misSemilleros'       => $misSemilleros,
             'misLideres'          => $misLideres,
+            'chartResumenLabels'  => $chartResumenLabels,
+            'chartResumenSeries'  => $chartResumenSeries,
+            'chartEstadoSemillerosLabels' => $chartEstadoSemillerosLabels,
+            'chartEstadoSemillerosSeries' => $chartEstadoSemillerosSeries,
         ]);
     }
 }

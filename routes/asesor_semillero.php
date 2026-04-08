@@ -8,7 +8,6 @@ use App\Http\Controllers\AsesorSemillero\EvidenciaController;
 use App\Http\Controllers\AsesorSemillero\MisSemillerosController;
 use App\Http\Controllers\AsesorSemillero\ExportarReporteController;
 use App\Http\Controllers\AsesorSemillero\SemilleroActivoController;
-use App\Http\Controllers\AsesorSemillero\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,7 +23,9 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
     ->group(function () {
 
         // Dashboard
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', function () {
+            return view('asesor_semillero.dashboard');
+        })->name('dashboard');
 
         // Mis Semilleros y Proyectos
         Route::get('/mis-semilleros', [MisSemillerosController::class, 'index'])->name('mis_semilleros.index');
