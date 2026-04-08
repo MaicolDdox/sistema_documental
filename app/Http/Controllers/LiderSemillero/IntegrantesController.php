@@ -33,10 +33,17 @@ class IntegrantesController extends Controller
                 ->values();
 
             $integrantes = $semillero->members()
-                ->with('person')
+                ->with(['person', 'roles'])
                 ->get()
                 ->map(function ($user) use ($userIdsConProyectoActivo) {
                     $user->con_proyecto = $userIdsConProyectoActivo->contains($user->id);
+                    $user->roles_texto = $user->roles
+                        ->pluck('name')
+                        ->map(fn ($roleName) => $this->formatearNombreRol((string) $roleName))
+                        ->implode(', ');
+                    if ($user->roles_texto === '') {
+                        $user->roles_texto = 'Sin rol asignado';
+                    }
                     return $user;
                 });
         }
@@ -45,5 +52,11 @@ class IntegrantesController extends Controller
             'semillero'   => $semillero,
             'integrantes' => $integrantes,
         ]);
+    }
+
+    private function formatearNombreRol(string $roleName): string
+    {
+        $normalizado = str_replace('_', ' ', trim($roleName));
+        return mb_convert_case($normalizado, MB_CASE_TITLE, 'UTF-8');
     }
 }

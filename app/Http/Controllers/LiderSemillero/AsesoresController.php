@@ -29,9 +29,27 @@ class AsesoresController extends Controller
             ? $semillero->seedlingAdvisors()->with('externalAdvisor.user')->get()
             : collect();
 
+        $asesoresDisponibles = $semillero
+            ? ExternalAdvisor::query()
+                ->whereDoesntHave('seedlings', function ($q) use ($semillero) {
+                    $q->where('seedlings.id', $semillero->id);
+                })
+                // Solo asesores con cuenta en el mismo centro del líder
+                ->where(function ($q) {
+                    $centroId = Auth::user()->training_center_id;
+                    $q->whereNull('user_id')  // Asesores externos sin cuenta: siempre disponibles
+                      ->orWhereHas('user', function ($uq) use ($centroId) {
+                          $uq->where('training_center_id', $centroId);
+                      });
+                })
+                ->orderBy('nombre_completo')
+                ->get(['id', 'nombre_completo', 'email'])
+            : collect();
+
         return view('lider_semillero.asesores.index', [
             'semillero' => $semillero,
             'vinculos'  => $vinculos,
+            'asesoresDisponibles' => $asesoresDisponibles,
         ]);
     }
 

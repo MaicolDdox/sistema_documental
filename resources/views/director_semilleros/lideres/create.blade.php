@@ -64,6 +64,7 @@
             <!-- Semillero Asignación (Opcional) -->
             <div class="mb-6">
                 <label for="semillero_id" class="block text-sm font-medium text-slate-700 mb-1.5">Asignar a Semillero (Opcional)</label>
+                <p class="text-xs text-slate-500 mb-2">Solo aparecen semilleros <span class="font-medium">sin líder asignado</span> en tu centro.</p>
                 <div class="relative">
                     <select name="semillero_id" id="semillero_id"
                             class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all appearance-none pr-10">
@@ -81,18 +82,19 @@
                 @error('semillero_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
             </div>
 
-            @can('usuarios.asignar_credenciales')
+            @canany(['usuarios.crear_lider_semillero', 'usuarios.asignar_credenciales'])
             <div class="mb-6 p-4 bg-green-50 border border-green-100 rounded-lg flex items-start gap-3">
                 <div class="mt-0.5">
-                    <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales" value="1" checked
+                    <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales" value="1"
+                           {{ old('enviar_credenciales', false) ? 'checked' : '' }}
                            class="w-4 h-4 text-[#39A900] bg-white border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
                 </div>
                 <div class="text-sm">
                     <label for="enviar_credenciales" class="font-medium text-slate-800 cursor-pointer">Enviar credenciales por correo electrónico</label>
-                    <p class="text-slate-500 mt-0.5">Al activarse, el sistema enviará un correo con la contraseña temporal autogenerada al líder seleccionado.</p>
+                    <p class="text-slate-500 mt-0.5">La contraseña temporal siempre se genera para entregarla manualmente al líder. Si activas esta opción, además se enviará por correo.</p>
                 </div>
             </div>
-            @endcan
+            @endcanany
 
             <div class="border-t border-slate-100 pt-5 flex items-center justify-end gap-3">
                 <a href="{{ route('dir-sem.lideres.index') }}" 

@@ -4,6 +4,41 @@
     <div class="mb-6">
         <h2 class="text-xl font-semibold text-slate-900">Panel de Administración</h2>
         <p class="text-sm text-slate-500 mt-1">Resumen del sistema y accesos rápidos.</p>
+        @if(\App\Support\TrainingCenterAccess::scopedToTrainingCenter(auth()->user()))
+            @php
+                $centroCtx = auth()->user()->trainingCenter;
+            @endphp
+            <p class="text-xs text-slate-600 mt-2 rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2 max-w-2xl">
+                Estás viendo solo información del centro:
+                <span class="font-semibold text-slate-800">{{ $centroCtx?->nombre ?? 'tu centro asignado' }}</span>.
+            </p>
+        @endif
+        @if(!empty($primaryRoleLabel))
+            <p class="text-xs text-slate-600 mt-2 max-w-2xl">
+                <span class="font-semibold text-slate-800">Rol principal</span> (prioridad al iniciar sesión):
+                <span class="text-slate-800">{{ $primaryRoleLabel }}</span>.
+            </p>
+        @endif
+        @if(!empty($roleModuleNav))
+            <div class="mt-4 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 max-w-2xl shadow-sm">
+                <p class="text-sm font-semibold text-slate-900 mb-2">Accesos a otros módulos</p>
+                <p class="text-xs text-slate-500 mb-3">Abre el panel correspondiente a cada rol. El marcado como <span class="font-medium text-slate-700">Principal</span> coincide con la prioridad de acceso al iniciar sesión.</p>
+                <ul class="flex flex-wrap gap-2">
+                    @foreach($roleModuleNav as $link)
+                        @if(!empty($link['url']))
+                            <li>
+                                <a href="{{ $link['url'] }}" class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors {{ !empty($link['is_primary']) ? 'border-[#39A900]/50 bg-[#39A900]/10 text-[#1f6b00]' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100' }}">
+                                    {{ $link['label'] }}
+                                    @if(!empty($link['is_primary']))
+                                        <span class="text-[10px] uppercase text-[#39A900]">Principal</span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endif
+                    @endforeach
+                </ul>
+            </div>
+        @endif
     </div>
 
     {{-- 4 tarjetas de métricas --}}
@@ -152,12 +187,12 @@
                         Asignar Rol
                     </a>
                     @endcan
-                    @can('catalogos.leer')
+                    @if(auth()->user()->hasRole('super_administrador'))
                     <a href="{{ route('admin.training-centers.index') }}" class="sgd-btn-primary flex items-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z" /></svg>
                         Centros
                     </a>
-                    @endcan
+                    @endif
                     @if(\Illuminate\Support\Facades\Route::has('admin.research-lines.index'))
                     <a href="{{ route('admin.research-lines.index') }}" class="sgd-btn-primary flex items-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" /></svg>

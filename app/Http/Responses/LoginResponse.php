@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses;
 
+use App\Support\RoleModuleLinks;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Symfony\Component\HttpFoundation\Response;
@@ -9,31 +10,13 @@ use Symfony\Component\HttpFoundation\Response;
 class LoginResponse implements LoginResponseContract
 {
     /**
-     * Redirección post-login basada en el rol del usuario (Spatie).
+     * Redirección post-login: mismo criterio que Livewire Login (rol principal guardado o prioridad).
      */
     public function toResponse($request): Response
     {
         $user = Auth::user();
+        $user->load('roles');
 
-        $home = match (true) {
-            $user->hasRole('administrador_sistema'),
-            $user->hasRole('admin') => '/admin/dashboard',
-            $user->hasRole('director_investigacion'),
-            $user->hasRole('investigador_asociado') => '/research/dashboard',
-            $user->hasRole('director_semilleros') => '/director-semilleros',
-            $user->hasRole('lider_semillero') => '/lider-semillero',
-            $user->hasRole('asesor') => '/seedlings',
-            default => '/dashboard',
-        };
-
-        if ($user->hasRole('director_semilleros')) {
-            return redirect()->to('/director-semilleros');
-        }
-
-        if ($user->hasRole('lider_semillero')) {
-            return redirect()->to('/lider-semillero');
-        }
-
-        return redirect()->intended($home);
+        return redirect()->intended(RoleModuleLinks::dashboardUrlForUser($user));
     }
 }

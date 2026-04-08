@@ -27,64 +27,72 @@
     </div>
 </div>
 @else
-<div class="mb-4">
-    <h2 class="text-base font-semibold text-slate-900">Proyectos del Semillero</h2>
-    <p class="text-xs text-slate-500 mt-0.5">Proyectos vinculados a {{ $semillero->nombre }} — Solo los creados por asesores del semillero</p>
-</div>
+<div>
+    <div class="mb-4">
+        <h2 class="text-base font-semibold text-slate-900">Proyectos del Semillero</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Proyectos vinculados a {{ $semillero->nombre }} con resumen de fechas, productos y avance.</p>
+    </div>
 
-<div class="sgd-table-card bg-white overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="sgd-table text-sm">
-            <thead>
-                <tr>
-                    <th class="text-left">Título</th>
-                    <th class="text-left">Asesor</th>
-                    <th class="text-left">Integrantes</th>
-                    <th class="text-left">Estado</th>
-                    <th class="text-left">Avance</th>
-                    <th class="text-left">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($proyectos as $proyecto)
-                @php
-                    $creador = $proyecto->projectCreator;
-                    $asesorNombre = $creador?->person?->nombre_completo ?? $creador?->email ?? '—';
-                    $estadoVal = $proyecto->estado->value ?? $proyecto->estado;
-                    $avance = $proyecto->avance ?? 0;
-                @endphp
-                <tr>
-                    <td class="px-5 py-3 font-medium text-slate-800">{{ $proyecto->nombre ?? '—' }}</td>
-                    <td class="px-5 py-3 text-slate-600">{{ $asesorNombre }}</td>
-                    <td class="px-5 py-3 text-slate-600">{{ $proyecto->integrantes_count ?? 0 }}</td>
-                    <td class="px-5 py-3">
-                        @if($estadoVal === 'activo')
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Activo</span>
-                        @else
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Inactivo</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3">
-                        <div class="flex items-center gap-2 min-w-[100px]">
-                            <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                <div class="h-full rounded-full bg-[#39A900] transition-all duration-300" style="width: {{ $avance }}%"></div>
+    <div class="sgd-table-card bg-white overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="sgd-table text-sm">
+                <thead>
+                    <tr>
+                        <th class="text-left">Título</th>
+                        <th class="text-left">Asesor</th>
+                        <th class="text-left">Fechas</th>
+                        <th class="text-left">Integrantes</th>
+                        <th class="text-left">Productos</th>
+                        <th class="text-left">Estado</th>
+                        <th class="text-left">Avance</th>
+                        <th class="text-left">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($proyectos as $proyecto)
+                    @php
+                        $creador = $proyecto->projectCreator;
+                        $asesorNombre = $creador?->person?->nombre_completo ?? $creador?->email ?? '—';
+                        $estadoVal = $proyecto->estado->value ?? $proyecto->estado;
+                        $avance = $proyecto->avance ?? 0;
+                        $avanceLabel = $proyecto->avance_label ?? 'Sin iniciar';
+                    @endphp
+                    <tr>
+                        <td class="px-5 py-3 font-medium text-slate-800">{{ $proyecto->nombre ?? '—' }}</td>
+                        <td class="px-5 py-3 text-slate-600">{{ $asesorNombre }}</td>
+                        <td class="px-5 py-3 text-slate-600 text-xs">
+                            {{ $proyecto->fecha_inicio?->format('d/m/Y') ?? '—' }} - {{ $proyecto->fecha_fin?->format('d/m/Y') ?? '—' }}
+                        </td>
+                        <td class="px-5 py-3 text-slate-600">{{ $proyecto->integrantes_count ?? 0 }}</td>
+                        <td class="px-5 py-3 text-slate-600">{{ $proyecto->productos_count ?? 0 }}</td>
+                        <td class="px-5 py-3">
+                            @if($estadoVal === 'activo')
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Activo</span>
+                            @else
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Inactivo</span>
+                            @endif
+                        </td>
+                        <td class="px-5 py-3">
+                            <div class="flex items-center gap-2 min-w-[100px]">
+                                <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full bg-[#39A900] transition-all duration-300" style="width: {{ $avance }}%"></div>
+                                </div>
+                                <span class="text-xs font-medium text-slate-600 w-10">{{ $avance }}%</span>
                             </div>
-                            <span class="text-xs font-medium text-slate-600 w-9">{{ $avance }}%</span>
-                        </div>
-                    </td>
-                    <td class="px-5 py-3">
-                        <a href="#" class="sgd-btn-secondary inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200">Ver</a>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="6" class="px-5 py-10 text-center text-slate-500">
-                        No hay proyectos vinculados a este semillero.
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+                            <p class="text-[11px] text-slate-500 mt-1">{{ $avanceLabel }}</p>
+                        </td>
+                        <td class="px-5 py-3 text-xs text-slate-400">Sin acciones</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="px-5 py-10 text-center text-slate-500">
+                            No hay proyectos vinculados a este semillero.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 @endif

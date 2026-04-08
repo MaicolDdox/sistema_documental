@@ -4,7 +4,16 @@
 @section('header', '')
 
 @section('content')
-<div x-data="{ modalNuevoSemillero: @json($errors->any() && old('_from_modal')) }">
+<div x-data="{
+        modalNuevoSemillero: @json($errors->any() && old('_from_modal')),
+        detailOpen: false,
+        detailUrl: '',
+        editOpen: false,
+        editUrl: '',
+        deleteOpen: false,
+        deleteUrl: '',
+        deleteName: ''
+    }">
 {{-- Breadcrumbs --}}
 <nav class="text-sm text-slate-500 mb-2">
     <a href="{{ route('dir-sem.dashboard') }}" class="hover:text-[#39A900]">Gestión Semilleros</a>
@@ -117,24 +126,50 @@
                         @endif
                     </td>
                     <td class="px-4 py-3">
-                        <div class="flex items-center justify-end gap-1">
-                            @can('semilleros.ver_detalle')
-                            <a href="{{ route('dir-sem.semilleros.show', $semillero) }}" class="p-2 rounded-lg {{ $semillero->estado === \App\Enums\EstadoEnum::Activo ? 'text-slate-500 hover:text-slate-700 hover:bg-slate-100' : 'text-red-400 hover:text-red-600 hover:bg-red-50' }}" title="Ver detalle">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
-                            </a>
-                            @endcan
-                            @can('semilleros.editar')
-                            <a href="{{ route('dir-sem.semilleros.edit', $semillero) }}" class="p-2 text-slate-500 hover:text-[#39A900] hover:bg-[#39A900]/10 rounded-lg transition-all duration-200" title="Editar">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
-                            </a>
-                            <form action="{{ route('dir-sem.semilleros.destroy', $semillero) }}" method="POST" class="inline" onsubmit="return confirm('¿Está seguro de eliminar este semillero?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                        <div class="relative flex items-center justify-end" x-data="{ open: false }">
+                            <button type="button"
+                                    @click.stop="open = !open"
+                                    @keydown.escape.window="open = false"
+                                    class="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open ? 'true' : 'false'">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </button>
+                            <div x-show="open"
+                                 x-cloak
+                                 @click.away="open = false"
+                                 class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                @can('semilleros.ver_detalle')
+                                <button type="button"
+                                        @click="open = false; detailUrl = '{{ route('dir-sem.semilleros.show', $semillero) }}?embedded=1'; detailOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="4"/>
+                                    </svg>
+                                    <span>Ver detalle</span>
                                 </button>
-                            </form>
-                            @endcan
+                                @endcan
+                                @can('semilleros.editar')
+                                <button type="button"
+                                        @click="open = false; editUrl = '{{ route('dir-sem.semilleros.edit', $semillero) }}?embedded=1'; editOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" />
+                                    </svg>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button"
+                                        @click="open = false; deleteUrl = '{{ route('dir-sem.semilleros.destroy', $semillero) }}'; deleteName = '{{ addslashes($semillero->nombre) }}'; deleteOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" />
+                                    </svg>
+                                    <span>Eliminar</span>
+                                </button>
+                                @endcan
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -200,9 +235,9 @@
                             </div>
                         </div>
                         <div>
-                            <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado <span class="text-red-500">*</span></label>
-                            <select name="lider_id" id="modal_lider_id" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('lider_id') border-red-300 @enderror">
-                                <option value="">Selecciona un líder...</option>
+                            <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado (opcional)</label>
+                            <select name="lider_id" id="modal_lider_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('lider_id') border-red-300 @enderror">
+                                <option value="">Sin líder asignado</option>
                                 @foreach($lideres ?? [] as $lider)
                                     @php
                                         $nombreLider = $lider->person ? trim(($lider->person->primer_nombre ?? '') . ' ' . ($lider->person->primer_apellido ?? '')) : $lider->email;
@@ -231,5 +266,83 @@
         </div>
     </div>
     @endcan
+
+    {{-- Modal detalle semillero (iframe) --}}
+    <div x-show="detailOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+            <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                <h2 class="text-sm font-semibold text-slate-900">Detalle del semillero</h2>
+                <button type="button" @click="detailOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="w-full h-[80vh]">
+                <iframe
+                    :src="detailUrl"
+                    class="w-full h-full border-0"
+                    loading="lazy">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal eliminar semillero (estilo administrador) --}}
+    <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 border-b border-slate-100 bg-red-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l7.5-15 7.5 15h-15z" />
+                        </svg>
+                    </span>
+                    <h2 class="text-sm font-semibold text-red-800">Eliminar semillero</h2>
+                </div>
+                <button type="button" @click="deleteOpen = false" class="p-1.5 rounded-lg hover:bg-red-100 text-red-500" aria-label="Cerrar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-6 py-4 space-y-2">
+                <p class="text-sm text-slate-700">¿Estás seguro de que deseas eliminar el semillero:</p>
+                <p class="text-sm font-semibold text-slate-900" x-text="deleteName"></p>
+                <p class="text-xs text-slate-500 mt-1">Esta acción no se puede deshacer y puede afectar registros relacionados.</p>
+            </div>
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button type="button"
+                        @click="deleteOpen = false"
+                        class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-white">
+                    Cancelar
+                </button>
+                <form :action="deleteUrl" method="POST" class="inline-flex">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700">
+                        Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal editar semillero (iframe) --}}
+    <div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[95vh] overflow-hidden border border-slate-200">
+            <div class="flex items-center justify-between px-6 py-3 border-b border-slate-100 bg-slate-50">
+                <h2 class="text-sm font-semibold text-slate-900">Editar semillero</h2>
+                <button type="button" @click="editOpen = false" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors" aria-label="Cerrar">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="w-full h-[80vh]">
+                <iframe
+                    :src="editUrl"
+                    class="w-full h-full border-0"
+                    loading="lazy">
+                </iframe>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

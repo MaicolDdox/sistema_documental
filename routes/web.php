@@ -52,11 +52,20 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     if ($user->hasRole('director_semilleros')) {
         return redirect()->to('/director-semilleros', 302);
     }
-    if ($user->hasRole('administrador_sistema') || $user->hasRole('admin')) {
+    if ($user->hasRole('super_administrador')) {
+        return redirect()->to('/super-admin/dashboard', 302);
+    }
+    if ($user->hasAnyRole(['administrador_sistema', 'admin'])) {
         return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
     }
-    if ($user->hasRole('director_investigacion') || $user->hasRole('investigador_asociado')) {
-        return redirect()->to('/research/dashboard', 302);
+    if ($user->hasRole('director_investigacion')) {
+        return redirect()->to('/director', 302);
+    }
+    if ($user->hasRole('investigador_asociado')) {
+        return redirect()->to('/investigador', 302);
+    }
+    if ($user->hasRole('asesor_semillero')) {
+        return redirect()->to('/asesor-semillero/dashboard', 302);
     }
     if ($user->hasRole('asesor')) {
         return redirect()->to('/seedlings', 302);
@@ -70,7 +79,9 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
 Route::middleware(['auth', 'ensure.active'])->group(function () {
 
     // ─── Módulo: Admin ───────────────────────────────────────────────────────
-    Route::middleware(['role:administrador_sistema|admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Acceso para cualquier usuario autenticado y activo.
+    // Los permisos finos se controlan dentro de las vistas / componentes.
+    Route::prefix('admin')->name('admin.')->group(function () {
 
         // Dashboard del admin (vista pendiente de creación)
         // Route::view('dashboard', 'admin.dashboard')->name('dashboard');
@@ -78,8 +89,10 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         // Configuración general
         Route::resource('departments', DepartmentController::class)->names('departments');
         Route::resource('cities', CityController::class)->names('cities');
-        Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
-        Route::patch('training-centers/{training_center}/toggle', [TrainingCenterController::class, 'toggle'])->name('training-centers.toggle');
+        Route::middleware('role:super_administrador')->group(function () {
+            Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
+            Route::patch('training-centers/{training_center}/toggle', [TrainingCenterController::class, 'toggle'])->name('training-centers.toggle');
+        });
         Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
         Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
         Route::resource('training-records', \App\Http\Controllers\Web\TrainingRecordController::class)->names('training-records');

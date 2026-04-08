@@ -93,3 +93,7 @@
         @fluxScripts
     </body>
 </html>
+
+<script>
+    console.warn('AQUI TOYYYYY').
+</script>

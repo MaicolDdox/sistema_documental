@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Users;
 
 use App\Enums\EstadoEnum;
 use App\Models\User;
+use App\Support\TrainingCenterAccess;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,7 +27,8 @@ class UserIndex extends Component
      */
     public function toggleEstado(int $userId): void
     {
-        $user = User::findOrFail($userId);
+        $user = TrainingCenterAccess::scopeUserQueryForList(User::query(), auth()->user())
+            ->findOrFail($userId);
 
         $user->estado = $user->estado === EstadoEnum::Activo
             ? EstadoEnum::Inactivo
@@ -37,7 +39,10 @@ class UserIndex extends Component
 
     public function render()
     {
-        $users = User::with(['person', 'roles'])
+        $users = TrainingCenterAccess::scopeUserQueryForList(
+            User::with(['person', 'roles']),
+            auth()->user()
+        )
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('email', 'like', "%{$this->search}%")

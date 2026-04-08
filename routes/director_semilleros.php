@@ -1,11 +1,11 @@
 <?php
 
-use App\Http\Controllers\DirectorSemilleros\AsignarRolController;
 use App\Http\Controllers\DirectorSemilleros\DashboardController;
 use App\Http\Controllers\DirectorSemilleros\DocumentoSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\LiderSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\ReporteSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\SemilleroController;
+use App\Http\Controllers\DirectorSemilleros\VinculacionSemilleroLiderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:director_semilleros'])
+Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_semilleros'])
     ->prefix('director-semilleros')
     ->name('dir-sem.')
     ->group(function () {
@@ -26,10 +26,6 @@ Route::middleware(['auth', 'role:director_semilleros'])
         Route::post('semilleros/{semillero}/toggle-estado', [SemilleroController::class, 'toggleEstado'])->name('semilleros.toggle-estado');
         Route::post('semilleros/{semillero}/reasignar-lider', [SemilleroController::class, 'reasignarLider'])->name('semilleros.reasignar-lider');
 
-        // Asignar Roles (vista reutilizada, solo Líder de Semillero)
-        Route::get('asignar-roles', [AsignarRolController::class, 'index'])->name('asignar-roles.index');
-        Route::post('asignar-roles', [AsignarRolController::class, 'store'])->name('asignar-roles.store');
-
         // Módulo Líderes de Semillero
         Route::get('lideres', [LiderSemilleroController::class, 'index'])->name('lideres.index');
         Route::get('lideres/create', [LiderSemilleroController::class, 'create'])->name('lideres.create');
@@ -39,6 +35,8 @@ Route::middleware(['auth', 'role:director_semilleros'])
         Route::put('lideres/{lider}', [LiderSemilleroController::class, 'update'])->name('lideres.update');
         Route::post('lideres/{lider}/toggle-estado', [LiderSemilleroController::class, 'toggleEstado'])->name('lideres.toggle-estado');
         Route::delete('lideres/{lider}', [LiderSemilleroController::class, 'destroy'])->name('lideres.destroy');
+        Route::get('vinculaciones', [VinculacionSemilleroLiderController::class, 'index'])->name('vinculaciones.index');
+        Route::put('vinculaciones/{semillero}', [VinculacionSemilleroLiderController::class, 'update'])->name('vinculaciones.update');
 
         // Módulo Documentos Institucionales
         Route::resource('documentos', DocumentoSemilleroController::class)->only(['index', 'create', 'store', 'destroy']);

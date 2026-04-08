@@ -72,6 +72,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'proyectos.activar_desactivar',
                 'proyectos.ver_ajeno',
                 'proyectos.gestionar_autores',
+                // Módulo asesor_semillero
+                'proyectos.listar_semillero',
+                'proyectos.crear_semillero',
+                'proyectos.vincular_integrantes',
             ],
             // MÓDULO: APRENDICES
             'aprendices' => [
@@ -80,6 +84,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'aprendices.vincular_proyecto',
                 'aprendices.desvincular_proyecto',
                 'aprendices.listar_autores',
+                // Módulo asesor_semillero
+                'aprendices.listar',
+                'aprendices.editar',
+                'aprendices.ver_detalle',
             ],
             // MÓDULO: PRODUCTOS
             'productos' => [
@@ -92,6 +100,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'productos.cambiar_a_en_revision',
                 'productos.ver_estado_revision',
                 'productos.ver_observaciones',
+                // Módulo asesor_semillero
+                'productos.registrar',
             ],
             // MÓDULO: EVIDENCIAS
             'evidencias' => [
@@ -145,6 +155,12 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
+        // ROL 0: super_administrador — todos los permisos web (instancia / soporte)
+        $rolSuperAdmin = Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
+        $rolSuperAdmin->syncPermissions(
+            Permission::where('guard_name', 'web')->pluck('name')->all()
+        );
+
         // Definición de Roles y sus permisos
         
         // ROL 1: administrador_sistema
@@ -171,6 +187,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'productos.crear', 'productos.listar', 'productos.ver_detalle', 'productos.editar', 'productos.ver_estado_revision', 'productos.ver_observaciones',
             'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_propia',
             'catalogos.leer',
+            'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
         ];
 
         $rolInvAsoc = Role::firstOrCreate(['name' => 'investigador_asociado', 'guard_name' => 'web']);
@@ -197,8 +214,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // Actor operativo del semillero. Gestiona proyectos propios, registra aprendices y productos.
         $asesorSemPermissions = [
             'proyectos.crear', 'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.editar', 'proyectos.activar_desactivar', 'proyectos.gestionar_autores',
+            'proyectos.listar_semillero', 'proyectos.crear_semillero', 'proyectos.vincular_integrantes',
             'aprendices.registrar', 'aprendices.buscar_por_documento', 'aprendices.vincular_proyecto', 'aprendices.desvincular_proyecto', 'aprendices.listar_autores',
+            'aprendices.listar', 'aprendices.editar', 'aprendices.ver_detalle',
             'productos.crear', 'productos.listar', 'productos.ver_detalle', 'productos.editar', 'productos.ver_estado_revision', 'productos.ver_observaciones',
+            'productos.registrar',
             'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_propia',
             'asesores_externos.registrar', 'asesores_externos.vincular_semillero', 'asesores_externos.desvincular_semillero', 'asesores_externos.listar',
             'catalogos.leer',
@@ -319,7 +339,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->command->info('🔍 Verificación de integridad:');
 
         $rolesEsperados = [
-            'administrador_sistema', 'director_investigacion',
+            'super_administrador', 'administrador_sistema', 'director_investigacion',
             'investigador_asociado', 'director_semilleros',
             'lider_semillero', 'asesor_semillero',
         ];

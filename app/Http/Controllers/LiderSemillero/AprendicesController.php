@@ -64,11 +64,9 @@ class AprendicesController extends Controller
 
     /**
      * Desvincular: UPDATE activo -> false en project_authors. Nunca DELETE.
-     * El líder de semillero solo puede visualizar; vinculación/desvinculación la gestiona el asesor.
      */
     public function desvincular(ProjectAuthor $projectAuthor): RedirectResponse
     {
-        abort(403, 'El Líder de Semillero solo puede visualizar aprendices. La vinculación y desvinculación las gestiona el asesor.');
         $semillero = Auth::user()->ledSeedlings()->first();
         if (!$semillero) {
             return redirect()->route('lider-sem.aprendices')->with('error', 'Sin semillero asignado.');
@@ -86,11 +84,9 @@ class AprendicesController extends Controller
 
     /**
      * Vincular aprendiz a un proyecto del semillero (crear o activar project_author).
-     * El líder de semillero solo puede visualizar; esta acción la gestiona el asesor.
      */
     public function vincular(Request $request): RedirectResponse
     {
-        abort(403, 'El Líder de Semillero solo puede visualizar aprendices. La vinculación la gestiona el asesor.');
         $request->validate([
             'user_id' => 'required|exists:users,id',
             'project_id' => 'required|exists:projects,id',
@@ -125,11 +121,9 @@ class AprendicesController extends Controller
 
     /**
      * Registrar aprendiz: agregar usuario existente (por documento) al semillero.
-     * El registro de aprendices lo realiza el asesor, no el líder de semillero.
      */
     public function registrar(Request $request): RedirectResponse
     {
-        abort(403, 'El registro de aprendices lo realiza el asesor. El Líder de Semillero solo puede visualizar.');
         $request->validate([
             'numero_documento' => 'required|string|max:50',
         ]);
@@ -139,10 +133,14 @@ class AprendicesController extends Controller
             return redirect()->route('lider-sem.aprendices')->with('error', 'Sin semillero asignado.');
         }
 
-        $user = User::where('numero_documento', $request->numero_documento)->first();
+        $centroId = Auth::user()->training_center_id;
+        $user = User::where('numero_documento', $request->numero_documento)
+            ->where('training_center_id', $centroId)
+            ->first();
+
         if (!$user) {
             return redirect()->route('lider-sem.aprendices')
-                ->with('error', 'No se encontró un usuario con ese número de documento.')
+                ->with('error', 'No se encontró un usuario con ese número de documento en tu sede.')
                 ->withInput();
         }
 

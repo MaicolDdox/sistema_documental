@@ -41,9 +41,7 @@
     <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <p class="text-xs font-medium text-slate-500 mb-1">Proyectos activos</p>
         <p class="text-2xl font-bold text-slate-900">{{ $metricas['proyectos_activos'] }}</p>
-        @if($metricas['proyectos_activos_texto'])
         <p class="text-xs text-slate-500 mt-1">{{ $metricas['proyectos_activos_texto'] }}</p>
-        @endif
     </div>
     <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
         <p class="text-xs font-medium text-slate-500 mb-1">Sin proyecto activo</p>
@@ -56,6 +54,59 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
+        {{-- Proyectos del semillero --}}
+        <div class="sgd-table-card bg-white overflow-hidden">
+            <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900">Proyectos del semillero</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Proyectos vinculados a {{ $metricas['nombre_semillero'] }}</p>
+                </div>
+                <a href="{{ route('lider-sem.proyectos') }}" class="text-sm font-medium text-[#39A900] hover:underline">Ver todos</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="sgd-table text-sm">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Proyecto</th>
+                            <th class="text-left">Estado</th>
+                            <th class="text-left">Fechas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse(($proyectosDelSemillero ?? []) as $p)
+                        @php
+                            $estado = $p->estado_tablero ?? ($p->estado?->value ?? (string) ($p->estado ?? ''));
+                            $estadoLabel = $estado === 'activo'
+                                ? 'Activo'
+                                : ($estado === 'inactivo'
+                                    ? 'Inactivo'
+                                    : ($estado === 'finalizado' ? 'Finalizado' : ($estado ?: '—')));
+                        @endphp
+                        <tr>
+                            <td class="px-5 py-3 font-medium text-slate-800">{{ $p->nombre }}</td>
+                            <td class="px-5 py-3">
+                                @if($estado === 'activo')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Activo</span>
+                                @elseif($estado === 'finalizado')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Finalizado</span>
+                                @elseif($estado === 'inactivo')
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">Inactivo</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">{{ $estadoLabel }}</span>
+                                @endif
+                            </td>
+                            <td class="px-5 py-3 text-slate-600">
+                                {{ $p->fecha_inicio?->format('Y-m-d') ?? '—' }} → {{ $p->fecha_fin?->format('Y-m-d') ?? '—' }}
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="px-5 py-8 text-center text-slate-500">No hay proyectos vinculados a este semillero.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         {{-- Productos pendientes de revisión --}}
         <div class="sgd-table-card bg-white overflow-hidden">
             <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-[#f0fdf4]/50">
@@ -109,12 +160,23 @@
                             </td>
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-2">
-                                    <form method="POST" action="#" class="inline" onsubmit="return confirm('¿Aprobar este producto?');">
+                                    {{-- Aprobar directamente desde el panel --}}
+                                    <form method="POST"
+                                          action="{{ route('lider-sem.productos.aprobar', $gp->product_id) }}"
+                                          class="inline"
+                                          onsubmit="return confirm('¿Aprobar este producto?');">
                                         @csrf
+                                        @method('PATCH')
                                         <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors">✓ Aprobar</button>
                                     </form>
-                                    <form method="POST" action="#" class="inline" onsubmit="return confirm('¿Rechazar este producto?');">
+                                    {{-- Rechazar rápido con observación genérica --}}
+                                    <form method="POST"
+                                          action="{{ route('lider-sem.productos.rechazar', $gp->product_id) }}"
+                                          class="inline"
+                                          onsubmit="return confirm('¿Rechazar este producto? Se usará una observación automática.');">
                                         @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="observaciones" value="Rechazado desde el panel del líder de semillero.">
                                         <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition-colors">✕ Rechazar</button>
                                     </form>
                                 </div>
@@ -166,7 +228,11 @@
                                 @else — @endif
                             </td>
                             <td class="px-5 py-3">
-                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Sin proyecto</span>
+                                @if($integrante->tiene_proyecto_activo ?? false)
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Con proyecto activo</span>
+                                @else
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Sin proyecto activo</span>
+                                @endif
                             </td>
                         </tr>
                         @empty
@@ -187,15 +253,11 @@
             <div class="p-4 grid grid-cols-2 gap-3">
                 <a href="{{ route('lider-sem.productos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    Registrar Producto
+                    Ver productos
                 </a>
                 <a href="{{ route('lider-sem.proyectos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
-                    Nuevo Proyecto
-                </a>
-                <a href="{{ route('lider-sem.aprendices') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.479-2.72m.94 3.198a6 6 0 01-.939 3.801M6 18.72a6 6 0 01-.939-3.801m12 0c.076.417.124.845.124 1.281 0 2.36-2.773 4.281-6.181 4.281S5.819 19.642 5.819 17.28c0-.436.048-.864.124-1.281M6 18.72a9 9 0 0112 0"/></svg>
-                    Reg. Aprendiz
+                    Ver proyectos
                 </a>
                 <a href="{{ route('lider-sem.archivos') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-white text-sm font-medium">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
@@ -230,7 +292,7 @@
                 @endif
             </div>
             <div class="p-4 pt-0">
-                <a href="{{ route('lider-sem.info-semillero') }}" class="sgd-btn-secondary block w-full text-center px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700">Editar información</a>
+                <a href="{{ route('lider-sem.info-semillero') }}" class="sgd-btn-secondary block w-full text-center px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-700">Ver información</a>
             </div>
         </div>
         @endif

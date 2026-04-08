@@ -13,7 +13,8 @@
             <h2 class="text-xl font-semibold text-slate-900">Centros de Formación</h2>
             <p class="text-sm text-slate-500 mt-1">Tabla: centros_formaciones → departamentos, ciudades</p>
         </div>
-        <button type="button" @click="modalNuevoCentro = true"
+        <button type="button"
+                @click="modalNuevoCentro = true; $nextTick(() => filterTrainingCenterCities(document.getElementById('modal_department_id'), document.getElementById('modal_city_id')))"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -65,49 +66,87 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1 flex-wrap">
-                                {{-- Ver detalle (modal) --}}
-                                <button type="button" @click="openDetalle({{ json_encode($center->only(['id','nombre','codigo']) + ['department' => $center->department?->nombre, 'city' => $center->city?->nombre, 'activo' => $center->activo ?? true]) }})"
-                                        class="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" title="Ver detalle">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            @php
+                                $detalleCentro = $center->only(['id','nombre','codigo']) + [
+                                    'department' => $center->department?->nombre,
+                                    'city' => $center->city?->nombre,
+                                    'activo' => $center->activo ?? true,
+                                ];
+                                $editCentro = $center->only(['nombre','codigo','department_id','city_id']);
+                                $activo = $center->activo ?? true;
+                            @endphp
+                            <div class="relative flex items-center justify-end" x-data="{ open: false }">
+                                <button type="button"
+                                        @click.stop="open = !open"
+                                        @keydown.escape.window="open = false"
+                                        class="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                        aria-haspopup="true"
+                                        :aria-expanded="open ? 'true' : 'false'">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                 </button>
-                                {{-- Editar (modal) --}}
-                                <button type="button" @click="openEditar({{ $center->id }}, {{ json_encode($center->only(['nombre','codigo','department_id','city_id'])) }})"
-                                        class="p-2 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Editar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                    </svg>
-                                </button>
-                                {{-- Eliminar: solo confirmación si está desactivado; si está activo se muestra modal de error --}}
-                                <form id="form-delete-{{ $center->id }}" method="POST" action="{{ route('admin.training-centers.destroy', $center) }}" class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" @click="intentEliminar({{ ($center->activo ?? true) ? 'true' : 'false' }}, 'form-delete-{{ $center->id }}', {{ json_encode($center->nombre) }})"
-                                            class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Eliminar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+
+                                <div x-show="open"
+                                     x-cloak
+                                     @click.away="open = false"
+                                     class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
+                                    {{-- Ver detalle --}}
+                                    <button type="button"
+                                            @click="open = false; openDetalle({{ json_encode($detalleCentro) }})"
+                                            class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         </svg>
+                                        <span>Ver detalle</span>
                                     </button>
-                                </form>
-                                {{-- Activar / Desactivar --}}
-                                <form method="POST" action="{{ route('admin.training-centers.toggle', $center) }}" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="p-2 rounded-lg text-slate-400 hover:text-[#39A900] hover:bg-green-50 transition-colors" title="{{ ($center->activo ?? true) ? 'Desactivar' : 'Activar' }}">
-                                        @if($center->activo ?? true)
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                                            </svg>
-                                        @else
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                        @endif
+
+                                    {{-- Editar --}}
+                                    <button type="button"
+                                            @click="open = false; openEditar({{ $center->id }}, {{ json_encode($editCentro) }})"
+                                            class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                        </svg>
+                                        <span>Editar</span>
                                     </button>
-                                </form>
+
+                                    {{-- Activar / Desactivar --}}
+                                    <form method="POST" action="{{ route('admin.training-centers.toggle', $center) }}" class="inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit"
+                                                @click="open = false"
+                                                class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                            @if($activo)
+                                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                                </svg>
+                                                <span>Desactivar</span>
+                                            @else
+                                                <svg class="w-4 h-4 text-[#39A900]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span>Activar</span>
+                                            @endif
+                                        </button>
+                                    </form>
+
+                                    {{-- Eliminar (solo si está inactivo, se reutiliza el modal de confirmación) --}}
+                                    <form id="form-delete-{{ $center->id }}" method="POST" action="{{ route('admin.training-centers.destroy', $center) }}" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button"
+                                                @click="open = false; intentEliminar({{ $activo ? 'true' : 'false' }}, 'form-delete-{{ $center->id }}', {{ json_encode($center->nombre) }})"
+                                                class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                            <span>Eliminar</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -308,6 +347,33 @@
     </div>
 
     <script>
+        function filterTrainingCenterCities(deptSelect, citySelect) {
+            if (!deptSelect || !citySelect) return;
+            var deptId = deptSelect.value;
+            citySelect.querySelectorAll('option[data-department]').forEach(function (opt) {
+                var ok = deptId && String(opt.getAttribute('data-department')) === String(deptId);
+                opt.hidden = !ok;
+                opt.disabled = !ok;
+            });
+            var cur = citySelect.selectedOptions[0];
+            if (cur && cur.disabled) {
+                citySelect.value = '';
+            }
+        }
+        function bindTrainingCenterCascade(deptId, cityId) {
+            var d = document.getElementById(deptId);
+            var c = document.getElementById(cityId);
+            if (!d || !c) return;
+            d.addEventListener('change', function () {
+                filterTrainingCenterCities(d, c);
+            });
+            filterTrainingCenterCities(d, c);
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            bindTrainingCenterCascade('modal_department_id', 'modal_city_id');
+            bindTrainingCenterCascade('edit_department_id', 'edit_city_id');
+        });
+
         function trainingCentersIndex() {
             return {
                 modalDetalle: false,
@@ -330,12 +396,13 @@
                     this.editFormAction = '{{ url('admin/training-centers') }}/' + id;
                     this.editData = { nombre: data.nombre || '', codigo: data.codigo ?? '', department_id: String(data.department_id || ''), city_id: String(data.city_id || '') };
                     this.modalEditar = true;
-                    this.$nextTick(() => {
+                    this.$nextTick(function () {
                         document.getElementById('edit_nombre').value = this.editData.nombre;
                         document.getElementById('edit_codigo').value = this.editData.codigo;
                         document.getElementById('edit_department_id').value = this.editData.department_id;
+                        filterTrainingCenterCities(document.getElementById('edit_department_id'), document.getElementById('edit_city_id'));
                         document.getElementById('edit_city_id').value = this.editData.city_id;
-                    });
+                    }.bind(this));
                 },
                 intentEliminar(activo, formId, nombre) {
                     if (activo) {

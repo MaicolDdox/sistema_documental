@@ -4,9 +4,8 @@ namespace App\Livewire\Admin\Users;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Enums\TipoDocumentoEnum;
-use App\Models\TrainingCenter;
+use App\Support\TrainingCenterAccess;
 use Livewire\Component;
-use Spatie\Permission\Models\Role;
 
 class UserCreate extends Component
 {
@@ -36,6 +35,14 @@ class UserCreate extends Component
     public ?int $entity_position_id = null;
     public ?int $linkage_type_id = null;
     public ?int $training_program_id = null;
+
+    public function mount(): void
+    {
+        $auth = auth()->user();
+        if (TrainingCenterAccess::isCentroAdmin($auth) && $auth->training_center_id) {
+            $this->training_center_id = (int) $auth->training_center_id;
+        }
+    }
 
     /**
      * Crea el usuario usando la acción de Fortify reescrita.
@@ -71,10 +78,13 @@ class UserCreate extends Component
 
     public function render()
     {
+        $auth = auth()->user();
+
         return view('livewire.admin.users.user-create', [
             'tiposDocumento' => TipoDocumentoEnum::cases(),
-            'roles' => Role::all(),
-            'trainingCenters' => TrainingCenter::activos()->orderBy('nombre')->get(),
+            'roles' => TrainingCenterAccess::rolesForUserForm($auth, false),
+            'trainingCenters' => TrainingCenterAccess::centersForSelect($auth),
+            'centerSelectReadonly' => TrainingCenterAccess::isCentroAdmin($auth) && $auth->training_center_id,
         ]);
     }
 }

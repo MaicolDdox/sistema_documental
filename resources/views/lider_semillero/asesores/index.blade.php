@@ -209,6 +209,7 @@
         </table>
     </div>
 </div>
+<script>window.asesoresData = @json($asesoresData ?? []);</script>
 
 {{-- Modal Detalle --}}
 <template x-teleport="body">

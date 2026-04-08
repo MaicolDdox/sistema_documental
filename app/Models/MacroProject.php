@@ -2,34 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Enums\EstadoEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MacroProjectLinkage extends Model
+class MacroProject extends Model
 {
     use HasFactory;
 
-    protected $table = 'macro_project_linkages';
-
     protected $fillable = [
-        'project_id',
         'research_group_id',
         'codigo',
         'nombre',
+        'estado',
+    ];
+
+    protected $casts = [
+        'estado' => EstadoEnum::class,
     ];
 
     // ─────────────────────────────────────────────
     // RELACIONES
     // ─────────────────────────────────────────────
 
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class, 'project_id');
-    }
-
     public function researchGroup(): BelongsTo
     {
-        return $this->belongsTo(ResearchGroup::class, 'research_group_id');
+        return $this->belongsTo(ResearchGroup::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
     }
 }

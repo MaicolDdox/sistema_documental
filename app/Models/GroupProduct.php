@@ -53,6 +53,11 @@ class GroupProduct extends Model
         return $this->belongsTo(User::class, 'author_id');
     }
 
+    public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(GroupProductReview::class, 'group_product_id');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class, 'product_id');

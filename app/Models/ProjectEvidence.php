@@ -14,6 +14,8 @@ class ProjectEvidence extends Model
 
     protected $fillable = [
         'project_id',
+        'nombre',
+        'uploaded_by',
         'archivo',
         'url_archivo',
         'descripccion',
@@ -26,5 +28,10 @@ class ProjectEvidence extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class, 'project_id');
+    }
+
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 }

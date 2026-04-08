@@ -19,6 +19,7 @@ class ExternalAdvisor extends Model
         'email',
         'telefono',
         'institucion',
+        'cvlac_link',
     ];
 
     // ─────────────────────────────────────────────

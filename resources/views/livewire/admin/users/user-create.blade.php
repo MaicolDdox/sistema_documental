@@ -25,13 +25,27 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <flux:input wire:model="email" label="Email" type="email" placeholder="opcional" />
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Centro de formación</label>
-                    <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm">
-                        <option value="">Seleccionar...</option>
-                        @foreach($trainingCenters as $center)
-                            <option value="{{ $center->id }}">{{ $center->nombre }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Centro de formación @if($centerSelectReadonly)<span class="text-slate-400 font-normal">(tu centro)</span>@endif</label>
+                    @if($centerSelectReadonly)
+                        <p class="text-sm text-slate-700 py-2 px-3 rounded-lg border border-slate-200 bg-slate-50">{{ $trainingCenters->first()?->nombre ?? '—' }}</p>
+                        <input type="hidden" wire:model="training_center_id" />
+                    @else
+                        <select wire:model="training_center_id" class="w-full rounded-lg border-slate-300 text-sm">
+                            <option value="">
+                                @if($role === 'administrador_sistema')
+                                    Sin centro (luego en Centro ↔ administrador)
+                                @else
+                                    Seleccionar centro…
+                                @endif
+                            </option>
+                            @foreach($trainingCenters as $center)
+                                <option value="{{ $center->id }}">{{ $center->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @if($role === 'administrador_sistema')
+                            <p class="text-xs text-amber-700 mt-1">Opcional: si lo dejas sin centro, podrás asignarlo desde <strong>Centro ↔ administrador</strong>.</p>
+                        @endif
+                    @endif
                 </div>
             </div>
 

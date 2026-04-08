@@ -63,13 +63,19 @@
                 </div>
 
                 <!-- Rol -->
+                @php
+                    $namesRol = $usuario->roles->pluck('name')->all();
+                    $rolPrincipalVista = ($usuario->primary_role_name && in_array($usuario->primary_role_name, $namesRol, true))
+                        ? $usuario->primary_role_name
+                        : (\App\Support\RoleModuleLinks::pickPrimaryRoleNameFromNames($namesRol) ?? $usuario->roles->first()?->name);
+                @endphp
                 <div>
-                    <label for="rol" class="block text-sm font-medium text-slate-700 mb-1.5">Rol Principal <span class="text-red-500">*</span></label>
+                    <label for="rol" class="block text-sm font-medium text-slate-700 mb-1.5">Rol principal <span class="text-red-500">*</span></label>
                     <select name="rol" id="rol" required
                             class="w-full border @error('rol') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                         <option value="">Selecciona un rol...</option>
                         @foreach($roles as $role)
-                            <option value="{{ $role->name }}" {{ (old('rol') ?? ($usuario->roles->first()?->name)) == $role->name ? 'selected' : '' }}>
+                            <option value="{{ $role->name }}" {{ (old('rol') ?? $rolPrincipalVista) == $role->name ? 'selected' : '' }}>
                                 {{ ucfirst(str_replace('_', ' ', $role->name)) }}
                             </option>
                         @endforeach
@@ -77,8 +83,27 @@
                     @error('rol')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-xs text-slate-500 mt-1">Si el usuario tiene múltiples roles, este definirá su rol base. Los demás se mantienen.</p>
+                    <p class="text-xs text-slate-500 mt-1">No se quitan otros roles. El rol que elijas aquí queda como <span class="font-medium">principal</span> (inicio de sesión y menú). Al agregar roles desde otras pantallas, el principal ya no cambia solo por prioridad automática.</p>
                 </div>
+
+                @if($trainingCenters->isNotEmpty())
+                <div class="md:col-span-2">
+                    <label for="training_center_id" class="block text-sm font-medium text-slate-700 mb-1.5">Centro de formación</label>
+                    <select name="training_center_id" id="training_center_id"
+                            class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                        <option value="">Sin centro (para vincular en Centro ↔ administrador)</option>
+                        @foreach($trainingCenters as $tc)
+                            <option value="{{ $tc->id }}" {{ (string) old('training_center_id', $usuario->training_center_id) === (string) $tc->id ? 'selected' : '' }}>
+                                {{ $tc->nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('training_center_id')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-slate-500 mt-1">Solo super administrador. Si el rol es <strong>administrador del sistema</strong>, cada centro admite <strong>un solo</strong> usuario con ese vínculo; lo habitual es asignarlo en <strong>Centro ↔ administrador</strong>. Deja sin centro para que vuelva a aparecer allí.</p>
+                </div>
+                @endif
             </div>
 
             <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">

@@ -26,12 +26,14 @@ class DashboardController extends Controller
         $metricas = $this->calcularMetricas($user, $miSemillero);
         $productosPendientes = $this->productosPendientesRevision($miSemillero);
         $integrantesSinProyecto = $this->integrantesSinProyectoActivo($miSemillero);
+        $proyectosDelSemillero = $this->proyectosDelSemillero($miSemillero);
 
         return view('lider_semillero.dashboard', [
             'miSemillero'             => $miSemillero,
             'metricas'                => $metricas,
             'productosPendientes'     => $productosPendientes,
             'integrantesSinProyecto'  => $integrantesSinProyecto,
+            'proyectosDelSemillero'   => $proyectosDelSemillero,
         ]);
     }
 
@@ -65,8 +67,13 @@ class DashboardController extends Controller
                 ->whereIn('estado_revision', [EstadoRevisionEnum::Pendiente, EstadoRevisionEnum::EnRevision])
                 ->count();
 
+            // Activo para tablero: estado activo y no finalizado por fecha.
             $proyectosActivosCount = Project::whereIn('id', $projectIds)
                 ->active()
+                ->where(function ($q) {
+                    $q->whereNull('fecha_fin')
+                        ->orWhereDate('fecha_fin', '>=', now()->toDateString());
+                })
                 ->count();
 
             $userIdsConProyectoActivo = ProjectAuthor::whereIn('project_id', $projectIds)
@@ -87,7 +94,7 @@ class DashboardController extends Controller
             'productos_pendientes'     => $productosPendientesCount,
             'productos_pendientes_texto' => $productosPendientesCount > 0 ? "+{$productosPendientesCount} requieren revisión" : null,
             'proyectos_activos'         => $proyectosActivosCount,
-            'proyectos_activos_texto'   => $proyectosActivosCount > 0 ? "+{$proyectosActivosCount} activo(s)" : null,
+            'proyectos_activos_texto'   => $proyectosActivosCount > 0 ? "{$proyectosActivosCount} en ejecución" : 'Sin proyectos en ejecución',
             'sin_proyecto_activo'        => $sinProyectoActivoCount,
             'sin_proyecto_texto'        => $sinProyectoActivoCount > 0 ? "+{$sinProyectoActivoCount} aprendices sin vincular" : null,
         ];
@@ -124,8 +131,33 @@ class DashboardController extends Controller
         return $miSemillero->members()
             ->with('person')
             ->get()
-            ->filter(fn ($u) => !$userIdsConProyectoActivo->contains($u->id))
+            ->map(function ($u) use ($userIdsConProyectoActivo) {
+                $u->tiene_proyecto_activo = $userIdsConProyectoActivo->contains($u->id);
+                return $u;
+            })
+            ->filter(fn ($u) => !($u->tiene_proyecto_activo ?? false))
             ->take(10)
             ->values();
+    }
+
+    private function proyectosDelSemillero(?Seedling $miSemillero)
+    {
+        if (! $miSemillero) {
+            return collect();
+        }
+
+        $projectIds = DB::table('project_seedlings')
+            ->where('seedling_id', $miSemillero->id)
+            ->pluck('project_id');
+
+        return Project::query()
+            ->whereIn('id', $projectIds)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'estado', 'fecha_inicio', 'fecha_fin'])
+            ->map(function ($p) {
+                $finalizadoPorFecha = $p->fecha_fin && $p->fecha_fin->isBefore(now()->startOfDay());
+                $p->estado_tablero = $finalizadoPorFecha ? 'finalizado' : ($p->estado?->value ?? (string) $p->estado);
+                return $p;
+            });
     }
 }

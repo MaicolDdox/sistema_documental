@@ -21,24 +21,25 @@
 </div>
 @else
 <div x-data="{
+    modalDetalle: false,
     modalAprobar: false,
     modalRechazar: false,
     modalRegistrar: false,
+    modalAsignarInv: false,
     selectedId: null,
     selectedTitulo: '',
+    detalleId: null,
     baseUrl: '{{ url('lider-semillero/productos') }}',
+    openDetalle(id) { this.detalleId = id; this.modalDetalle = true; },
     openAprobar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAprobar = true; },
-    openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; }
-}" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif">
+    openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; },
+    openAsignarInv(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAsignarInv = true; }
+}" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif @if(session('open_asignar_product_id')) $nextTick(() => { selectedId = {{ session('open_asignar_product_id') }}; modalAsignarInv = true; }); @endif">
 <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
         <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
     </div>
-    <button type="button" @click="modalRegistrar = true" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        + Registrar Producto
-    </button>
 </div>
 @if(session('success'))
 <div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
@@ -49,10 +50,13 @@
 @if($errors->has('observaciones'))
 <div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('observaciones') }}</div>
 @endif
+@if($errors->has('assigned_investigator_user_id'))
+<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('assigned_investigator_user_id') }}</div>
+@endif
 
 <div class="mb-4">
-    <h2 class="text-base font-semibold text-slate-900">Productos del Semillero</h2>
-    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero y NO los tuyos propios</p>
+    <h2 class="text-base font-semibold text-slate-900">Productos del semillero</h2>
+    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero (no puedes aprobar los tuyos propios). Los aprobados los envías a un <strong>investigador asociado</strong> de tu grupo para que los formalice y suban al grupo.</p>
 </div>
 
 <div class="sgd-table-card bg-white overflow-hidden">
@@ -61,45 +65,41 @@
             <thead>
                 <tr>
                     <th class="text-left">Producto</th>
-                    <th class="text-left">Tipo</th>
-                    <th class="text-left">Autor</th>
+                    <th class="text-left">Autor / Remitente</th>
                     <th class="text-left">Estado revisión</th>
                     <th class="text-left">Repositorio</th>
                     <th class="text-left">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($productos as $gp)
+                @forelse($productos as $prod)
                 @php
-                    $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
-                    $tipoNombre = $gp->mincienciasTypology?->nombre ?? '—';
-                    $autorNombre = $gp->author?->person?->nombre_completo ?? $gp->author?->email ?? '—';
-                    $iniciales = $gp->author && $gp->author->person
-                        ? strtoupper(mb_substr($gp->author->person->primer_nombre ?? '', 0, 1) . mb_substr($gp->author->person->primer_apellido ?? '', 0, 1))
-                        : ($gp->author ? strtoupper(mb_substr($gp->author->email ?? '?', 0, 2)) : '—');
-                    $proyectoNombre = $gp->product?->project?->nombre ?? '—';
-                    $repositorio = $gp->url_repositorio ? '✓ URL' : ($gp->evidencia ? 'Archivo' : '—');
+                    $estadoRev = $prod->estado_revision instanceof \App\Enums\EstadoRevisionEnum
+                        ? $prod->estado_revision->value
+                        : (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
+                    $autorUser = $prod->productAuthors->first()?->projectAuthor?->user;
+                    $autorPerson = $autorUser?->person;
+                    $autorNombre = $autorPerson
+                        ? trim(($autorPerson->primer_nombre ?? '') . ' ' . ($autorPerson->primer_apellido ?? ''))
+                        : ($autorUser?->email ?? '—');
+                    if (!$autorNombre) $autorNombre = $autorUser?->email ?? '—';
+                    $iniciales = $autorPerson
+                        ? strtoupper(mb_substr($autorPerson->primer_nombre ?? '', 0, 1) . mb_substr($autorPerson->primer_apellido ?? '', 0, 1))
+                        : strtoupper(mb_substr($autorUser?->email ?? '?', 0, 2));
+                    // Compatibilidad con $prod->es_mio que usa el primer autor
+                    $prod->autor = $autorUser;
+                    $proyectoNombre = $prod->project?->nombre ?? '—';
+                    $repositorio = $prod->url_repositorio ? '✓ URL' : ($prod->archivo ? 'Archivo' : '—');
                 @endphp
-                <tr class="{{ $gp->es_mio ? 'bg-slate-50/80' : '' }}">
+                <tr class="{{ $prod->es_mio ? 'bg-slate-50/80' : '' }}">
                     <td class="px-5 py-3">
-                        <div class="font-medium text-slate-800">{{ $gp->titulo ?? '—' }}</div>
+                        <div class="font-medium text-slate-800">{{ $prod->nombre ?? '—' }}</div>
                         <div class="text-xs text-slate-500 mt-0.5">Proyecto: {{ $proyectoNombre }}</div>
-                    </td>
-                    <td class="px-5 py-3">
-                        @if(stripos($tipoNombre, 'artículo') !== false || stripos($tipoNombre, 'articulo') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $tipoNombre }}</span>
-                        @elseif(stripos($tipoNombre, 'prototipo') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">{{ $tipoNombre }}</span>
-                        @elseif(stripos($tipoNombre, 'software') !== false)
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{{ $tipoNombre }}</span>
-                        @else
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $tipoNombre }}</span>
-                        @endif
                     </td>
                     <td class="px-5 py-3">
                         <div class="flex items-center gap-2">
                             <span class="w-8 h-8 rounded-full bg-[#39A900]/20 text-[#39A900] flex items-center justify-center text-xs font-semibold shrink-0">{{ $iniciales ?: '?' }}</span>
-                            <span class="text-slate-700">{{ $autorNombre }}{{ $gp->es_mio ? ' (tú)' : '' }}</span>
+                            <span class="text-slate-700">{{ $autorNombre }}{{ $prod->es_mio ? ' (tú)' : '' }}</span>
                         </div>
                     </td>
                     <td class="px-5 py-3">
@@ -115,22 +115,82 @@
                     </td>
                     <td class="px-5 py-3 text-slate-600">{{ $repositorio }}</td>
                     <td class="px-5 py-3">
-                        @if($gp->es_mio)
-                        <span class="text-xs text-slate-500 italic">No puedes aprobar los tuyos</span>
-                        @else
-                        <div class="flex items-center gap-2">
+                        @php
+                            // Usamos el estado del registro de la fila actual ($prod)
+                            $estadoRev = $prod->estado_revision->value ?? (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
+                            $accionesBloqueadas = $prod->es_mio || !in_array($estadoRev, ['pendiente', 'en_revision'], true);
+                        @endphp
+                        <div class="flex items-center gap-1.5 whitespace-nowrap">
+                            {{-- Ver detalle (modal) --}}
                             <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
-                                @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition">✓ Aprobar</button>
-                            <button type="button"
-                                data-id="{{ $gp->id }}"
-                                data-titulo="{{ e($gp->titulo ?? '') }}"
-                                @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-800 hover:bg-red-200 transition">✗ Rechazar</button>
+                               @click="openDetalle({{ $prod->id }})"
+                               class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition"
+                               title="Ver detalle">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
+                                    <circle cx="12" cy="12" r="3.25" />
+                                </svg>
+                            </button>
+
+                            @if($accionesBloqueadas)
+                                <span class="ml-1 text-[11px] text-slate-400 italic">Sin acciones</span>
+                            @else
+                                {{-- Aprobar --}}
+                                <button type="button"
+                                    data-id="{{ $prod->id }}"
+                                    data-titulo="{{ e($prod->nombre ?? '') }}"
+                                    @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition"
+                                    title="Aprobar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </button>
+                                {{-- Rechazar --}}
+                                <button type="button"
+                                    data-id="{{ $prod->id }}"
+                                    data-titulo="{{ e($prod->nombre ?? '') }}"
+                                    @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white transition"
+                                    title="Rechazar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            @endif
+
+                            {{-- Enviar a investigador asociado → formaliza en grupo (solo aprobados) --}}
+                            @if($estadoRev === 'aprobado')
+                                @if(!$prod->ya_en_grupo)
+                                    @if($semillero->research_group_id)
+                                        @if($prod->assigned_investigator_user_id)
+                                            <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-100 max-w-[10rem] truncate inline-block align-middle" title="Esperando formalización por el investigador">
+                                                → {{ $prod->assignedInvestigator?->person?->nombre_completo ?? $prod->assignedInvestigator?->email ?? 'Investigador' }}
+                                            </span>
+                                        @else
+                                            <button type="button"
+                                                data-id="{{ $prod->id }}"
+                                                data-titulo="{{ e($prod->nombre ?? '') }}"
+                                                @click="openAsignarInv($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
+                                                @disabled($investigadoresGrupo->isEmpty())
+                                                class="inline-flex items-center gap-1 ml-1 text-[11px] px-2 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-500 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
+                                                title="{{ $investigadoresGrupo->isEmpty() ? 'No hay investigadores asociados en tu grupo' : 'Elegir investigador que formalizará en el grupo' }}">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                                </svg>
+                                                Enviar a investigador
+                                            </button>
+                                        @endif
+                                    @else
+                                        <span class="ml-1 text-[11px] text-slate-400 italic">Sin grupo vinculado</span>
+                                    @endif
+                                @else
+                                    <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
+                                        En grupo
+                                    </span>
+                                @endif
+                            @endif
                         </div>
-                        @endif
                     </td>
                 </tr>
                 @empty
@@ -184,6 +244,122 @@
                     <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">✓ Confirmar</button>
                 </div>
             </form>
+        </div>
+    </div>
+</template>
+
+{{-- Modal Detalle producto --}}
+<template x-teleport="body">
+    <div x-show="modalDetalle" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50" @click="modalDetalle = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            @click.stop
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Detalle del producto</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Información del producto registrado en tu semillero</p>
+                </div>
+                <button type="button" @click="modalDetalle = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5 space-y-5">
+                @foreach($productos as $gp)
+                @php
+                    $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
+                    $proyectoNombre = $gp->project?->nombre ?? '—';
+                    $autores = $gp->productAuthors
+                        ->map(fn($pa) => $pa->projectAuthor?->user?->person?->nombre_completo ?? $pa->projectAuthor?->user?->email)
+                        ->filter()
+                        ->values();
+                    $autorNombre = $autores->first() ?? '—';
+                    $evidencias = $gp->productEvidences ?? collect();
+                @endphp
+                <div x-show="detalleId === {{ $gp->id }}" x-cloak class="space-y-4">
+                    <div>
+                        <h4 class="text-xl font-bold text-slate-900 mb-1">{{ $gp->nombre ?? 'Sin título' }}</h4>
+                        <p class="text-xs text-slate-500">Proyecto: {{ $proyectoNombre }}</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Nombre del producto</p>
+                            <p class="text-sm font-medium text-slate-800">{{ $gp->nombre ?? '—' }}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Autor principal</p>
+                            <p class="text-sm font-medium text-slate-800">{{ $autorNombre }}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Estado de revisión</p>
+                            <p class="text-sm font-medium text-slate-800 capitalize">
+                                {{ str_replace('_', ' ', $estadoRev) }}
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-3">
+                            <p class="text-xs text-slate-400 mb-0.5">Repositorio / archivo principal</p>
+                            @if($gp->url_repositorio)
+                                <a href="{{ $gp->url_repositorio }}" target="_blank" class="text-sm text-sky-600 hover:underline break-all">
+                                    {{ $gp->url_repositorio }}
+                                </a>
+                            @elseif($gp->archivo)
+                                <p class="text-sm text-slate-700">{{ $gp->archivo_nombre ?: basename($gp->archivo) }}</p>
+                            @else
+                                <p class="text-sm text-slate-400">No se registró archivo ni URL.</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-3">
+                        <p class="text-xs text-slate-400 mb-1">Autores enviados por el asesor</p>
+                        @if($autores->isNotEmpty())
+                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
+                                @foreach($autores as $autor)
+                                    <li>{{ $autor }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">Sin autores registrados.</p>
+                        @endif
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-3">
+                        <p class="text-xs text-slate-400 mb-1">Evidencias subidas</p>
+                        @if($evidencias->isNotEmpty())
+                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
+                                @foreach($evidencias as $ev)
+                                    <li>
+                                        {{ $ev->nombre ?: 'Evidencia' }}
+                                        @if($ev->url_archivo)
+                                            — <a href="{{ $ev->url_archivo }}" target="_blank" class="text-sky-600 hover:underline">ver enlace</a>
+                                        @elseif($ev->archivo)
+                                            — archivo cargado
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="text-sm text-slate-500">Sin evidencias adicionales.</p>
+                        @endif
+                    </div>
+                    @if(!empty($gp->observacion_revision))
+                    <div class="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                        <p class="text-xs text-amber-700 mb-0.5">Observación de revisión</p>
+                        <p class="text-sm text-amber-900">{{ $gp->observacion_revision }}</p>
+                    </div>
+                    @endif
+                </div>
+                @endforeach
+            </div>
         </div>
     </div>
 </template>
@@ -269,18 +445,8 @@
                     @error('titulo')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Tipo de producto *</label>
-                    <select name="minciencias_typology_id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
-                        <option value="">Seleccione...</option>
-                        @foreach($tipologias ?? [] as $t)
-                        <option value="{{ $t->id }}" {{ old('minciencias_typology_id') == $t->id ? 'selected' : '' }}>{{ $t->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('minciencias_typology_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto origen *</label>
-                    <select name="project_id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+                    <select name="project_id" id="registro-project-id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
                         <option value="">Seleccione...</option>
                         @foreach($proyectosParaRegistro ?? [] as $p)
                         <option value="{{ $p->id }}" {{ old('project_id') == $p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>
@@ -288,6 +454,7 @@
                     </select>
                     @error('project_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">¿Tiene repositorio en línea?</label>
                     <div class="flex gap-6">
@@ -321,7 +488,7 @@
                     @error('evidencia')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-800">
-                    El producto se crea con estado_revision = pendiente. Debes ser autor en proyecto_autores del proyecto seleccionado.
+                    El producto se crea con estado <strong>pendiente de revisión</strong>. Una vez que lo apruebes, podrás enviarlo al investigador asociado desde esta misma lista.
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="modalRegistrar = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -331,6 +498,68 @@
         </div>
     </div>
 </template>
+
+{{-- Modal: enviar producto a investigador asociado del grupo --}}
+<template x-teleport="body">
+    <div x-show="modalAsignarInv" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-slate-900/50" @click="modalAsignarInv = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
+            @click.stop
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Enviar a investigador asociado</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Debe pertenecer a tu grupo de investigación y al mismo centro</p>
+                </div>
+                <button type="button" @click="modalAsignarInv = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 mb-4 text-sm text-sky-900" x-show="selectedTitulo">
+                <span class="font-medium">Producto:</span> <span x-text="selectedTitulo"></span>
+            </div>
+            @if($investigadoresGrupo->isEmpty())
+                <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">No hay investigadores asociados vinculados a tu grupo. Verifica el grupo del semillero y que existan usuarios con rol <strong>investigador asociado</strong>.</p>
+                <div class="flex justify-end pt-4">
+                    <button type="button" @click="modalAsignarInv = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
+                </div>
+            @else
+                <form action="{{ route('lider-sem.productos.asignar-investigador-form') }}" method="post" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="product_id" :value="selectedId">
+                    <div>
+                        <label for="assigned_investigator_user_id" class="block text-sm font-medium text-slate-700 mb-1">Investigador asociado *</label>
+                        <select name="assigned_investigator_user_id" id="assigned_investigator_user_id" required
+                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
+                            <option value="">Seleccionar…</option>
+                            @foreach($investigadoresGrupo as $inv)
+                                @php $label = $inv->person?->nombre_completo ?? $inv->email; @endphp
+                                <option value="{{ $inv->id }}" @selected((string) old('assigned_investigator_user_id') === (string) $inv->id)>{{ $label }} — {{ $inv->email }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <p class="text-xs text-slate-500">El investigador verá el producto en <strong>Productos → Bandeja de Semilleros</strong> y completará la formalización para el Director del grupo.</p>
+                    <div class="flex gap-3 pt-2">
+                        <button type="button" @click="modalAsignarInv = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
+                        <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">Enviar</button>
+                    </div>
+                </form>
+            @endif
+        </div>
+    </div>
+</template>
 </div>
 @endif
 @endsection
+
+@push('scripts')
+@endpush

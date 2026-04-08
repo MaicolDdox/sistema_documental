@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Support\TrainingCenterAccess;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\TrainingCenter;
@@ -16,7 +17,15 @@ class TrainingCenterController extends Controller
 {
     public function index(Request $request): View
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $query = TrainingCenter::with(['department', 'city'])->orderBy('nombre');
+
+        if (TrainingCenterAccess::scopedToTrainingCenter($request->user())) {
+            $query->where('id', (int) $request->user()->training_center_id);
+        } elseif (TrainingCenterAccess::isCentroAdmin($request->user())) {
+            $query->whereRaw('0 = 1');
+        }
 
         if ($request->filled('search')) {
             $term = $request->search;
@@ -39,12 +48,16 @@ class TrainingCenterController extends Controller
 
     public function show(TrainingCenter $training_center)
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $training_center->load(['department', 'city']);
         return response()->json($training_center);
     }
 
     public function toggle(TrainingCenter $training_center): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $training_center->update(['activo' => !$training_center->activo]);
         $estado = $training_center->activo ? 'activado' : 'desactivado';
         return redirect()->route('admin.training-centers.index')
@@ -53,6 +66,8 @@ class TrainingCenterController extends Controller
 
     public function create(): View
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
         return view('admin.training_centers.create', compact('departments', 'cities'));
@@ -60,6 +75,8 @@ class TrainingCenterController extends Controller
 
     public function store(StoreTrainingCenterRequest $request): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         TrainingCenter::create($request->validated());
         return redirect()->route('admin.training-centers.index')
             ->with('success', 'Centro de formación creado correctamente.');
@@ -67,6 +84,8 @@ class TrainingCenterController extends Controller
 
     public function edit(TrainingCenter $training_center): View
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
         return view('admin.training_centers.edit', compact('training_center', 'departments', 'cities'));
@@ -74,6 +93,8 @@ class TrainingCenterController extends Controller
 
     public function update(UpdateTrainingCenterRequest $request, TrainingCenter $training_center): RedirectResponse
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $training_center->update($request->validated());
         return redirect()->route('admin.training-centers.index')
             ->with('success', 'Centro de formación actualizado correctamente.');
@@ -81,6 +102,8 @@ class TrainingCenterController extends Controller
 
     public function destroy(Request $request, TrainingCenter $training_center)
     {
+        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+
         $razones = [];
 
         if ($training_center->activo ?? true) {
@@ -115,4 +138,5 @@ class TrainingCenterController extends Controller
                 ->with('delete_error', $mensaje);
         }
     }
+
 }
