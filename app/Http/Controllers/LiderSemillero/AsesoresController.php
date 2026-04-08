@@ -8,7 +8,6 @@ use App\Enums\TipoDocumentoEnum;
 use App\Models\ExternalAdvisor;
 use App\Models\SeedlingAdvisor;
 use App\Models\User;
-use App\Support\RoleModuleLinks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,42 +64,16 @@ class AsesoresController extends Controller
             return redirect()->route('lider-sem.asesores')->with('error', 'No tienes un semillero asignado.');
         }
 
-        // Vincular asesor existente (ya registrado) a este semillero
-        if ($request->filled('external_advisor_id')) {
-            $validated = $request->validate([
-                'external_advisor_id' => 'required|exists:external_advisors,id',
-            ]);
-
-            $advisor = ExternalAdvisor::query()->findOrFail((int) $validated['external_advisor_id']);
-
-            $vinculo = SeedlingAdvisor::firstOrCreate(
-                [
-                    'seedling_id'         => $semillero->id,
-                    'external_advisor_id' => $advisor->id,
-                ],
-                ['activo' => true]
-            );
-
-            if (!$vinculo->wasRecentlyCreated) {
-                return redirect()->route('lider-sem.asesores')
-                    ->with('warning', 'Este asesor ya estaba vinculado a tu semillero.');
-            }
-
-            return redirect()->route('lider-sem.asesores')
-                ->with('success', 'Asesor vinculado al semillero.');
-        }
-
         $crearCuenta = $request->boolean('crear_cuenta');
         $rules = [
             'nombre_completo' => 'required|string|max:255',
             'email'           => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
             'telefono'        => 'nullable|string|max:50',
             'institucion'     => 'nullable|string|max:255',
-            'cvlac_link'      => 'required|url|max:500',
             'crear_cuenta'    => 'nullable|boolean',
         ];
         if ($crearCuenta) {
-            $rules['numero_documento'] = 'required|string|max:20';
+            $rules['numero_documento'] = 'required|numeric';
         }
         $validated = $request->validate($rules);
 
@@ -115,8 +88,7 @@ class AsesoresController extends Controller
                 // Ya existe usuario con ese email: reutilizar y solo vincular al semillero (puede estar en varios)
                 $eraUsuarioExistente = true;
                 $userId = $existingUser->id;
-                if (! $existingUser->hasRole('asesor_semillero')) {
-                    RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($existingUser);
+                if (!$existingUser->hasRole('asesor_semillero')) {
                     $existingUser->assignRole('asesor_semillero');
                 }
                 $advisor = ExternalAdvisor::firstOrCreate(
@@ -126,12 +98,8 @@ class AsesoresController extends Controller
                         'email'           => $validated['email'],
                         'telefono'        => $validated['telefono'] ?? null,
                         'institucion'     => $validated['institucion'] ?? null,
-                        'cvlac_link'      => $validated['cvlac_link'] ?? null,
                     ]
                 );
-                if (empty($advisor->cvlac_link) && !empty($validated['cvlac_link'])) {
-                    $advisor->forceFill(['cvlac_link' => $validated['cvlac_link']])->save();
-                }
             } else {
                 // Usuario nuevo: validar documento único y crear todo
                 $request->validate(['numero_documento' => 'unique:users,numero_documento']);
@@ -140,7 +108,7 @@ class AsesoresController extends Controller
                 $newUser = User::create([
                     'training_center_id' => $leader->training_center_id,
                     'email'              => $validated['email'],
-                    'numero_documento'   => $validated['numero_documento'],
+                    'numero_documento'   => (int) $validated['numero_documento'],
                     'tipo_documento'     => TipoDocumentoEnum::CedulaCiudadana,
                     'password'           => Hash::make($passwordTemporal),
                     'estado'             => EstadoEnum::Activo,
@@ -151,13 +119,11 @@ class AsesoresController extends Controller
                     'primer_apellido'     => $nombrePartes[1] ?? '',
                     'segundo_apellido'    => '',
                     'email_institucional' => $validated['email'],
-                    'cvlac_link'          => $validated['cvlac_link'] ?? null,
                     'genero'               => 'prefiero no decirlo',
                     'celular'             => 0,
                     'eps'                 => '',
                 ]);
                 $newUser->assignRole('asesor_semillero');
-                $newUser->forceFill(['primary_role_name' => 'asesor_semillero'])->saveQuietly();
                 $userId = $newUser->id;
                 $advisor = ExternalAdvisor::create([
                     'user_id'         => $userId,
@@ -165,7 +131,6 @@ class AsesoresController extends Controller
                     'email'           => $validated['email'],
                     'telefono'        => $validated['telefono'] ?? null,
                     'institucion'     => $validated['institucion'] ?? null,
-                    'cvlac_link'      => $validated['cvlac_link'] ?? null,
                 ]);
             }
         } else {
@@ -180,7 +145,6 @@ class AsesoresController extends Controller
                     'email'           => $validated['email'] ?? null,
                     'telefono'        => $validated['telefono'] ?? null,
                     'institucion'     => $validated['institucion'] ?? null,
-                    'cvlac_link'      => $validated['cvlac_link'] ?? null,
                 ]);
             }
         }
@@ -253,7 +217,6 @@ class AsesoresController extends Controller
             'email'           => 'nullable|email|max:255',
             'telefono'        => 'nullable|string|max:50',
             'institucion'     => 'nullable|string|max:255',
-            'cvlac_link'      => 'required|url|max:500',
         ]);
 
         $advisor->update($validated);
