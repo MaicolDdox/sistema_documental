@@ -30,7 +30,7 @@
                 </flux:sidebar.item>
             </flux:sidebar.nav>
 
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+            <x-desktop-user-menu class="hidden lg:block" :name="\Illuminate\Support\Facades\Auth::user()?->name ?? ''" />
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -50,7 +50,7 @@
                         <div class="p-0 text-sm font-normal">
                             <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
                                 <flux:avatar
-                                    :name="auth()->user()->name"
+                                    :name="\Illuminate\Support\Facades\Auth::user()?->name ?? ''"
                                     :initials="auth()->user()->initials()"
                                 />
 
@@ -94,6 +94,3 @@
     </body>
 </html>
 
-<script>
-    console.warn('AQUI TOYYYYY').
-</script>

@@ -113,6 +113,9 @@ class ArchivosSemilleroController extends Controller
 
         $uploaded = $request->file('archivo');
         $path = $uploaded->store('archivos_semillero/' . $semillero->id, 'public');
+        if ($path === false) {
+            return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+        }
         $nombreOriginal = $uploaded->getClientOriginalName();
 
         SeedlingFile::create([

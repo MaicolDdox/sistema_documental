@@ -14,7 +14,7 @@ class ResearchLine extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

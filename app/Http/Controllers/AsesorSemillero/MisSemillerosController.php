@@ -4,7 +4,6 @@ namespace App\Http\Controllers\AsesorSemillero;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExternalAdvisor;
-use App\Models\Project;
 use App\Models\Seedling;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;

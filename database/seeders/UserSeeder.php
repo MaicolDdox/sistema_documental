@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use App\Models\Person;
 use App\Models\TrainingCenter;
 use App\Models\ResearchGroup;
 use App\Models\ResearchGroupUser;
@@ -135,6 +136,23 @@ class UserSeeder extends Seeder
             ],
         ];
 
+        // Datos de persona por email: [primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, genero, entity_position_id]
+        $peopleByEmail = [
+            'ydmoreno@sena.edu.co'           => ['Yolanda',  'Del Carmen', 'Moreno',        'Ospina',   'femenino',  5],
+            'jovalenciap@sena.edu.co'        => ['Jorge',    'Andrés',     'Valencia',      'Parra',    'masculino', 5],
+            'directorsem@sena.edu.co'        => ['Carlos',   'Alberto',    'Rodríguez',     'Gómez',    'masculino', 6],
+            'dirsemillero@sena.edu.co'       => ['Ana',      'Lucía',      'Soto',          'Jiménez',  'femenino',  6],
+            'lidersem@sena.edu.co'           => ['Luis',     'Fernando',   'Bermúdez',      'Torres',   'masculino', 6],
+            'liderIndustrialsem@sena.edu.co' => ['María',    'Isabel',     'Patiño',        'Ruiz',     'femenino',  6],
+            'asesorsem@sena.edu.co'          => ['Pedro',    'José',       'Herrera',       'Castillo', 'masculino', 10],
+            'asesorIndu@sena.edu.co'         => ['Sandra',   'Milena',     'Vargas',        'Peña',     'femenino',  10],
+            'dirgrupo1@sena.edu.co'          => ['Roberto',  'Carlos',     'Montoya',       'Ríos',     'masculino', 5],
+            'dirgrupo2@sena.edu.co'          => ['Patricia', 'Elena',      'Gutiérrez',     'Lozano',   'femenino',  5],
+            'investigador@sena.edu.co'       => ['Felipe',   'Augusto',    'Mora',          'Salinas',  'masculino', 4],
+            'investigadorIndu@sena.edu.co'   => ['Laura',    'Cristina',   'Díaz',          'Medina',   'femenino',  4],
+            'superadmin@sena.edu.co'         => ['Super',    null,         'Administrador', null,       'masculino', 2],
+        ];
+
         $rolesByEmail = [
             'ydmoreno@sena.edu.co' => 'administrador_sistema',
             'jovalenciap@sena.edu.co' => 'administrador_sistema',
@@ -164,6 +182,22 @@ class UserSeeder extends Seeder
                 } else {
                     $user->assignRole($rol);
                 }
+            }
+
+            // Crear registro en people si no existe
+            if (!$user->person && isset($peopleByEmail[$user->email])) {
+                [$pNombre, $sNombre, $pApellido, $sApellido, $genero, $posId] = $peopleByEmail[$user->email];
+                Person::create([
+                    'user_id'             => $user->id,
+                    'primer_nombre'       => $pNombre,
+                    'segundo_nombre'      => $sNombre,
+                    'primer_apellido'     => $pApellido,
+                    'segundo_apellido'    => $sApellido,
+                    'genero'              => $genero,
+                    'email_institucional' => $user->email,
+                    'entity_position_id'  => $posId,
+                    'linkage_type_id'     => 5,
+                ]);
             }
         }
 

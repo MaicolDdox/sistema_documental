@@ -350,6 +350,18 @@
                             </div>
                         </div>
                         <div>
+                            <label for="crear_tipo_documento" class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
+                            <select name="tipo_documento" id="crear_tipo_documento" required class="w-full border @error('tipo_documento') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
+                                <option value="">Selecciona un tipo...</option>
+                                @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
+                                    <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
+                                        {{ ucfirst($tipo->value) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tipo_documento')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
                             <label for="crear_numero_documento" class="block text-sm font-medium text-slate-700 mb-1">Número de documento <span class="text-red-500">*</span></label>
                             <input type="text" name="numero_documento" id="crear_numero_documento" value="{{ old('numero_documento') }}" required class="w-full border @error('numero_documento') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
                             @error('numero_documento')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
@@ -370,6 +382,29 @@
                             </div>
                             <p class="text-xs text-slate-500 mt-1">Mínimo 8 caracteres. Puedes usar el ícono del ojo para ver lo que escribes.</p>
                             @error('password')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="crear_rol" class="block text-sm font-medium text-slate-700 mb-1">Rol inicial</label>
+                            <select name="rol" id="crear_rol" class="w-full border @error('rol') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
+                                <option value="">Sin rol (asignar después)</option>
+                                @foreach($roles as $role)
+                                    <option value="{{ $role->name }}" {{ old('rol') === $role->name ? 'selected' : '' }}>
+                                        {{ ucfirst(str_replace('_', ' ', $role->name)) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('rol')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3 flex items-start gap-3">
+                            <input type="checkbox" name="enviar_credenciales" id="crear_enviar_credenciales" value="1"
+                                   {{ old('enviar_credenciales') ? 'checked' : '' }}
+                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                            <div>
+                                <label for="crear_enviar_credenciales" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
+                                    Enviar credenciales por correo
+                                </label>
+                                <p class="text-xs text-slate-500 mt-0.5">Se enviará al usuario su email y contraseña temporal.</p>
+                            </div>
                         </div>
                         <div class="flex gap-3 justify-end pt-2">
                             <button type="button" @click="modalNuevo = false; mostrarPasswordCrear = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>

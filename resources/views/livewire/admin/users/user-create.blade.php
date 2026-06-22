@@ -94,6 +94,20 @@
             </div>
         </fieldset>
 
+        {{-- Enviar credenciales por correo --}}
+        <fieldset class="space-y-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" wire:model="enviar_credenciales"
+                           class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
+                    <div>
+                        <span class="text-sm font-medium text-slate-800">Enviar credenciales por correo</span>
+                        <p class="text-xs text-slate-500 mt-0.5">Se enviará un correo al usuario con su usuario y contraseña. Requiere que el campo de email esté diligenciado.</p>
+                    </div>
+                </label>
+            </div>
+        </fieldset>
+
         <div class="flex items-center gap-4 pt-4">
             <flux:button variant="primary" type="submit">Crear Usuario</flux:button>
             <a href="{{ route('admin.users.index') }}" class="text-sm text-slate-500 hover:text-slate-700">Cancelar</a>

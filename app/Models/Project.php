@@ -23,7 +23,7 @@ class Project extends Model
         'project_modality_id',
         'investigation_type_id',
         'nombre',
-        'descripccion',
+        'descripcion',
         'fecha_inicio',
         'fecha_fin',
         'estado',

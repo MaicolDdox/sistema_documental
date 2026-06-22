@@ -14,7 +14,7 @@ class ThematicArea extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

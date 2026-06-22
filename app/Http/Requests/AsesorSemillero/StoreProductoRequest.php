@@ -26,7 +26,7 @@ class StoreProductoRequest extends FormRequest
             'minciencias_subcategory_id' => 'nullable|exists:minciencias_subcategories,id',
             'knowledge_area_id'          => 'nullable|exists:knowledge_areas,id',
             'anio_publicacion'           => 'nullable|integer|min:2000|max:' . date('Y'),
-            'descripccion'               => 'nullable|string',
+            'descripcion'               => 'nullable|string',
         ];
     }
 

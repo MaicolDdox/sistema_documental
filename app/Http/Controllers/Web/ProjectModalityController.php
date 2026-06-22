@@ -15,7 +15,7 @@ class ProjectModalityController extends Controller
     private function getFields() {
         return [
             'nombre' => ['type' => 'text', 'options' => []],
-            'descripccion' => ['type' => 'text', 'options' => []],
+            'descripcion' => ['type' => 'text', 'options' => []],
 
         ];
     }

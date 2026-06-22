@@ -35,18 +35,37 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
+        // ──────────────────────────────────────────────────────────────────
+        // Gate::before: Super Admin y Admin del Sistema tienen acceso total
+        // ──────────────────────────────────────────────────────────────────
         Gate::before(function ($user, $ability) {
             return $user->hasAnyRole(['super_administrador', 'administrador_sistema']) ? true : null;
         });
 
-        // Registrar políticas del módulo Director de Investigación
-        Gate::policy(ResearchGroup::class, DirectorPolicy::class);
-        Gate::policy(GroupProduct::class, GroupProductPolicy::class);
+        // ──────────────────────────────────────────────────────────────────
+        // Políticas de modelos
+        // ──────────────────────────────────────────────────────────────────
 
-        // Registrar políticas del módulo Investigador Asociado
+        // Director de Investigación
+        Gate::policy(ResearchGroup::class, DirectorPolicy::class);
+
+        // Investigador Asociado — GroupProduct (view, update, delete, subirEvidencia)
+        // NOTA: Solo puede haber UNA política por modelo/clase. ProductoPolicy cubre
+        // las acciones del Investigador sobre sus propios GroupProducts.
+        Gate::policy(GroupProduct::class, ProductoPolicy::class);
+
+        // Project
         Gate::policy(Project::class, ProyectoPolicy::class);
-        Gate::policy(GroupProduct::class, ProductoPolicy::class); // extiende la del Director
-        Gate::policy(ResearchGroup::class, GrupoPolicy::class); // extiende la del Director
+
+        // ResearchGroup (extiende DirectorPolicy — el último registrado prevalece)
+        Gate::policy(ResearchGroup::class, GrupoPolicy::class);
+
+        // Habilidad 'revisar' para el Director de Investigación sobre GroupProduct.
+        // Se define como Gate::define() porque Gate::policy() no admite dos policies
+        // por el mismo modelo. El DirectorPolicy se llama directamente aquí.
+        Gate::define('revisar', function (User $user, GroupProduct $producto) {
+            return (new GroupProductPolicy())->revisar($user, $producto);
+        });
     }
 
     /**

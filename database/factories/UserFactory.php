@@ -29,7 +29,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana,
-            'numero_documento' => fake()->unique()->numberBetween(10000000, 2000000000),
+            'numero_documento' => (string) fake()->unique()->numberBetween(10000000, 2000000000),
             'password' => static::$password ??= Hash::make('password'),
             'estado' => EstadoEnum::Activo,
             'remember_token' => Str::random(10),

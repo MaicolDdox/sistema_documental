@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\DirectorSemilleros;
 
+use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Seedling;
@@ -330,13 +331,13 @@ class ReporteSemilleroController extends Controller
             $totProductos = 0;
             foreach ($semilleros as $s) {
                 $integrantes = $s->members()->count();
-                $proyectos = $s->projects()->where('estado', 'activo')->count();
-                $productos = $s->projects()->where('estado', 'activo')->withCount('products')->get()->sum('products_count');
+                $proyectos = $s->projects()->where('estado', EstadoEnum::Activo)->count();
+                $productos = $s->projects()->where('estado', EstadoEnum::Activo)->withCount('products')->get()->sum('products_count');
 
                 $filas[] = [
                     'nombre'      => $s->nombre,
                     'codigo'      => $s->codigo ?? '—',
-                    'grupo'       => $s->researchGroup->nombre ?? '—',
+                    'grupo'       => $s->researchGroup?->nombre ?? '—',
                     'lider'       => $s->leader?->person?->nombre_completo ?? $s->leader?->email ?? 'Sin líder',
                     'asesores'    => $s->advisors()->count(),
                     'integrantes' => $integrantes,

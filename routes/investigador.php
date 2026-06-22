@@ -71,10 +71,12 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:investigado
             Route::post('/{producto}/evidencias', [EvidenciaController::class, 'storeProducto'])->name('evidencias.store');
         });
 
-        // ── Eliminación de evidencias (rutas planas para DELETE por ID) ──
+        // ── Eliminación y descarga de evidencias (rutas por ID) ──
         Route::prefix('evidencias')->name('evidencias.')->group(function () {
             Route::delete('/producto/{evidencia}', [EvidenciaController::class, 'destroyProducto'])->name('producto.destroy');
             Route::delete('/proyecto/{evidencia}', [EvidenciaController::class, 'destroyProyecto'])->name('proyecto.destroy');
+
+            Route::get('/producto/{evidencia}/download', [EvidenciaController::class, 'downloadProducto'])->name('producto.download');
         });
 
         // ── Estado y seguimiento de productos ────────────────────────

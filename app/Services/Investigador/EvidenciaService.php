@@ -32,6 +32,7 @@ class EvidenciaService
             'archivo'     => $path,
             'nombre'      => $file->getClientOriginalName(),
             'uploaded_by' => $userId,
+            'descripcion' => null,
         ]);
     }
 
@@ -49,7 +50,7 @@ class EvidenciaService
             'archivo'     => $path,
             'nombre'      => $file->getClientOriginalName(),
             'uploaded_by' => $userId,
-            'descripccion' => null,
+            'descripcion' => null,
         ]);
     }
 

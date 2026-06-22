@@ -133,19 +133,6 @@
                                         </button>
                                     </form>
 
-                                    {{-- Eliminar (solo si está inactivo, se reutiliza el modal de confirmación) --}}
-                                    <form id="form-delete-{{ $center->id }}" method="POST" action="{{ route('admin.training-centers.destroy', $center) }}" class="inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button"
-                                                @click="open = false; intentEliminar({{ $activo ? 'true' : 'false' }}, 'form-delete-{{ $center->id }}', {{ json_encode($center->nombre) }})"
-                                                class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                            </svg>
-                                            <span>Eliminar</span>
-                                        </button>
-                                    </form>
                                 </div>
                             </div>
                         </td>
@@ -266,35 +253,6 @@
     </div>
 
     {{-- Modal: Confirmar eliminación (solo cuando el centro está desactivado) --}}
-    <div x-show="modalConfirmEliminar" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
-        <div class="flex min-h-full items-center justify-center p-4">
-            <div x-show="modalConfirmEliminar" @click.self="modalConfirmEliminar = false" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/40"></div>
-            <div x-show="modalConfirmEliminar" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                 class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-100">
-                <div class="text-center">
-                    <div class="mx-auto w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                        <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-1">Eliminar centro de formación</h3>
-                    <p class="text-sm text-slate-500 mb-1" x-text="'«' + (confirmEliminarNombre || '') + '»'"></p>
-                    <p class="text-sm text-slate-600 mb-6">¿Está seguro? Esta acción no se puede deshacer.</p>
-                    <div class="flex gap-3 justify-center">
-                        <button type="button" @click="modalConfirmEliminar = false; pendingDeleteFormId = null"
-                                class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="button" @click="submitEliminar()"
-                                class="px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors shadow-sm">
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- Modal: Nuevo Centro --}}
     <div x-show="modalNuevoCentro" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
@@ -380,9 +338,6 @@
                 modalEditar: false,
                 modalNuevoCentro: @json($errors->any()),
                 deleteError: @json(session('delete_error')),
-                modalConfirmEliminar: false,
-                confirmEliminarNombre: '',
-                pendingDeleteFormId: null,
                 detalle: null,
                 editData: { nombre: '', codigo: '', department_id: '', city_id: '' },
                 editFormAction: '',
@@ -404,22 +359,6 @@
                         document.getElementById('edit_city_id').value = this.editData.city_id;
                     }.bind(this));
                 },
-                intentEliminar(activo, formId, nombre) {
-                    if (activo) {
-                        this.deleteError = 'Este centro está activo. Desactívelo desde el botón de acciones en la fila y vuelva a intentar eliminarlo.';
-                        return;
-                    }
-                    this.confirmEliminarNombre = nombre || '';
-                    this.pendingDeleteFormId = formId;
-                    this.modalConfirmEliminar = true;
-                },
-                submitEliminar() {
-                    if (this.pendingDeleteFormId) {
-                        document.getElementById(this.pendingDeleteFormId).submit();
-                    }
-                    this.modalConfirmEliminar = false;
-                    this.pendingDeleteFormId = null;
-                }
             };
         }
     </script>

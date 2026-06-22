@@ -20,7 +20,7 @@ class ResearchGroup extends Model
         'nombre',
         'codigo',
         'logo',
-        'descripccion',
+        'descripcion',
         'estado',
     ];
 

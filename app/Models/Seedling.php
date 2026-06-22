@@ -22,7 +22,7 @@ class Seedling extends Model
         'nombre',
         'codigo',
         'logo',
-        'descripccion',
+        'descripcion',
         'estado',
     ];
 
@@ -95,6 +95,16 @@ class Seedling extends Model
             'seedling_id',
             'project_id'
         )->withTimestamps();
+    }
+
+    // ─────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────
+
+    /** IDs de los proyectos vinculados a este semillero. */
+    public function projectIds(): \Illuminate\Support\Collection
+    {
+        return $this->projects()->pluck('projects.id');
     }
 
     // ─────────────────────────────────────────────

@@ -13,6 +13,7 @@ use App\Models\ProjectModality;
 use App\Models\ResearchLine;
 use App\Models\Seedling;
 use App\Models\TechnologicalLine;
+use App\Services\AsesorSemillero\ProyectoService;
 use App\Support\AsesorSemilleroContext;
 use App\Models\ThematicArea;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,8 @@ use Illuminate\View\View;
 
 class ProyectoController extends Controller
 {
+    public function __construct(private readonly ProyectoService $proyectoService) {}
+
     /**
      * Obtiene todos los semilleros del asesor autenticado con research_group_id.
      */
@@ -36,25 +39,9 @@ class ProyectoController extends Controller
      */
     private function getAllProjectIdsDelAsesor(): \Illuminate\Support\Collection
     {
-        $semilleroIds = $this->getSemillerosDelAsesor()->pluck('id');
-        return DB::table('project_seedlings')
-            ->whereIn('seedling_id', $semilleroIds)
-            ->pluck('project_id')
+        return $this->getSemillerosDelAsesor()
+            ->flatMap(fn ($s) => $s->projectIds())
             ->unique();
-    }
-
-    /**
-     * Busca un proyecto verificando que pertenezca a algún semillero del asesor.
-     */
-    private function findProyectoDelSemillero(int $projectId): Project
-    {
-        $projectIds = $this->getAllProjectIdsDelAsesor();
-
-        if (!$projectIds->contains($projectId)) {
-            abort(403, 'Este proyecto no pertenece a tus semilleros.');
-        }
-
-        return Project::findOrFail($projectId);
     }
 
     /**
@@ -109,7 +96,7 @@ class ProyectoController extends Controller
         
         $group_ids        = $semilleros->pluck('research_group_id')->filter()->unique();
         $macroProyectos   = MacroProject::whereIn('research_group_id', $group_ids)
-            ->where('estado', 'activo')
+            ->where('estado', EstadoEnum::Activo)
             ->orderBy('nombre')
             ->get();
 
@@ -141,7 +128,7 @@ class ProyectoController extends Controller
             $request->validate([
                 'macro_project_id' => [
                     'required',
-                    function ($attribute, $value, $fail) use ($selectedSeedling) {
+                    function ($_attribute, $value, $fail) use ($selectedSeedling) {
                         $exists = MacroProject::where('id', $value)
                             ->where('research_group_id', $selectedSeedling->research_group_id)
                             ->exists();
@@ -153,40 +140,11 @@ class ProyectoController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($validated, $request) {
-            // 1. Crear el proyecto
-            $proyecto = Project::create([
-                'project_creator_id'    => Auth::id(),
-                'research_line_id'      => $validated['research_line_id'],
-                'technological_line_id' => $validated['technological_line_id'] ?? null,
-                'thematic_area_id'      => $validated['thematic_area_id'] ?? null,
-                'project_modality_id'   => $validated['project_modality_id'],
-                'investigation_type_id' => $validated['investigation_type_id'],
-                'nombre'                => $validated['nombre'],
-                'descripccion'          => $validated['descripccion'] ?? null,
-                'fecha_inicio'          => $validated['fecha_inicio'],
-                'fecha_fin'             => $validated['fecha_fin'] ?? null,
-                'estado'                => EstadoEnum::Activo,
-                'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
-                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
-                'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
-            ]);
+        $mergedValidated = array_merge($validated, [
+            'macro_project_id' => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
+        ]);
 
-            // 2. Vincular proyecto al semillero seleccionado
-            DB::table('project_seedlings')->insert([
-                'project_id'  => $proyecto->id,
-                'seedling_id' => $validated['seedling_id'],
-                'created_at'  => now(),
-                'updated_at'  => now(),
-            ]);
-
-            // 3. Agregar al asesor como primer autor
-            ProjectAuthor::create([
-                'project_id' => $proyecto->id,
-                'user_id'    => Auth::id(),
-                'activo'     => true,
-            ]);
-        });
+        $this->proyectoService->crearProyecto($mergedValidated, (int) $validated['seedling_id']);
 
         return redirect()->route('asesor.proyectos.index')
             ->with('success', 'Proyecto creado correctamente y vinculado a tu semillero.');
@@ -225,7 +183,7 @@ class ProyectoController extends Controller
         
         $group_ids      = $semilleros->pluck('research_group_id')->filter()->unique();
         $macroProyectos = MacroProject::whereIn('research_group_id', $group_ids)
-            ->where('estado', 'activo')
+            ->where('estado', EstadoEnum::Activo)
             ->orderBy('nombre')
             ->get();
             
@@ -256,7 +214,7 @@ class ProyectoController extends Controller
             $request->validate([
                 'macro_project_id' => [
                     'required',
-                    function ($attribute, $value, $fail) use ($selectedSeedling) {
+                    function ($_attribute, $value, $fail) use ($selectedSeedling) {
                         $exists = MacroProject::where('id', $value)
                             ->where('research_group_id', $selectedSeedling->research_group_id)
                             ->exists();
@@ -268,28 +226,11 @@ class ProyectoController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($proyecto, $validated, $selectedSeedling, $request) {
-            // Actualizar proyecto — SE IGNORA investigation_type_id (bloqueado post-creación)
-            $proyecto->update([
-                'research_line_id'      => $validated['research_line_id'],
-                'technological_line_id' => $validated['technological_line_id'] ?? null,
-                'thematic_area_id'      => $validated['thematic_area_id'] ?? null,
-                'project_modality_id'   => $validated['project_modality_id'],
-                'nombre'                => $validated['nombre'],
-                'descripccion'          => $validated['descripccion'] ?? null,
-                'fecha_inicio'          => $validated['fecha_inicio'],
-                'fecha_fin'             => $validated['fecha_fin'] ?? null,
-                'vinculacion_macro_proyecto' => (bool) $validated['tiene_macroproyecto'],
-                'macro_project_id'      => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
-                'tipo_financiacion'     => $validated['tipo_financiacion'] ?? null,
-            ]);
-            
-            // Actualizar vinculación de semillero
-            DB::table('project_seedlings')->where('project_id', $proyecto->id)->update([
-                'seedling_id' => $validated['seedling_id'],
-                'updated_at'  => now(),
-            ]);
-        });
+        $mergedValidated = array_merge($validated, [
+            'macro_project_id' => $validated['tiene_macroproyecto'] ? $request->macro_project_id : null,
+        ]);
+
+        $this->proyectoService->actualizarProyecto($proyecto, $mergedValidated, (int) $validated['seedling_id']);
 
         return redirect()->route('asesor.proyectos.show', $proyecto->id)
             ->with('success', 'Proyecto actualizado correctamente.');
@@ -321,8 +262,7 @@ class ProyectoController extends Controller
             ->get();
 
         // Alerta: miembros del semillero sin ningún proyecto
-        $projectIds = DB::table('project_seedlings')->where('seedling_id', $semillero->id)->pluck('project_id');
-        $miembrosConProyecto = ProjectAuthor::whereIn('project_id', $projectIds)
+        $miembrosConProyecto = ProjectAuthor::whereIn('project_id', $semillero->projectIds())
             ->where('activo', true)
             ->pluck('user_id');
         $miembrosSinProyecto = $semillero->members()

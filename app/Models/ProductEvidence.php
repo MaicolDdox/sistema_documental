@@ -18,7 +18,7 @@ class ProductEvidence extends Model
         'uploaded_by',
         'archivo',
         'url_archivo',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

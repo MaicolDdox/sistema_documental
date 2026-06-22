@@ -12,6 +12,7 @@ use App\Services\Investigador\EvidenciaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class EvidenciaController extends Controller
 {
@@ -30,7 +31,7 @@ class EvidenciaController extends Controller
         $request->validate([
             'archivos'   => ['required', 'array', 'min:1', 'max:10'], // Máx 10 a la vez
             'archivos.*' => ['required', 'file', 'max:10240'], // 10 MB c/u
-            'descripccion' => ['nullable', 'string', 'max:300'],
+            'descripcion' => ['nullable', 'string', 'max:300'],
         ]);
 
         try {
@@ -58,7 +59,7 @@ class EvidenciaController extends Controller
         $request->validate([
             'archivos'   => ['required', 'array', 'min:1', 'max:10'], // Máx 10 a la vez
             'archivos.*' => ['required', 'file', 'max:10240'], // 10 MB c/u
-            'descripccion' => ['nullable', 'string', 'max:300'],
+            'descripcion' => ['nullable', 'string', 'max:300'],
         ]);
 
         try {
@@ -123,6 +124,30 @@ class EvidenciaController extends Controller
         abort_unless(
             $proyecto->project_creator_id === Auth::id() || $evidencia->uploaded_by === Auth::id(),
             403
+        );
+
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($evidencia->archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download(
+            $evidencia->archivo,
+            $evidencia->nombre ?? basename($evidencia->archivo)
+        );
+    }
+
+    /**
+     * Descarga una evidencia vinculada a un producto.
+     */
+    public function downloadProducto(ProductEvidence $evidencia): \Symfony\Component\HttpFoundation\StreamedResponse|\Illuminate\Http\RedirectResponse
+    {
+        $productBase = $evidencia->product;
+        $esAutor = $productBase->groupProducts()->where('author_id', Auth::id())->exists();
+        
+        abort_unless(
+            $evidencia->uploaded_by === Auth::id() || $esAutor,
+            403, 
+            'No tienes permiso para descargar esta evidencia de producto.'
         );
 
         if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($evidencia->archivo)) {

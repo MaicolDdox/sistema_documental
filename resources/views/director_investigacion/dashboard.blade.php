@@ -2,7 +2,7 @@
     <x-slot name="header">Dashboard — Grupo de Investigación</x-slot>
 
     @php
-        $grupoId = \App\Models\ResearchGroupUser::where('user_id', auth()->id())
+        $grupoId = \App\Models\ResearchGroupUser::where('user_id', \Illuminate\Support\Facades\Auth::id())
             ->where('rol', \App\Enums\RolGrupoEnum::Director)
             ->value('research_group_id');
 
@@ -253,7 +253,7 @@
                         @forelse($ultimosProductos as $gp)
                         <tr>
                             <td class="px-4 py-3 font-medium text-slate-800 max-w-[160px] truncate">
-                                {{ $gp->product?->titulo ?? $gp->titulo ?? '—' }}
+                                {{ $gp->titulo ?? '—' }}
                             </td>
                             <td class="px-4 py-3 text-slate-600 text-xs">
                                 {{ $gp->author?->person?->primer_nombre ?? $gp->author?->email ?? '—' }}
@@ -352,7 +352,7 @@
                 @php $tasa = round(($productosAprobados / $productosTotal) * 100); @endphp
                 <div class="flex items-center gap-2">
                     <div class="flex-1 bg-slate-100 rounded-full h-2">
-                        <div class="h-2 rounded-full bg-gradient-to-r from-[#39A900] to-emerald-400 transition-all" style="width: {{ $tasa }}%"></div>
+                        <div class="h-2 rounded-full bg-gradient-to-r from-[#39A900] to-emerald-400 transition-all" style="width: <?= $tasa ?>%"></div>
                     </div>
                     <span class="text-xs font-bold text-slate-700">{{ $tasa }}%</span>
                 </div>
@@ -395,169 +395,190 @@
         @endif
     </div>
 
+    {{-- Datos PHP para Chart.js (type application/json = el linter JS lo ignora) --}}
+    <script id="dash-data" type="application/json">
+    {
+        "productosPendientes": {{ $productosPendientes }},
+        "productosEnRevision": {{ $productosEnRevision }},
+        "productosAprobados":  {{ $productosAprobados }},
+        "productosRechazados": {{ $productosRechazados }},
+        "productosTotal":      {{ $productosTotal }},
+        "nombres":    @json($prodPorInvestigador->pluck('nombre')),
+        "totalesInv": @json($prodPorInvestigador->pluck('total')),
+        "tendenciaMes": @json($tendencia->pluck('mes')),
+        "tendenciaTot": @json($tendencia->pluck('total')),
+        "anios":    @json($prodPorAnio->pluck('anio')),
+        "aniosTot": @json($prodPorAnio->pluck('total'))
+    }
+    </script>
+
     {{-- Chart.js --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script>
     (function () {
-        const verde    = '#39A900';
-        const verdeT   = '#39A90022';
-        const amber    = '#f59e0b';
-        const blue     = '#38bdf8';
-        const red      = '#f87171';
+        const d      = JSON.parse(document.getElementById('dash-data').textContent);
+        const verde  = '#39A900';
+        const verdeT = '#39A90022';
+        const amber  = '#f59e0b';
+        const blue   = '#38bdf8';
+        const red    = '#f87171';
+
+        const dataNombres      = d.nombres;
+        const dataTotalesInv   = d.totalesInv;
+        const dataTendenciaMes = d.tendenciaMes;
+        const dataTendenciaTot = d.tendenciaTot;
+        const dataAnios        = d.anios;
+        const dataAniosTot     = d.aniosTot;
 
         // Donut: distribución de estados
-        @if($productosTotal > 0)
-        const ctxDonut = document.getElementById('chartDonutDirector');
-        if (ctxDonut) {
-            new Chart(ctxDonut, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pendiente', 'En revisión', 'Aprobado', 'Rechazado'],
-                    datasets: [{
-                        data: [{{ $productosPendientes }}, {{ $productosEnRevision }}, {{ $productosAprobados }}, {{ $productosRechazados }}],
-                        backgroundColor: [amber, blue, verde, red],
-                        borderColor: '#fff',
-                        borderWidth: 3,
-                        hoverOffset: 6,
-                    }]
-                },
-                options: {
-                    cutout: '70%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } }
+        if (d.productosTotal > 0) {
+            const ctxDonut = document.getElementById('chartDonutDirector');
+            if (ctxDonut) {
+                new Chart(ctxDonut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pendiente', 'En revisión', 'Aprobado', 'Rechazado'],
+                        datasets: [{
+                            data: [d.productosPendientes, d.productosEnRevision, d.productosAprobados, d.productosRechazados],
+                            backgroundColor: [amber, blue, verde, red],
+                            borderColor: '#fff',
+                            borderWidth: 3,
+                            hoverOffset: 6,
+                        }]
                     },
-                    animation: { animateRotate: true, duration: 800 }
-                }
-            });
+                    options: {
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } }
+                        },
+                        animation: { animateRotate: true, duration: 800 }
+                    }
+                });
+            }
         }
-        @endif
 
         // Barras: productos por investigador
-        @if($prodPorInvestigador->isNotEmpty())
-        const ctxBar = document.getElementById('chartBarInvestigador');
-        if (ctxBar) {
-            const nombres = @json($prodPorInvestigador->pluck('nombre'));
-            const totales = @json($prodPorInvestigador->pluck('total'));
-            // Abreviar nombres largos
-            const nombresCortos = nombres.map(n => n.length > 18 ? n.substr(0, 15) + '…' : n);
-            new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: nombresCortos,
-                    datasets: [{
-                        label: 'Productos',
-                        data: totales,
-                        backgroundColor: verdeT,
-                        borderColor: verde,
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} producto(s)`, title: i => nombres[i[0].dataIndex] } }
+        if (dataNombres.length > 0) {
+            const ctxBar = document.getElementById('chartBarInvestigador');
+            if (ctxBar) {
+                const nombresCortos = dataNombres.map(n => n.length > 18 ? n.substr(0, 15) + '…' : n);
+                new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: nombresCortos,
+                        datasets: [{
+                            label: 'Productos',
+                            data: dataTotalesInv,
+                            backgroundColor: verdeT,
+                            borderColor: verde,
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
-                            grid: { color: '#f1f5f9' }
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} producto(s)`, title: i => dataNombres[i[0].dataIndex] } }
                         },
-                        x: {
-                            ticks: { color: '#64748b', font: { size: 11 } },
-                            grid: { display: false }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
+                                grid: { color: '#f1f5f9' }
+                            },
+                            x: {
+                                ticks: { color: '#64748b', font: { size: 11 } },
+                                grid: { display: false }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
-        @endif
 
         // Tendencia: aprobados por mes
-        @if($tendencia->isNotEmpty())
-        const ctxTend = document.getElementById('chartTendenciaDirector');
-        if (ctxTend) {
-            new Chart(ctxTend, {
-                type: 'line',
-                data: {
-                    labels: @json($tendencia->pluck('mes')),
-                    datasets: [{
-                        label: 'Aprobados',
-                        data: @json($tendencia->pluck('total')),
-                        borderColor: verde,
-                        backgroundColor: verdeT,
-                        borderWidth: 2.5,
-                        pointRadius: 4,
-                        pointBackgroundColor: verde,
-                        fill: true,
-                        tension: 0.35,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} aprobado(s)` } }
+        if (dataTendenciaMes.length > 0) {
+            const ctxTend = document.getElementById('chartTendenciaDirector');
+            if (ctxTend) {
+                new Chart(ctxTend, {
+                    type: 'line',
+                    data: {
+                        labels: dataTendenciaMes,
+                        datasets: [{
+                            label: 'Aprobados',
+                            data: dataTendenciaTot,
+                            borderColor: verde,
+                            backgroundColor: verdeT,
+                            borderWidth: 2.5,
+                            pointRadius: 4,
+                            pointBackgroundColor: verde,
+                            fill: true,
+                            tension: 0.35,
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
-                            grid: { color: '#f1f5f9' }
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} aprobado(s)` } }
                         },
-                        x: {
-                            ticks: { color: '#94a3b8', font: { size: 10 } },
-                            grid: { display: false }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
+                                grid: { color: '#f1f5f9' }
+                            },
+                            x: {
+                                ticks: { color: '#94a3b8', font: { size: 10 } },
+                                grid: { display: false }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
-        @endif
 
         // Barras: producción por año
-        @if($prodPorAnio->isNotEmpty())
-        const ctxAnio = document.getElementById('chartAnioDirector');
-        if (ctxAnio) {
-            new Chart(ctxAnio, {
-                type: 'bar',
-                data: {
-                    labels: @json($prodPorAnio->pluck('anio')),
-                    datasets: [{
-                        label: 'Productos',
-                        data: @json($prodPorAnio->pluck('total')),
-                        backgroundColor: '#0ea5e922',
-                        borderColor: '#0ea5e9',
-                        borderWidth: 2,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: ctx => ` ${ctx.raw} producto(s)` } }
+        if (dataAnios.length > 0) {
+            const ctxAnio = document.getElementById('chartAnioDirector');
+            if (ctxAnio) {
+                new Chart(ctxAnio, {
+                    type: 'bar',
+                    data: {
+                        labels: dataAnios,
+                        datasets: [{
+                            label: 'Productos',
+                            data: dataAniosTot,
+                            backgroundColor: '#0ea5e922',
+                            borderColor: '#0ea5e9',
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
-                            grid: { color: '#f1f5f9' }
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} producto(s)` } }
                         },
-                        x: {
-                            ticks: { color: '#94a3b8', font: { size: 11 } },
-                            grid: { display: false }
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: '#94a3b8', font: { size: 11 } },
+                                grid: { color: '#f1f5f9' }
+                            },
+                            x: {
+                                ticks: { color: '#94a3b8', font: { size: 11 } },
+                                grid: { display: false }
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
-        @endif
     })();
     </script>
 </x-app-layout>

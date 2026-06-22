@@ -60,9 +60,21 @@ class Login extends Component
             ]);
         }
 
+        // ─────────────────────────────────────────────────
+        // Redirigir al reto de 2FA si el usuario lo tiene confirmado
+        // ─────────────────────────────────────────────────
+        if ($user->two_factor_secret && ! is_null($user->two_factor_confirmed_at)) {
+            session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $this->remember,
+            ]);
+
+            return redirect()->route('two-factor.login');
+        }
+
         Auth::login($user, $this->remember);
 
-        request()->session()->regenerate();
+        session()->regenerate();
 
         $user->load('roles');
 

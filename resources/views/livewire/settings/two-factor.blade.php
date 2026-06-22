@@ -75,9 +75,12 @@
                         <div class="space-y-6">
                             <div class="flex flex-col items-center space-y-3 justify-center">
                                 <label class="block text-sm font-medium text-slate-700 text-center mb-1.5">Código OTP de tu App</label>
-                                <input type="text" wire:model="code"
+                                <input type="text" wire:model.live="code"
                                        class="w-48 text-center text-tracking-widest letter-spacing-[0.2em] font-mono text-xl border border-slate-300 rounded-lg px-4 py-3 text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all"
                                        maxlength="6" placeholder="123456" autofocus>
+                                @error('code')
+                                    <p class="text-sm text-red-600 text-center">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div class="flex items-center space-x-3 pt-4">

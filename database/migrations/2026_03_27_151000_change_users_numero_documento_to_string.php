@@ -1,17 +1,22 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement("ALTER TABLE users MODIFY numero_documento VARCHAR(20) NOT NULL");
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('numero_documento', 20)->nullable(false)->change();
+        });
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE users MODIFY numero_documento BIGINT UNSIGNED NOT NULL");
+        Schema::table('users', function (Blueprint $table) {
+            $table->unsignedBigInteger('numero_documento')->nullable(false)->change();
+        });
     }
 };

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ExternalAdvisor;
 use App\Http\Requests\StoreExternalAdvisorRequest;
 use App\Http\Requests\UpdateExternalAdvisorRequest;
+use App\Models\TrainingCenter;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -15,12 +16,13 @@ class ExternalAdvisorController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = ExternalAdvisor::with('user')->orderBy('nombre_completo');
+        $query = ExternalAdvisor::with(['user', 'trainingCenter'])->orderBy('nombre_completo');
 
         if (TrainingCenterAccess::scopedToTrainingCenter($request->user())) {
             $cid = (int) $request->user()->training_center_id;
             $query->where(function ($q) use ($cid) {
-                $q->whereHas('user', fn ($u) => $u->where('training_center_id', $cid))
+                $q->where('training_center_id', $cid)
+                    ->orWhereHas('user', fn ($u) => $u->where('training_center_id', $cid))
                     ->orWhereHas('seedlings.researchGroup', fn ($r) => $r->where('training_center_id', $cid));
             });
         }
@@ -30,18 +32,20 @@ class ExternalAdvisorController extends Controller
             $query->where(function ($q) use ($term) {
                 $q->where('nombre_completo', 'like', "%{$term}%")
                   ->orWhere('email', 'like', "%{$term}%")
-                  ->orWhere('institucion', 'like', "%{$term}%");
+                  ->orWhereHas('trainingCenter', fn ($tc) => $tc->where('nombre', 'like', "%{$term}%"));
             });
         }
 
-        $advisors = $query->paginate(15)->withQueryString();
+        $advisors    = $query->paginate(15)->withQueryString();
+        $trainingCenters = TrainingCenterAccess::centersForSelect($request->user());
 
-        return view('admin.external_advisors.index', compact('advisors'));
+        return view('admin.external_advisors.index', compact('advisors', 'trainingCenters'));
     }
 
     public function create(): View
     {
-        return view('admin.external_advisors.create');
+        $trainingCenters = TrainingCenterAccess::centersForSelect(auth()->user());
+        return view('admin.external_advisors.create', compact('trainingCenters'));
     }
 
     public function store(StoreExternalAdvisorRequest $request): RedirectResponse
@@ -53,14 +57,15 @@ class ExternalAdvisorController extends Controller
     public function show(ExternalAdvisor $externalAdvisor): View
     {
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
-        $externalAdvisor->load('user', 'seedlings');
+        $externalAdvisor->load(['user', 'seedlings', 'trainingCenter']);
         return view('admin.external_advisors.show', compact('externalAdvisor'));
     }
 
     public function edit(ExternalAdvisor $externalAdvisor): View
     {
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
-        return view('admin.external_advisors.edit', compact('externalAdvisor'));
+        $trainingCenters = TrainingCenterAccess::centersForSelect(auth()->user());
+        return view('admin.external_advisors.edit', compact('externalAdvisor', 'trainingCenters'));
     }
 
     public function update(UpdateExternalAdvisorRequest $request, ExternalAdvisor $externalAdvisor): RedirectResponse
@@ -76,7 +81,7 @@ class ExternalAdvisorController extends Controller
         try {
             $externalAdvisor->delete();
             return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo eliminado correctamente.');
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (\Illuminate\Database\QueryException) {
             return redirect()->route('admin.external-advisors.index')
                 ->with('delete_error', 'No se puede eliminar porque está asociado a semilleros u otros registros.');
         }
@@ -93,7 +98,11 @@ class ExternalAdvisorController extends Controller
         }
 
         $cid = (int) $user->training_center_id;
-        $externalAdvisor->loadMissing('user');
+        $externalAdvisor->loadMissing(['user', 'trainingCenter']);
+
+        if ((int) $externalAdvisor->training_center_id === $cid) {
+            return;
+        }
 
         if ($externalAdvisor->user && (int) $externalAdvisor->user->training_center_id === $cid) {
             return;

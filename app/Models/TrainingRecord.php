@@ -14,7 +14,7 @@ class TrainingRecord extends Model
 
     protected $fillable = [
         'codigo',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

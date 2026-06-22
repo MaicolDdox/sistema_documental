@@ -6,11 +6,11 @@ use App\Http\Controllers\Admin\CatalogoController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ResearchGroupController;
 
-Route::middleware(['auth', 'role:super_administrador|administrador_sistema|admin|director_investigacion'])
+Route::middleware(['auth', 'role:administrador_sistema|admin|director_investigacion'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        
+
         // Dashboard Admin
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -24,7 +24,7 @@ Route::middleware(['auth', 'role:super_administrador|administrador_sistema|admin
         Route::post('usuarios/{id}/revocar-rol', [UsuarioController::class, 'revocarRol'])->name('usuarios.revocar_rol');
 
         // Catálogos (habilitados también para Director de Investigación)
-        Route::middleware('role:super_administrador|administrador_sistema|admin|director_investigacion')->group(function () {
+        Route::middleware('role:administrador_sistema|admin|director_investigacion')->group(function () {
             Route::get('catalogos/simples', [CatalogoController::class, 'simples'])->name('catalogos.simples');
             Route::resource('catalogos', CatalogoController::class)->except(['show']);
             Route::resource('research-groups', ResearchGroupController::class)->except(['show']);

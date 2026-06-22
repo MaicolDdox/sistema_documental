@@ -51,6 +51,9 @@ class DocumentoGrupoController extends Controller
         ]);
 
         $path = $request->file('archivo')->store("grupos/{$grupoId}/documentos", 'public');
+        if ($path === false) {
+            return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+        }
 
         SeedlingInternalDocument::create([
             'seedling_id' => $grupoId,
@@ -75,9 +78,31 @@ class DocumentoGrupoController extends Controller
         abort_unless($documento->seedling_id === $grupoId, 403);
         abort_unless($documento->user_id === Auth::id(), 403, 'Solo puedes eliminar documentos que tú subiste.');
 
-        Storage::disk('public')->delete($documento->archivo);
+        if (Storage::disk('public')->exists($documento->url_archivo)) {
+            Storage::disk('public')->delete($documento->url_archivo);
+        }
         $documento->delete();
 
         return back()->with('success', 'Documento eliminado.');
+    }
+
+    /**
+     * Descarga un documento institucional del grupo.
+     * Solo el director autenticado cuyo grupo sea el dueño del documento puede descargarlo.
+     */
+    public function download(SeedlingInternalDocument $documento): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    {
+        $grupoId = $this->getGrupoId();
+
+        abort_unless($documento->seedling_id === $grupoId, 403, 'No tienes permiso para descargar este documento.');
+
+        if (! Storage::disk('public')->exists($documento->url_archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        $extension = pathinfo($documento->url_archivo, PATHINFO_EXTENSION);
+        $nombreDescarga = $documento->titulo.($extension ? ".{$extension}" : '');
+
+        return Storage::disk('public')->download($documento->url_archivo, $nombreDescarga);
     }
 }

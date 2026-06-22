@@ -7,6 +7,7 @@ use App\Enums\TipoProyectoOrigenEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GroupProduct extends Model
 {
@@ -21,7 +22,7 @@ class GroupProduct extends Model
         'campo_otro',
         'codigo_proyecto_origen',
         'titulo',
-        'descripccion',
+        'descripcion',
         'anio_publicacion',
         'nombre_programa_formacion_impacto',
         'minciencias_typology_id',
@@ -81,5 +82,28 @@ class GroupProduct extends Model
     public function knowledgeArea(): BelongsTo
     {
         return $this->belongsTo(KnowledgeArea::class, 'knowledge_area_id');
+    }
+
+    // ─────────────────────────────────────────────
+    // OBSERVER / LIFECYCLE
+    // ─────────────────────────────────────────────
+
+    /**
+     * Cuando se actualiza el estado_revision de este GroupProduct,
+     * sincroniza automáticamente el mismo valor en el Product base.
+     * Esto mantiene consistencia entre el flujo del Líder (products.estado_revision)
+     * y el flujo del Director (group_products.estado_revision) sin sync manual.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (self $gp) {
+            if ($gp->wasChanged('estado_revision') && $gp->product_id) {
+                // Usamos updateQuietly para evitar disparar de nuevo el observer
+                Product::where('id', $gp->product_id)->update([
+                    'estado_revision'      => $gp->estado_revision,
+                    'observacion_revision' => $gp->observaciones_revision,
+                ]);
+            }
+        });
     }
 }

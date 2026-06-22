@@ -9,11 +9,9 @@ use App\Models\Product;
 use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
-use App\Models\Seedling;
 use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -27,11 +25,6 @@ class ProductoController extends Controller
     private function getSemillerosDelAsesor(): \Illuminate\Database\Eloquent\Collection
     {
         return AsesorSemilleroContext::semillerosDelUsuarioAutenticado();
-    }
-
-    private function getSemilleroDelAsesor(): ?Seedling
-    {
-        return AsesorSemilleroContext::semilleroActivo($this->getSemillerosDelAsesor());
     }
 
     private function getProyectosDelSemillero(int $seedlingId): \Illuminate\Database\Eloquent\Collection
@@ -76,6 +69,12 @@ class ProductoController extends Controller
     /** GET /asesor-semillero/api/proyecto/{project_id}/autores */
     public function apiAutoresPorProyecto(int $project_id): JsonResponse
     {
+        // Verificar que el proyecto pertenece a un semillero del asesor autenticado
+        $projectIds = $this->getAllProjectIdsDelAsesor();
+        if (! $projectIds->contains((int) $project_id)) {
+            return response()->json([], 403);
+        }
+
         $autores = ProjectAuthor::with('user.person')
             ->where('project_id', $project_id)
             ->where('activo', true)
@@ -100,7 +99,6 @@ class ProductoController extends Controller
     /** Permiso: productos.listar */
     public function index(): View
     {
-        $productIds  = collect();
         $productos   = collect();
         $proyectos   = collect();
         $semilleros  = $this->getSemillerosDelAsesor();
@@ -176,38 +174,45 @@ class ProductoController extends Controller
             abort(403, 'El proyecto no pertenece a tus semilleros.');
         }
 
-        DB::transaction(function () use ($validated, $request) {
-            $archivoPath    = null;
-            $urlRepositorio = null;
+        try {
+            DB::transaction(function () use ($validated, $request) {
+                $archivoPath    = null;
+                $urlRepositorio = null;
 
-            $archivoNombre = null;
-            if ($request->hasFile('archivo')) {
-                $file = $request->file('archivo');
-                $archivoPath   = $file->store('productos', 'public');
-                $archivoNombre = $file->getClientOriginalName();
-            }
-            if (filled($validated['url_repositorio'] ?? null)) {
-                $urlRepositorio = $validated['url_repositorio'];
-            }
+                $archivoNombre = null;
+                if ($request->hasFile('archivo')) {
+                    $file = $request->file('archivo');
+                    $archivoPath   = $file->store('productos', 'public');
+                    if ($archivoPath === false) {
+                        throw new \RuntimeException('No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+                    }
+                    $archivoNombre = $file->getClientOriginalName();
+                }
+                if (filled($validated['url_repositorio'] ?? null)) {
+                    $urlRepositorio = $validated['url_repositorio'];
+                }
 
-            $product = Product::create([
-                'project_id'      => $validated['project_id'],
-                'nombre'          => $validated['nombre'],
-                'archivo'         => $archivoPath,
-                'archivo_nombre'  => $archivoNombre,
-                'url_repositorio' => $urlRepositorio,
-                'estado'          => EstadoEnum::Activo,
-            ]);
-
-            // Autores seleccionados manualmente en el form
-            $autorIds = $validated['autores'] ?? [];
-            foreach ($autorIds as $projectAuthorId) {
-                ProductAuthor::firstOrCreate([
-                    'product_id'        => $product->id,
-                    'project_author_id' => (int) $projectAuthorId,
+                $product = Product::create([
+                    'project_id'      => $validated['project_id'],
+                    'nombre'          => $validated['nombre'],
+                    'archivo'         => $archivoPath,
+                    'archivo_nombre'  => $archivoNombre,
+                    'url_repositorio' => $urlRepositorio,
+                    'estado'          => EstadoEnum::Activo,
                 ]);
-            }
-        });
+
+                // Autores seleccionados manualmente en el form
+                $autorIds = $validated['autores'] ?? [];
+                foreach ($autorIds as $projectAuthorId) {
+                    ProductAuthor::firstOrCreate([
+                        'product_id'        => $product->id,
+                        'project_author_id' => (int) $projectAuthorId,
+                    ]);
+                }
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('asesor.productos.index')
             ->with('success', 'Producto registrado correctamente.');
@@ -279,40 +284,47 @@ class ProductoController extends Controller
         $product     = $this->findProductoDelAsesor($id);
         $validated   = $request->validated();
 
-        DB::transaction(function () use ($product, $validated, $request) {
-            $archivoPath    = $product->archivo;
-            $archivoNombre  = $product->archivo_nombre;
-            $urlRepositorio = $product->url_repositorio;
+        try {
+            DB::transaction(function () use ($product, $validated, $request) {
+                $archivoPath    = $product->archivo;
+                $archivoNombre  = $product->archivo_nombre;
+                $urlRepositorio = $product->url_repositorio;
 
-            if ($request->hasFile('archivo')) {
-                if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
-                    Storage::disk('public')->delete($product->archivo);
+                if ($request->hasFile('archivo')) {
+                    if ($product->archivo && Storage::disk('public')->exists($product->archivo)) {
+                        Storage::disk('public')->delete($product->archivo);
+                    }
+                    $file           = $request->file('archivo');
+                    $archivoPath    = $file->store('productos', 'public');
+                    if ($archivoPath === false) {
+                        throw new \RuntimeException('No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+                    }
+                    $archivoNombre  = $file->getClientOriginalName();
                 }
-                $file           = $request->file('archivo');
-                $archivoPath    = $file->store('productos', 'public');
-                $archivoNombre  = $file->getClientOriginalName();
-            }
-            if (filled($validated['url_repositorio'] ?? null)) {
-                $urlRepositorio = $validated['url_repositorio'];
-            }
+                if (filled($validated['url_repositorio'] ?? null)) {
+                    $urlRepositorio = $validated['url_repositorio'];
+                }
 
-            $product->update([
-                'nombre'          => $validated['nombre'],
-                'archivo'         => $archivoPath,
-                'archivo_nombre'  => $archivoNombre,
-                'url_repositorio' => $urlRepositorio,
-            ]);
-
-            // Sincronizar autores
-            $autorIds = $validated['autores'] ?? [];
-            ProductAuthor::where('product_id', $product->id)->delete();
-            foreach ($autorIds as $projectAuthorId) {
-                ProductAuthor::firstOrCreate([
-                    'product_id'        => $product->id,
-                    'project_author_id' => (int) $projectAuthorId,
+                $product->update([
+                    'nombre'          => $validated['nombre'],
+                    'archivo'         => $archivoPath,
+                    'archivo_nombre'  => $archivoNombre,
+                    'url_repositorio' => $urlRepositorio,
                 ]);
-            }
-        });
+
+                // Sincronizar autores
+                $autorIds = $validated['autores'] ?? [];
+                ProductAuthor::where('product_id', $product->id)->delete();
+                foreach ($autorIds as $projectAuthorId) {
+                    ProductAuthor::firstOrCreate([
+                        'product_id'        => $product->id,
+                        'project_author_id' => (int) $projectAuthorId,
+                    ]);
+                }
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('asesor.productos.show', $id)
             ->with('success', 'Producto actualizado correctamente.');
@@ -346,7 +358,7 @@ class ProductoController extends Controller
     // ──────────────────────────────────────────────────
 
     /** Descarga el archivo del producto con su nombre original */
-    public function download(int $id): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    public function download(int $id): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
     {
         $product = $this->findProductoDelAsesor($id);
 
@@ -355,7 +367,7 @@ class ProductoController extends Controller
         }
 
         $downloadName = $product->archivo_nombre ?? basename($product->archivo);
-        return Storage::disk('public')->download($product->archivo, $downloadName);
+        return response()->download(Storage::disk('public')->path($product->archivo), $downloadName);
     }
 
     /** Permiso: productos.editar (usado también para eliminar) */

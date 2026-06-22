@@ -23,7 +23,7 @@ class StoreLinkageTypeRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'descripccion' => ['required', 'string', 'max:500'],
+            'descripcion' => ['required', 'string', 'max:500'],
         ];
     }
 }

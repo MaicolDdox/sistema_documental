@@ -4,7 +4,10 @@ namespace App\Livewire\Admin\Users;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Enums\TipoDocumentoEnum;
+use App\Mail\CredencialesAcceso;
 use App\Support\TrainingCenterAccess;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
 class UserCreate extends Component
@@ -31,6 +34,10 @@ class UserCreate extends Component
     // Role
     public string $role = '';
 
+    // Opciones de notificación
+    public bool $enviar_credenciales = false;
+    public string $password_plain = '';
+
     // Optional relations
     public ?int $entity_position_id = null;
     public ?int $linkage_type_id = null;
@@ -49,30 +56,49 @@ class UserCreate extends Component
      */
     public function store(CreateNewUser $creator): void
     {
+        $this->password_plain = $this->password;
+
         $user = $creator->create([
-            'training_center_id' => $this->training_center_id,
-            'email' => $this->email ?: null,
-            'tipo_documento' => $this->tipo_documento,
-            'numero_documento' => $this->numero_documento,
-            'password' => $this->password,
+            'training_center_id'    => $this->training_center_id,
+            'email'                 => $this->email ?: null,
+            'tipo_documento'        => $this->tipo_documento,
+            'numero_documento'      => $this->numero_documento,
+            'password'              => $this->password,
             'password_confirmation' => $this->password_confirmation,
-            'primer_nombre' => $this->primer_nombre,
-            'segundo_nombre' => $this->segundo_nombre,
-            'primer_apellido' => $this->primer_apellido,
-            'segundo_apellido' => $this->segundo_apellido,
-            'genero' => $this->genero ?: null,
-            'telefono' => $this->telefono,
-            'celular' => $this->celular,
-            'eps' => $this->eps,
-            'email_institucional' => $this->email_institucional ?: null,
-            'role' => $this->role,
-            'entity_position_id' => $this->entity_position_id,
-            'linkage_type_id' => $this->linkage_type_id,
-            'training_program_id' => $this->training_program_id,
+            'primer_nombre'         => $this->primer_nombre,
+            'segundo_nombre'        => $this->segundo_nombre,
+            'primer_apellido'       => $this->primer_apellido,
+            'segundo_apellido'      => $this->segundo_apellido,
+            'genero'                => $this->genero ?: null,
+            'telefono'              => $this->telefono,
+            'celular'               => $this->celular,
+            'eps'                   => $this->eps,
+            'email_institucional'   => $this->email_institucional ?: null,
+            'role'                  => $this->role,
+            'entity_position_id'    => $this->entity_position_id,
+            'linkage_type_id'       => $this->linkage_type_id,
+            'training_program_id'   => $this->training_program_id,
         ]);
 
-        session()->flash('status', "Usuario {$user->person->primer_nombre} {$user->person->primer_apellido} creado exitosamente con estado inactivo.");
+        if ($this->enviar_credenciales && $user->email) {
+            try {
+                Mail::to($user->email)
+                    ->send(new CredencialesAcceso($user, $this->password_plain, config('app.url')));
+            } catch (\Throwable $e) {
+                Log::error('UserCreate: fallo al enviar credenciales por correo', [
+                    'usuario_id' => $user->id,
+                    'email'      => $user->email,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
 
+        $nombre   = "{$user->person->primer_nombre} {$user->person->primer_apellido}";
+        $mensaje  = $this->enviar_credenciales
+            ? "Usuario {$nombre} creado. Se enviaron las credenciales por correo."
+            : "Usuario {$nombre} creado exitosamente con estado inactivo.";
+
+        session()->flash('status', $mensaje);
         $this->redirect(route('admin.users.index'));
     }
 

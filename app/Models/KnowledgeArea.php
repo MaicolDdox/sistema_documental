@@ -16,7 +16,7 @@ class KnowledgeArea extends Model
     protected $fillable = [
         'knowledge_grand_area_id',
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

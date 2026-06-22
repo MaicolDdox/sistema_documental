@@ -15,7 +15,7 @@ class MincienciasTypology extends Model
     protected $fillable = [
         'nombre',
         'codigo',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

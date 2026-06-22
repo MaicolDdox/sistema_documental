@@ -2,21 +2,28 @@
 
 namespace App\Http\Controllers\LiderSemillero;
 
-use App\Http\Controllers\Controller;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
+use App\Http\Controllers\Controller;
 use App\Models\ExternalAdvisor;
 use App\Models\SeedlingAdvisor;
 use App\Models\User;
+use App\Services\Admin\NotificacionService;
+use App\Services\Admin\UserCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AsesoresController extends Controller
 {
+    public function __construct(
+        private readonly UserCreationService $userCreation,
+        private readonly NotificacionService $notificacion,
+    ) {}
+
     /**
      * Lista los asesores vinculados al semillero que lidera el usuario.
      * Usa la tabla pivot para mostrar estado activo/inactivo y permitir activar/desactivar.
@@ -66,13 +73,15 @@ class AsesoresController extends Controller
 
         $crearCuenta = $request->boolean('crear_cuenta');
         $rules = [
-            'nombre_completo' => 'required|string|max:255',
-            'email'           => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
-            'telefono'        => 'nullable|string|max:50',
-            'institucion'     => 'nullable|string|max:255',
-            'crear_cuenta'    => 'nullable|boolean',
+            'nombre_completo'    => 'required|string|max:255',
+            'email'              => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
+            'telefono'           => 'nullable|string|max:50',
+            'institucion'        => 'nullable|string|max:255',
+            'crear_cuenta'       => 'nullable|boolean',
+            'enviar_credenciales' => 'nullable|boolean',
         ];
         if ($crearCuenta) {
+            $rules['tipo_documento']   = ['required', Rule::enum(TipoDocumentoEnum::class)];
             $rules['numero_documento'] = 'required|numeric';
         }
         $validated = $request->validate($rules);
@@ -105,25 +114,16 @@ class AsesoresController extends Controller
                 $request->validate(['numero_documento' => 'unique:users,numero_documento']);
                 $passwordTemporal = Str::random(10);
                 $leader = Auth::user();
-                $newUser = User::create([
-                    'training_center_id' => $leader->training_center_id,
-                    'email'              => $validated['email'],
-                    'numero_documento'   => (int) $validated['numero_documento'],
-                    'tipo_documento'     => TipoDocumentoEnum::CedulaCiudadana,
-                    'password'           => Hash::make($passwordTemporal),
-                    'estado'             => EstadoEnum::Activo,
-                ]);
                 $nombrePartes = preg_split('/\s+/', trim($validated['nombre_completo']), 2);
-                $newUser->person()->create([
-                    'primer_nombre'       => $nombrePartes[0] ?? $validated['nombre_completo'],
-                    'primer_apellido'     => $nombrePartes[1] ?? '',
-                    'segundo_apellido'    => '',
-                    'email_institucional' => $validated['email'],
-                    'genero'               => 'prefiero no decirlo',
-                    'celular'             => 0,
-                    'eps'                 => '',
-                ]);
-                $newUser->assignRole('asesor_semillero');
+                $newUser = $this->userCreation->crearUsuario([
+                    'email'            => $validated['email'],
+                    'numero_documento' => (int) $validated['numero_documento'],
+                    'tipo_documento'   => $validated['tipo_documento'],
+                    'password'         => $passwordTemporal,
+                    'primer_nombre'    => $nombrePartes[0] ?? $validated['nombre_completo'],
+                    'primer_apellido'  => $nombrePartes[1] ?? '',
+                    'rol'              => 'asesor_semillero',
+                ], $leader->training_center_id);
                 $userId = $newUser->id;
                 $advisor = ExternalAdvisor::create([
                     'user_id'         => $userId,
@@ -164,11 +164,21 @@ class AsesoresController extends Controller
         }
 
         if ($crearCuenta && $passwordTemporal) {
+            $enviado = false;
+            if ($request->boolean('enviar_credenciales') && !empty($validated['email'])) {
+                $this->notificacion->enviarCredenciales($newUser, $passwordTemporal);
+                $enviado = true;
+            }
+
+            $mensaje = $enviado
+                ? 'Asesor creado y vinculado. Se enviaron las credenciales por correo.'
+                : 'Asesor creado y vinculado. Se creó cuenta con rol Asesor de Semillero.';
+
             return redirect()->route('lider-sem.asesores')
-                ->with('success', 'Asesor creado y vinculado. Se creó cuenta con rol Asesor de Semillero.')
+                ->with('success', $mensaje)
                 ->with('credenciales', [
-                    'email'      => $validated['email'],
-                    'password'   => $passwordTemporal,
+                    'email'    => $validated['email'],
+                    'password' => $passwordTemporal,
                 ]);
         }
 

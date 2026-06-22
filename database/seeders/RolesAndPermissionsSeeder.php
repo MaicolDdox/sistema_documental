@@ -155,11 +155,11 @@ class RolesAndPermissionsSeeder extends Seeder
             }
         }
 
-        // ROL 0: super_administrador — todos los permisos web (instancia / soporte)
+        // ROL 0: super_administrador — permisos exclusivos de gestión global de la instancia.
+        // Acceso: dashboard global, centros de formación (CRUD) y vinculación centro↔admin.
+        // No gestiona usuarios ni catálogos de centro (eso es del administrador_sistema).
         $rolSuperAdmin = Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
-        $rolSuperAdmin->syncPermissions(
-            Permission::where('guard_name', 'web')->pluck('name')->all()
-        );
+        $rolSuperAdmin->syncPermissions([]);
 
         // Definición de Roles y sus permisos
         
@@ -301,7 +301,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $this->command->newLine();
         $this->command->info('╔══════════════════════════════════════════╗');
-        $this->command->info('║   GIDESTH — Roles y Permisos cargados   ║');
+        $this->command->info('║   SIGESI — Roles y Permisos cargados    ║');
         $this->command->info('╚══════════════════════════════════════════╝');
         $this->command->newLine();
 

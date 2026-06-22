@@ -16,7 +16,7 @@ class StoreProyectoRequest extends FormRequest
         return [
             'seedling_id'            => 'required|exists:seedlings,id',
             'nombre'                 => 'required|string|max:255',
-            'descripccion'           => 'nullable|string',
+            'descripcion'           => 'nullable|string',
             'research_line_id'       => 'required|exists:research_lines,id',
             'technological_line_id'  => 'nullable|exists:technological_lines,id',
             'thematic_area_id'       => 'nullable|exists:thematic_areas,id',

@@ -17,7 +17,7 @@ class ResearchGroupSeeder extends Seeder
         $grupos = [
             [
                 'training_center_id' => $centroAgroindustrial?->id,
-                'nombre'     => 'GIDESTH Agroindustrial',
+                'nombre'     => 'SIGESI Agroindustrial',
                 'codigo'     => 9116,
                 'descripccion' => 'Grupo de investigación del Centro Agroempresarial y Desarrollo Pecuario del Huila.',
                 'estado'     => EstadoEnum::Activo,
@@ -25,7 +25,7 @@ class ResearchGroupSeeder extends Seeder
             ],
             [
                 'training_center_id' => $centroIndustria?->id,
-                'nombre'     => 'GIDESTH Industria',
+                'nombre'     => 'SIGESI Industria',
                 'codigo'     => 9527,
                 'descripccion' => 'Grupo de investigación del Centro de la Industria, la Empresa y los Servicios.',
                 'estado'     => EstadoEnum::Activo,

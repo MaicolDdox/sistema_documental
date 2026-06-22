@@ -105,12 +105,12 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
         <div class="header-org-cell">
             <div class="org-name">SENA — Servicio Nacional de Aprendizaje</div>
             <div class="org-sub">República de Colombia &nbsp;·&nbsp; Ministerio del Trabajo</div>
-            <div class="org-dep">Grupo de Investigación &nbsp;·&nbsp; Sistema de Gestión Documental</div>
+            <div class="org-dep">Grupo de Investigación &nbsp;·&nbsp; SIGESI</div>
         </div>
         <div class="header-doc-cell">
             <div class="doc-label">Informe del Grupo</div>
             <div class="doc-sub">Director de Investigación</div>
-            <div class="doc-code">Código: SGD-GRP-{{ now('America/Bogota')->format('Ymd') }}</div>
+            <div class="doc-code">Código: SIGESI-GRP-{{ now('America/Bogota')->format('Ymd') }}</div>
         </div>
     </div>
 </div>
@@ -303,7 +303,7 @@ body { font-family: DejaVu Sans, Arial, sans-serif; font-size:10px; color:#1e293
 <div class="footer">
     <div class="footer-left">
         SENA · Servicio Nacional de Aprendizaje · {{ now('America/Bogota')->year }}<br>
-        <span style="color:#bbb;">Documento de uso interno. Sistema de Gestión Documental — SGD.</span>
+        <span style="color:#bbb;">Documento de uso interno. SIGESI — Sistema de Gestión de Grupos y Semilleros de Investigación.</span>
     </div>
     <div class="footer-center">sgd.sena.gov.co</div>
     <div class="footer-right">

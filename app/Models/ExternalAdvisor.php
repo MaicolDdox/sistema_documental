@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\TrainingCenter;
 
 class ExternalAdvisor extends Model
 {
@@ -15,6 +16,7 @@ class ExternalAdvisor extends Model
 
     protected $fillable = [
         'user_id',
+        'training_center_id',
         'nombre_completo',
         'email',
         'telefono',
@@ -29,6 +31,11 @@ class ExternalAdvisor extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function trainingCenter(): BelongsTo
+    {
+        return $this->belongsTo(TrainingCenter::class, 'training_center_id');
     }
 
     public function seedlings(): BelongsToMany

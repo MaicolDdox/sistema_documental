@@ -28,7 +28,7 @@ class MincienciasTypologyController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'codigo' => ['required', 'string', 'max:50'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         MincienciasTypology::create($validated);
         return redirect()->route('admin.minciencias-typologies.index')
@@ -45,7 +45,7 @@ class MincienciasTypologyController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'codigo' => ['required', 'string', 'max:50'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         $minciencias_typology->update($validated);
         return redirect()->route('admin.minciencias-typologies.index')

@@ -220,6 +220,40 @@ class AprendizController extends Controller
     }
 
     /**
+     * Permiso: aprendices.editar
+     * Desvincula al aprendiz del semillero del asesor.
+     * El usuario NO se elimina del sistema, solo se desvincula.
+     * Bloquea si está activo como autor en algún proyecto del semillero.
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        $semillero = $this->getSemilleroDelAsesor();
+        $aprendiz  = $this->findAprendizEnSemillero($id, $semillero);
+
+        // No permitir que el asesor se desvincula a sí mismo
+        if ($aprendiz->id === Auth::id()) {
+            return redirect()->route('asesor.aprendices.index')
+                ->with('error', 'No puedes desvincularte a ti mismo del semillero.');
+        }
+
+        // Bloquear si tiene participación activa en proyectos del semillero
+        $tieneProyecto = \App\Models\ProjectAuthor::whereIn('project_id', $semillero->projectIds())
+            ->where('user_id', $aprendiz->id)
+            ->where('activo', true)
+            ->exists();
+
+        if ($tieneProyecto) {
+            return redirect()->route('asesor.aprendices.index')
+                ->with('error', 'No puedes desvincular a este aprendiz porque está activo como autor en un proyecto del semillero. Retíralo del proyecto primero.');
+        }
+
+        $semillero->members()->detach($aprendiz->id);
+
+        return redirect()->route('asesor.aprendices.index')
+            ->with('success', 'Aprendiz desvinculado del semillero correctamente.');
+    }
+
+    /**
      * Busca un aprendiz verificando que pertenezca al semillero del asesor.
      */
     private function findAprendizEnSemillero(int $userId, ?Seedling $semillero): User

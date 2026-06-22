@@ -14,7 +14,7 @@ class KnowledgeGrandArea extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

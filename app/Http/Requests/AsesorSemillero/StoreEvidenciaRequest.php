@@ -16,7 +16,7 @@ class StoreEvidenciaRequest extends FormRequest
         return [
             'archivo'     => 'required|file|mimes:pdf,docx,jpg,jpeg,png,xlsx|max:10240',
             'nombre'      => 'required|string|max:200',
-            'descripccion' => 'nullable|string',
+            'descripcion' => 'nullable|string',
         ];
     }
 
