@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\InvestigadorAsociado;
 
+use App\Enums\EstadoRevisionEnum;
 use App\Http\Controllers\Controller;
 use App\Models\GroupProduct;
 use App\Models\Project;
@@ -25,10 +26,10 @@ class ReporteController extends Controller
         $metricas = [
             'total_proyectos'      => Project::where('project_creator_id', $userId)->count(),
             'total_productos'      => GroupProduct::where('author_id', $userId)->count(),
-            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', 'aprobado')->count(),
-            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'rechazado')->count(),
-            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'pendiente')->count(),
-            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', 'en_revision')->count(),
+            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Aprobado)->count(),
+            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Rechazado)->count(),
+            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Pendiente)->count(),
+            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::EnRevision)->count(),
         ];
 
         $porAnio = GroupProduct::where('author_id', $userId)
@@ -57,10 +58,10 @@ class ReporteController extends Controller
             ->get();
 
         $data = [
-            'pendiente'   => $productos->where('estado_revision', 'pendiente')->count(),
-            'en_revision' => $productos->where('estado_revision', 'en_revision')->count(),
-            'aprobado'    => $productos->where('estado_revision', 'aprobado')->count(),
-            'rechazado'   => $productos->where('estado_revision', 'rechazado')->count(),
+            'pendiente'   => $productos->where('estado_revision', EstadoRevisionEnum::Pendiente)->count(),
+            'en_revision' => $productos->where('estado_revision', EstadoRevisionEnum::EnRevision)->count(),
+            'aprobado'    => $productos->where('estado_revision', EstadoRevisionEnum::Aprobado)->count(),
+            'rechazado'   => $productos->where('estado_revision', EstadoRevisionEnum::Rechazado)->count(),
         ];
 
         return view('investigador.reportes.productos_estado', compact('data', 'productos'));
@@ -90,7 +91,7 @@ class ReporteController extends Controller
         $query = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
             ->where('author_id', $userId)
             ->orderBy('anio_publicacion', 'desc')
-            ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', 'aprobado'))
+            ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', EstadoRevisionEnum::Aprobado))
             ->when($tipo === 'internos', fn($q) => $q->where('tipo_proyecto_origen', '!=', 'SEMILLEROS'))
             ->when($tipo === 'semilleros', fn($q) => $q->where('tipo_proyecto_origen', 'SEMILLEROS'))
             ->when($desde, fn($q) => $q->whereBetween('created_at', [$desde, $hasta]));
@@ -157,16 +158,16 @@ class ReporteController extends Controller
         $metricas = [
             'total_proyectos'      => Project::where('project_creator_id', $userId)->count(),
             'total_productos'      => GroupProduct::where('author_id', $userId)->count(),
-            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', 'aprobado')->count(),
-            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'rechazado')->count(),
-            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', 'pendiente')->count(),
-            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', 'en_revision')->count(),
+            'productos_aprobados'  => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Aprobado)->count(),
+            'productos_rechazados' => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Rechazado)->count(),
+            'productos_pendientes' => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::Pendiente)->count(),
+            'productos_revision'   => GroupProduct::where('author_id', $userId)->where('estado_revision', EstadoRevisionEnum::EnRevision)->count(),
         ];
 
         $productos = GroupProduct::with(['product.project', 'mincienciasTypology', 'knowledgeArea'])
             ->where('author_id', $userId)
             ->orderBy('anio_publicacion', 'desc')
-            ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', 'aprobado'))
+            ->when($tipo === 'aprobados', fn($q) => $q->where('estado_revision', EstadoRevisionEnum::Aprobado))
             ->when($tipo === 'internos', fn($q) => $q->where('tipo_proyecto_origen', '!=', 'SEMILLEROS'))
             ->when($tipo === 'semilleros', fn($q) => $q->where('tipo_proyecto_origen', 'SEMILLEROS'))
             ->when($desde, fn($q) => $q->whereBetween('created_at', [$desde, $hasta]))

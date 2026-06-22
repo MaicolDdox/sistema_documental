@@ -50,6 +50,7 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
             Route::get('/aprendices/{id}/edit', [AprendizController::class, 'edit'])->name('aprendices.edit');
             Route::put('/aprendices/{id}', [AprendizController::class, 'update'])->name('aprendices.update');
             Route::patch('/aprendices/{id}/desactivar', [AprendizController::class, 'deactivate'])->name('aprendices.deactivate');
+            Route::delete('/aprendices/{id}', [AprendizController::class, 'destroy'])->name('aprendices.destroy');
         });
 
         // ─── PROYECTOS ─────────────────────────────────────────────────────────
@@ -120,6 +121,12 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:asesor_semi
 
         Route::middleware('can:evidencias.eliminar_propia')->group(function () {
             Route::delete('/evidencias/{id}', [EvidenciaController::class, 'destroy'])->name('evidencias.destroy');
+        });
+
+        // ─── DESCARGAS DE EVIDENCIAS ─────────────────────────────────────────────────
+        Route::middleware('can:evidencias.listar')->group(function () {
+            Route::get('/proyectos/{proyecto_id}/evidencias/{evidencia_id}/descargar', [EvidenciaController::class, 'descargarEvidenciaProyecto'])->name('evidencias.proyecto.download');
+            Route::get('/productos/{producto_id}/evidencias/{evidencia_id}/descargar', [EvidenciaController::class, 'descargarEvidenciaProducto'])->name('evidencias.producto.download');
         });
 
         // ─── REPORTES (EXPORTACIÓN) ──────────────────────────────────────────────

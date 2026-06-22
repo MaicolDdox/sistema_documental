@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\AsesorSemillero;
 
+use App\Enums\EstadoRevisionEnum;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use App\Models\Seedling;
@@ -37,19 +38,18 @@ class DashboardController extends Controller
             ->count('user_id');
 
         // Productos
-        $productos = Product::whereIn('project_id', $allProjectIds)->get();
+        $productos = Product::with('project')->whereIn('project_id', $allProjectIds)->get();
         $totalProductos     = $productos->count();
-        $pendienteCount     = $productos->where('estado_revision', 'pendiente')->count();
-        $aprobadoCount      = $productos->where('estado_revision', 'aprobado')->count();
-        $rechazadoCount     = $productos->where('estado_revision', 'rechazado')->count();
+        $pendienteCount     = $productos->where('estado_revision', EstadoRevisionEnum::Pendiente)->count();
+        $aprobadoCount      = $productos->where('estado_revision', EstadoRevisionEnum::Aprobado)->count();
+        $rechazadoCount     = $productos->where('estado_revision', EstadoRevisionEnum::Rechazado)->count();
 
-        // Productos rechazados recientes
-        $productosRechazados = Product::whereIn('project_id', $allProjectIds)
-            ->where('estado_revision', 'rechazado')
-            ->with('project')
-            ->latest()
-            ->limit(5)
-            ->get();
+        // Productos rechazados recientes (reutiliza colección ya cargada)
+        $productosRechazados = $productos
+            ->where('estado_revision', EstadoRevisionEnum::Rechazado)
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->values();
 
         // Proyectos sin aprendices autores
         $proyectosSinIntegrantes = Project::whereIn('id', $allProjectIds)

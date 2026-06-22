@@ -94,10 +94,33 @@
                         <input type="checkbox" name="crear_cuenta" id="crear_cuenta" value="1" x-model="crearCuenta" class="mt-1 w-4 h-4 text-[#39A900] border-slate-300 rounded focus:ring-2 focus:ring-[#39A900]">
                         <label for="crear_cuenta" class="text-sm text-slate-700">Crear cuenta en el sistema para que pueda ingresar con rol <strong>Asesor de Semillero</strong></label>
                     </div>
-                    <div x-show="crearCuenta" x-cloak>
-                        <label for="numero_documento_asesor" class="block text-sm font-medium text-slate-700 mb-1">N.º de documento <span class="text-red-500">*</span></label>
-                        <input type="text" name="numero_documento" id="numero_documento_asesor" value="{{ old('numero_documento') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10" placeholder="Requerido para la cuenta">
-                        @error('numero_documento') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    <div x-show="crearCuenta" x-cloak class="space-y-4">
+                        <div>
+                            <label for="tipo_documento_asesor" class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
+                            <select name="tipo_documento" id="tipo_documento_asesor" class="w-full border @error('tipo_documento') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <option value="">Selecciona un tipo...</option>
+                                @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
+                                    <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
+                                        {{ ucfirst($tipo->value) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tipo_documento') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="numero_documento_asesor" class="block text-sm font-medium text-slate-700 mb-1">N.º de documento <span class="text-red-500">*</span></label>
+                            <input type="text" name="numero_documento" id="numero_documento_asesor" value="{{ old('numero_documento') }}" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10" placeholder="Requerido para la cuenta">
+                            @error('numero_documento') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3 flex items-start gap-3">
+                            <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales_asesor" value="1"
+                                   {{ old('enviar_credenciales') ? 'checked' : '' }}
+                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                            <div>
+                                <label for="enviar_credenciales_asesor" class="text-sm font-medium text-slate-800 cursor-pointer select-none">Enviar credenciales por correo</label>
+                                <p class="text-xs text-slate-500 mt-0.5">Se enviará al asesor su número de documento y contraseña temporal.</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex gap-3 justify-end pt-2 border-t border-slate-100">
                         <button type="button" @click="modalNuevoAsesor = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">Cancelar</button>

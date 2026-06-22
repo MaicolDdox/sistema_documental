@@ -4,12 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SGD — {{ $header ?? 'Sistema de Gestión Documental' }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <title>SIGESI — {{ $header ?? 'Sistema de Gestión de Grupos y Semilleros de Investigación' }}</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|outfit:700,900&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <style>
         [x-cloak] { display: none !important; }
@@ -118,15 +116,15 @@
 
             $menuContext = $routeMenuContext ?: ($sidebarPrimaryRole?->name);
 
-            // Super administrador: mismo panel (Super admin + catálogos + usuarios) en todas las rutas,
-            // no solo en super-admin.* — evita que al entrar a otros módulos desaparezca el menú lateral.
+            // Super administrador: menú propio exclusivo (dashboard global, centros, vinculación).
+            // No comparte secciones de usuarios/catálogos con el administrador_sistema.
             if ($sidebarUser && $sidebarUser->hasRole('super_administrador')) {
                 $menuContext = 'super_administrador';
             }
 
             $showSuperAdmin = $sidebarUser && $sidebarUser->hasRole('super_administrador') && $menuContext === 'super_administrador';
-            $showAdmin = $sidebarUser && $sidebarUser->hasAnyRole('super_administrador', 'administrador_sistema', 'admin')
-                && in_array($menuContext, ['super_administrador', 'administrador_sistema', 'admin'], true);
+            $showAdmin = $sidebarUser && $sidebarUser->hasAnyRole('administrador_sistema', 'admin')
+                && in_array($menuContext, ['administrador_sistema', 'admin'], true);
             $showDirectorInv = $sidebarUser && $sidebarUser->hasRole('director_investigacion') && $menuContext === 'director_investigacion';
             $showDirectorSem = $sidebarUser && $sidebarUser->hasRole('director_semilleros') && $menuContext === 'director_semilleros';
             $showLiderSem = $sidebarUser && $sidebarUser->hasRole('lider_semillero') && $menuContext === 'lider_semillero';
@@ -145,11 +143,23 @@
                 || request()->routeIs('director.dashboard')
                 || request()->routeIs('investigador.dashboard')
                 || request()->routeIs('asesor.dashboard');
+
+            $sidebarCentro = $sidebarUser
+                ? cache()->remember(
+                    "sidebar_centro_{$sidebarUser->id}",
+                    now()->addHour(),
+                    fn () => optional($sidebarUser->trainingCenter)->nombre ?? 'SENA'
+                )
+                : 'SENA';
         @endphp
         <!-- Logo -->
         <div class="h-16 flex items-center px-4 border-b border-slate-100">
-            <a href="{{ $dashboardUrl }}" class="flex-1 flex items-center justify-center lg:flex-initial lg:justify-start" title="Sistema de Gestión Documental">
-                <img src="{{ asset('images/logo-sgd-icon.svg') }}" alt="SGD" class="h-9 w-auto">
+            <a href="{{ $dashboardUrl }}" class="flex-1 min-w-0 flex items-center gap-2.5 justify-center lg:justify-start" title="SIGESI">
+                <img src="{{ asset('images/sena-logo.png') }}" alt="SIGESI" class="h-8 w-auto flex-shrink-0">
+                <div class="flex flex-col leading-tight min-w-0 overflow-hidden">
+                    <span class="text-xs font-bold text-slate-800 tracking-tight">SIGESI</span>
+                    <span class="text-[10px] text-slate-400 leading-snug line-clamp-2">{{ $sidebarCentro }}</span>
+                </div>
             </a>
             <!-- Cerrar sidebar (solo móvil) -->
             <button @click="sidebarOpen = false"
@@ -189,6 +199,27 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
                     </svg>
                     Centro ↔ administrador
+                </a>
+                <a href="{{ route('admin.training-centers.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.training-centers.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0 text-amber-600/90" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/>
+                    </svg>
+                    Centros de Formación
+                </a>
+                <a href="{{ route('super-admin.administradores.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('super-admin.administradores*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0 text-amber-600/90" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                    Usuarios Administradores
+                </a>
+                <a href="{{ route('super-admin.usuarios-sistema.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('super-admin.usuarios-sistema*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0 text-amber-600/90" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/>
+                    </svg>
+                    Usuarios del Sistema
                 </a>
             @endif
 
@@ -260,13 +291,6 @@
                         </svg>
                     </button>
                     <div x-show="openCatalogs" x-collapse class="pl-11 pr-3 py-2 space-y-1">
-                        @if($sidebarUser && $sidebarUser->hasRole('super_administrador'))
-                            <a href="{{ route('admin.training-centers.index') }}"
-                               class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">
-                                <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/></svg>
-                                Centros de Formación
-                            </a>
-                        @endif
                         <a href="{{ route('admin.training-programs.index') }}"
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-programs.*') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
@@ -554,7 +578,8 @@
                 @endcan
 
             @else
-                {{-- Otros roles (permisos por capacidad) --}}
+                {{-- Otros roles (permisos por capacidad) — el super_administrador tiene su propio bloque arriba --}}
+                @if(!$showSuperAdmin)
                 @can('semilleros.listar')
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión Semilleros</p>
                 <a href="{{ route('dir-sem.dashboard') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
@@ -609,6 +634,7 @@
                     </div>
                 </div>
                 @endhasrole
+                @endif {{-- !$showSuperAdmin --}}
 
             @endif
         </nav>
@@ -618,20 +644,7 @@
             <button @click="open = !open"
                     class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                            hover:bg-slate-50 transition-all text-left">
-                <div class="w-8 h-8 rounded-full bg-[#0a1628] flex items-center
-                            justify-center flex-shrink-0">
-                    <span class="text-white text-xs font-bold">
-                        {{ strtoupper(substr(Auth::user()->email ?? 'U', 0, 2)) }}
-                    </span>
-                </div>
-                <div class="flex-1 overflow-hidden">
-                    <p class="text-sm font-medium text-slate-800 truncate">
-                        {{ Auth::user()->name ?? 'Usuario' }}
-                    </p>
-                    <p class="text-xs text-slate-400 truncate">
-                        {{ Auth::user()->email ?? '' }}
-                    </p>
-                </div>
+                <livewire:shared.user-name-display />
                 <svg class="w-4 h-4 text-slate-400 transition-transform flex-shrink-0"
                      :class="open ? 'rotate-180' : ''"
                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -750,9 +763,7 @@
 
                 <div class="hidden sm:flex items-center gap-2 min-w-0">
                     <div class="w-2 h-2 rounded-full bg-[#39A900] shrink-0"></div>
-                    <span class="text-xs text-slate-500 truncate max-w-[140px] md:max-w-[220px]">
-                        {{ Auth::user()->name ?? Auth::user()->email ?? '' }}
-                    </span>
+                    <livewire:shared.user-name-display mode="topbar" />
                 </div>
             </div>
         </header>
@@ -800,6 +811,36 @@
             </div>
             @endif
 
+            {{-- Banner de verificación de correo (opcional, descartable) --}}
+            @auth
+                @if(!Auth::user()->hasVerifiedEmail())
+                <div x-data="{ show: true }" x-show="show" x-cloak
+                     class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                    <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-amber-800">Verifica tu correo electrónico</p>
+                        <p class="text-xs text-amber-700 mt-0.5">
+                            Revisa tu bandeja de entrada o
+                            <form method="POST" action="{{ route('verification.send') }}" class="inline">
+                                @csrf
+                                <button type="submit" class="underline font-medium hover:text-amber-900 transition-colors">
+                                    reenvía el enlace aquí
+                                </button>
+                            </form>.
+                            Una vez verificado, este aviso desaparecerá.
+                        </p>
+                    </div>
+                    <button @click="show = false" class="text-amber-400 hover:text-amber-600 shrink-0 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                @endif
+            @endauth
+
             {{ $slot }}
         </main>
     </div>
@@ -808,7 +849,3 @@
     @livewireScripts
 </body>
 </html>
-
-<script>
-    console.log('%cSGD - AQUI ESTOYYYYY', 'color: #39A900; font-size: 16px; font-weight: bold;');
-</script>

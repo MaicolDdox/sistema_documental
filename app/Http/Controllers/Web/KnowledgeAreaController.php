@@ -29,7 +29,7 @@ class KnowledgeAreaController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'knowledge_grand_area_id' => ['required', 'exists:knowledge_grand_areas,id'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         KnowledgeArea::create($validated);
         return redirect()->route('admin.knowledge-areas.index')
@@ -47,7 +47,7 @@ class KnowledgeAreaController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'knowledge_grand_area_id' => ['required', 'exists:knowledge_grand_areas,id'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         $knowledge_area->update($validated);
         return redirect()->route('admin.knowledge-areas.index')

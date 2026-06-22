@@ -5,14 +5,13 @@ namespace App\Http\Controllers\DirectorSemilleros;
 use App\Http\Controllers\Controller;
 use App\Models\Seedling;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): View
+    public function index(): View
     {
         $user = Auth::user();
         $centerId = $user->training_center_id;
@@ -62,7 +61,7 @@ class DashboardController extends Controller
                 ->value('c');
         }
 
-        $misSemilleros = (clone $semillerosQuery)->with(['leader.person', 'members'])->orderBy('nombre')->take(6)->get();
+        $misSemilleros = $semilleros->sortBy('nombre')->take(6)->values();
 
         $chartResumenLabels = collect([
             'Semilleros activos',

@@ -9,13 +9,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
@@ -141,15 +144,41 @@ class User extends Authenticatable
 
     /**
      * Dirección de email para notificaciones (reset password, etc.)
-     * Prioriza email_institucional si existe, con fallback a users.email.
+     * Usa siempre users.email para que el hash de verificación de Fortify coincida.
      */
     public function routeNotificationForMail($notification = null): string|array
     {
-        if ($this->person && $this->person->email_institucional) {
-            return $this->person->email_institucional;
-        }
-
         return $this->email;
+    }
+
+    /**
+     * Envía la notificación de verificación de email con manejo de errores.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        try {
+            $this->notify(new VerifyEmail);
+        } catch (\Throwable $e) {
+            Log::error('User: fallo al enviar email de verificación', [
+                'user_id' => $this->id,
+                'email'   => $this->email,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Nombre para mostrar: primer nombre + primer apellido, con fallback al email.
+     */
+    public function getNameAttribute(): string
+    {
+        if ($this->person) {
+            $nombre = trim(($this->person->primer_nombre ?? '') . ' ' . ($this->person->primer_apellido ?? ''));
+            if ($nombre !== '') {
+                return $nombre;
+            }
+        }
+        return $this->email ?? 'Usuario';
     }
 
     /**

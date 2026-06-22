@@ -152,7 +152,7 @@ class ProductoController extends Controller
             'project_id'                       => ['nullable', 'exists:projects,id'],
             'product_base_id'                  => ['nullable', 'exists:products,id'],
             'titulo'                           => ['required', 'string', 'max:500'],
-            'descripccion'                     => ['nullable', 'string'],
+            'descripcion'                     => ['nullable', 'string'],
             'tipo_proyecto_origen'             => ['required', 'string'],
             'campo_otro'                       => ['nullable', 'string', 'max:255'],
             'codigo_proyecto_origen'           => ['nullable', 'string', 'max:100'],
@@ -234,7 +234,7 @@ class ProductoController extends Controller
 
         $validated = $request->validate([
             'titulo'                     => ['required', 'string', 'max:500'],
-            'descripccion'               => ['nullable', 'string'],
+            'descripcion'               => ['nullable', 'string'],
             'anio_publicacion'           => ['required', 'integer', 'min:2000'],
             'minciencias_typology_id'    => ['nullable', 'exists:minciencias_typologies,id'],
             'minciencias_subcategory_id' => ['nullable', 'exists:minciencias_subcategories,id'],

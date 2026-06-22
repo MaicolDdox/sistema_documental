@@ -96,9 +96,9 @@ class ProductoService
                 'product_id'                     => $product->id,
                 'tipo_proyecto_origen'           => $data['tipo_proyecto_origen'] ?? null,
                 'campo_otro'                     => $data['campo_otro'] ?? null,
-                'codigo_proyecto_origen'         => $data['codigo_proyecto_origen'] ?? null,
+                'codigo_proyecto_origen'         => $data['codigo_proyecto_origen'] ?? '0',
                 'titulo'                         => $data['titulo'],
-                'descripccion'                   => $data['descripccion'] ?? null,
+                'descripcion'                   => $data['descripcion'] ?? null,
                 'anio_publicacion'               => $data['anio_publicacion'],
                 'nombre_programa_formacion_impacto' => $data['nombre_programa_formacion_impacto'] ?? null,
                 'minciencias_typology_id'        => $data['minciencias_typology_id'] ?? null,
@@ -117,13 +117,18 @@ class ProductoService
                 $product->update(['assigned_investigator_user_id' => null]);
             }
 
-            // Registrar autores del producto
+            // Registrar autores del producto (autores son user_ids; necesitamos project_author_id)
             $autoresProducto = $data['autores'] ?? [];
-            foreach ($autoresProducto as $autorId) {
-                ProductAuthor::firstOrCreate([
-                    'product_id' => $product->id,
-                    'user_id'    => $autorId,
-                ]);
+            foreach ($autoresProducto as $userId) {
+                $projectAuthor = ProjectAuthor::where('project_id', $product->project_id)
+                    ->where('user_id', $userId)
+                    ->first();
+                if ($projectAuthor) {
+                    ProductAuthor::firstOrCreate([
+                        'product_id'        => $product->id,
+                        'project_author_id' => $projectAuthor->id,
+                    ]);
+                }
             }
 
             return $groupProduct;
@@ -153,9 +158,9 @@ class ProductoService
                 'tipo_proyecto_origen'      => $data['tipo_proyecto_origen'] ?? $groupProduct->tipo_proyecto_origen,
                 'evidencia'                 => $evidenciaGp,
                 'campo_otro'                => $data['campo_otro'] ?? $groupProduct->campo_otro,
-                'codigo_proyecto_origen'    => $data['codigo_proyecto_origen'] ?? $groupProduct->codigo_proyecto_origen,
+                'codigo_proyecto_origen'    => $data['codigo_proyecto_origen'] ?? $groupProduct->codigo_proyecto_origen ?? '0',
                 'titulo'                    => $data['titulo'] ?? $groupProduct->titulo,
-                'descripccion'              => $data['descripccion'] ?? $groupProduct->descripccion,
+                'descripcion'              => $data['descripcion'] ?? $groupProduct->descripcion,
                 'anio_publicacion'          => $data['anio_publicacion'] ?? $groupProduct->anio_publicacion,
                 'nombre_programa_formacion_impacto' => $data['nombre_programa_formacion_impacto'] ?? $groupProduct->nombre_programa_formacion_impacto,
                 'minciencias_typology_id'   => $data['minciencias_typology_id'] ?? $groupProduct->minciencias_typology_id,

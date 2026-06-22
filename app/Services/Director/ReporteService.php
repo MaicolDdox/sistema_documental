@@ -98,8 +98,8 @@ class ReporteService
 
         return [
             'total'     => $proyectos->count(),
-            'activos'   => $proyectos->where('estado.value', 'activo')->count(),
-            'inactivos' => $proyectos->where('estado.value', 'inactivo')->count(),
+            'activos'   => $proyectos->where('estado', EstadoEnum::Activo)->count(),
+            'inactivos' => $proyectos->where('estado', EstadoEnum::Inactivo)->count(),
             'lista'     => $proyectos,
         ];
     }
@@ -150,10 +150,10 @@ class ReporteService
                 'rol'         => $pivot->rol?->value ?? '',
                 'cvlac'       => $user?->person?->cvlac_link ?? null,
                 'total'       => $productos->count(),
-                'aprobados'   => $productos->where('estado_revision.value', 'aprobado')->count(),
-                'en_revision' => $productos->where('estado_revision.value', 'en_revision')->count(),
-                'pendientes'  => $productos->where('estado_revision.value', 'pendiente')->count(),
-                'rechazados'  => $productos->where('estado_revision.value', 'rechazado')->count(),
+                'aprobados'   => $productos->where('estado_revision', EstadoRevisionEnum::Aprobado)->count(),
+                'en_revision' => $productos->where('estado_revision', EstadoRevisionEnum::EnRevision)->count(),
+                'pendientes'  => $productos->where('estado_revision', EstadoRevisionEnum::Pendiente)->count(),
+                'rechazados'  => $productos->where('estado_revision', EstadoRevisionEnum::Rechazado)->count(),
             ];
         })->values();
     }

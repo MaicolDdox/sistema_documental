@@ -14,7 +14,7 @@ class EntityPosition extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

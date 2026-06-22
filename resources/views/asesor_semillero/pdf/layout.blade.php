@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'Reporte') - Sistema Documental</title>
+    <title>@yield('title', 'Reporte') - SIGESI</title>
     <style>
         @page { margin: 1.5cm; }
         body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11px; line-height: 1.4; color: #334155; margin: 0; padding: 0; background-color: #fff; }
@@ -88,7 +88,7 @@
     @yield('content')
 
     <div class="footer">
-        Este documento es generado automáticamente por el Sistema de Gestión Documental del SENA. Página <span class="pagenum"></span>
+        Este documento es generado automáticamente por SIGESI del SENA. Página <span class="pagenum"></span>
     </div>
 </body>
 </html>

@@ -38,7 +38,7 @@
                         @endif
                     </div>
                     <h2 class="text-lg font-semibold text-slate-900">{{ $producto->titulo }}</h2>
-                    <p class="text-sm text-slate-500 mt-1">{{ $producto->descripccion ?? 'Sin descripción.' }}</p>
+                    <p class="text-sm text-slate-500 mt-1">{{ $producto->descripcion ?? 'Sin descripción.' }}</p>
                 </div>
                 @if($estado === 'rechazado')
                 <a href="{{ route('investigador.productos.edit', $producto) }}"
@@ -115,6 +115,16 @@
                     <div class="flex-1">
                         <input type="file" name="archivos[]" accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx" multiple
                                class="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-sm file:font-medium hover:file:bg-slate-200 transition-all">
+                        @error('archivos')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                        @foreach($errors->messages() as $key => $messages)
+                            @if(str_starts_with($key, 'archivos.'))
+                                @foreach($messages as $msg)
+                                    <p class="text-xs text-red-600 mt-1">{{ $msg }}</p>
+                                @endforeach
+                            @endif
+                        @endforeach
                     </div>
                     <button type="submit" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all flex-shrink-0">
                         Subir evidencia

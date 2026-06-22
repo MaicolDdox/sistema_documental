@@ -26,15 +26,20 @@ class SemilleroController extends Controller
         $user = Auth::user();
 
         $query = Seedling::with(['leader.person', 'members', 'researchGroup', 'creator'])
-            ->where(function ($q) use ($user) {
-                if ($user->training_center_id) {
-                    $q->whereHas('leader', function ($leaderQuery) use ($user) {
-                        $leaderQuery->where('training_center_id', $user->training_center_id);
-                    })->orWhereHas('creator', function ($creatorQuery) use ($user) {
-                        $creatorQuery->where('training_center_id', $user->training_center_id);
-                    });
-                }
-            });
+            ->when(
+                $user->training_center_id,
+                fn ($q) => $q->where(function ($inner) use ($user) {
+                    $inner->whereHas('researchGroup', fn ($g) =>
+                            $g->where('training_center_id', $user->training_center_id)
+                        )
+                        ->orWhere(function ($noGroup) use ($user) {
+                            $noGroup->whereNull('research_group_id')
+                                ->whereHas('creator', fn ($c) =>
+                                    $c->where('training_center_id', $user->training_center_id)
+                                );
+                        });
+                })
+            );
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -145,6 +150,9 @@ class SemilleroController extends Controller
         $logoPath = '';
         if ($request->hasFile('logo')) {
             $logoPath = $request->file('logo')->store('semilleros/logos', 'public');
+            if ($logoPath === false) {
+                return redirect()->back()->with('error', 'No se pudo guardar el logo. Verifica los permisos de almacenamiento.');
+            }
         }
 
         Seedling::create([
@@ -154,7 +162,7 @@ class SemilleroController extends Controller
             'nombre'             => $validated['nombre'],
             'codigo'             => $codigo,
             'logo'               => $logoPath,
-            'descripccion'       => $validated['descripcion'] ?? null,
+            'descripcion'       => $validated['descripcion'] ?? null,
             'estado'             => EstadoEnum::Activo,
         ]);
 
@@ -233,11 +241,14 @@ class SemilleroController extends Controller
                 Storage::disk('public')->delete($semillero->logo);
             }
             $logoPath = $request->file('logo')->store('semilleros/logos', 'public');
+            if ($logoPath === false) {
+                return redirect()->back()->with('error', 'No se pudo guardar el logo. Verifica los permisos de almacenamiento.');
+            }
         }
 
         $semillero->update([
             'nombre'       => $validated['nombre'],
-            'descripccion' => $validated['descripcion'] ?? $semillero->descripccion,
+            'descripcion' => $validated['descripcion'] ?? $semillero->descripcion,
             'leader_id'    => $validated['lider_id'] ?? null,
             'logo'         => $logoPath,
         ]);
@@ -318,17 +329,19 @@ class SemilleroController extends Controller
 
     /**
      * Extra validación de regla de negocio "Solo gestiona semilleros del mismo centro_formacion_id"
+     * Scope principal: researchGroup.training_center_id. Fallback: creator.training_center_id.
      */
-    private function checkCentroFormacion(Seedling $semillero)
+    private function checkCentroFormacion(Seedling $semillero): void
     {
         $user = Auth::user();
-        $leaderCenterId = $semillero->leader?->training_center_id;
-        $creatorCenterId = $semillero->creator?->training_center_id;
+        if (! $user->training_center_id) {
+            return;
+        }
 
-        if (
-            ($leaderCenterId !== null && $leaderCenterId !== $user->training_center_id)
-            || ($leaderCenterId === null && $creatorCenterId !== null && $creatorCenterId !== $user->training_center_id)
-        ) {
+        $centerOfRecord = $semillero->researchGroup?->training_center_id
+            ?? $semillero->creator?->training_center_id;
+
+        if ($centerOfRecord !== null && (int) $centerOfRecord !== (int) $user->training_center_id) {
             abort(403, 'No tienes permiso para gestionar semilleros de otros centros de formación.');
         }
     }

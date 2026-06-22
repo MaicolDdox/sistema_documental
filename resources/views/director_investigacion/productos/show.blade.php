@@ -87,7 +87,7 @@
                         <div class="flex-1 min-w-0">
                             <p class="text-sm text-slate-700 truncate">{{ $ev->nombre ?? basename($ev->archivo ?? '') }}</p>
                         </div>
-                        <a href="{{ asset('storage/' . $ev->archivo) }}" target="_blank"
+                        <a href="{{ route('director.productos.evidencias.download', [$producto, $ev]) }}"
                            class="text-xs text-[#39A900] hover:underline font-medium shrink-0">Ver →</a>
                     </div>
                     @empty

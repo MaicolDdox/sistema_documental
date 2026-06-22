@@ -14,7 +14,7 @@ class TrainingProgramType extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

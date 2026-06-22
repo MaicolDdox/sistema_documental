@@ -41,6 +41,23 @@
                     @enderror
                 </div>
 
+                <!-- Tipo de Documento -->
+                <div>
+                    <label for="tipo_documento" class="block text-sm font-medium text-slate-700 mb-1.5">Tipo de Documento <span class="text-red-500">*</span></label>
+                    <select name="tipo_documento" id="tipo_documento" required
+                            class="w-full border @error('tipo_documento') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                        <option value="">Selecciona un tipo...</option>
+                        @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
+                            <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
+                                {{ ucfirst($tipo->value) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('tipo_documento')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Numero de Documento -->
                 <div>
                     <label for="numero_documento" class="block text-sm font-medium text-slate-700 mb-1.5">Número de Documento <span class="text-red-500">*</span></label>
@@ -115,7 +132,20 @@
                 @endif
             </div>
 
-            <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
+            <!-- Enviar credenciales -->
+            <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3.5 flex items-start gap-3">
+                <input type="checkbox" name="enviar_credenciales" id="enviar_credenciales" value="1"
+                       {{ old('enviar_credenciales') ? 'checked' : '' }}
+                       class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                <div>
+                    <label for="enviar_credenciales" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
+                        Enviar credenciales por correo
+                    </label>
+                    <p class="text-xs text-slate-500 mt-0.5">Se enviará un correo al usuario con su email y contraseña temporal. Solo disponible si el correo ingresado es válido.</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                 <a href="{{ route('admin.usuarios.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">
                     Cancelar
                 </a>

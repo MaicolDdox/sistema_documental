@@ -151,7 +151,7 @@ class ResearchGroupController extends Controller
             'training_center_id' => $centerRule,
             'nombre'             => ['required', 'string', 'max:255'],
             'codigo'             => ['nullable', 'string', 'max:100'],
-            'descripccion'       => ['nullable', 'string'],
+            'descripcion'       => ['nullable', 'string'],
             'estado'             => ['required', 'string'],
         ]);
     }

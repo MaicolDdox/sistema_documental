@@ -27,7 +27,7 @@ class MincienciasSubcategoryController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'minciencias_typology_id' => ['required', 'exists:minciencias_typologies,id'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         MincienciasSubcategory::create($validated);
         return redirect()->route('admin.minciencias-typologies.index')
@@ -45,7 +45,7 @@ class MincienciasSubcategoryController extends Controller
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
             'minciencias_typology_id' => ['required', 'exists:minciencias_typologies,id'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         $minciencias_subcategory->update($validated);
         return redirect()->route('admin.minciencias-typologies.index')

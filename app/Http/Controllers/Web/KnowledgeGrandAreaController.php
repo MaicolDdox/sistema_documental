@@ -24,7 +24,7 @@ class KnowledgeGrandAreaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         KnowledgeGrandArea::create($validated);
         return redirect()->route('admin.knowledge-areas.index')
@@ -40,7 +40,7 @@ class KnowledgeGrandAreaController extends Controller
     {
         $validated = $request->validate([
             'nombre' => ['required', 'string', 'max:255'],
-            'descripccion' => ['nullable', 'string', 'max:500'],
+            'descripcion' => ['nullable', 'string', 'max:500'],
         ]);
         $knowledge_grand_area->update($validated);
         return redirect()->route('admin.knowledge-areas.index')

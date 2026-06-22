@@ -12,7 +12,6 @@ use App\Models\Seedling;
 use App\Support\AsesorSemilleroContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -64,15 +63,15 @@ class EvidenciaController extends Controller
         $validated = $request->validated();
 
         $path = $request->file('archivo')->store('evidencias/proyectos', 'public');
-        $mime = $request->file('archivo')->getClientOriginalExtension();
-        $size = $request->file('archivo')->getSize();
-
+        if ($path === false) {
+            return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+        }
         ProjectEvidence::create([
             'project_id'  => $proyecto->id,
             'nombre'      => $validated['nombre'],
             'archivo'     => $path,
             'url_archivo' => Storage::disk('public')->url($path),
-            'descripccion' => $validated['descripccion'] ?? '',
+            'descripcion' => $validated['descripcion'] ?? '',
             'uploaded_by' => Auth::id(),
         ]);
 
@@ -92,18 +91,64 @@ class EvidenciaController extends Controller
         $validated = $request->validated();
 
         $path = $request->file('archivo')->store('evidencias/productos', 'public');
+        if ($path === false) {
+            return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+        }
 
         ProductEvidence::create([
             'product_id'  => $producto_id,
             'nombre'      => $validated['nombre'],
             'archivo'     => $path,
             'url_archivo' => Storage::disk('public')->url($path),
-            'descripccion' => $validated['descripccion'] ?? '',
+            'descripcion' => $validated['descripcion'] ?? '',
             'uploaded_by' => Auth::id(),
         ]);
 
         return redirect()->route('asesor.evidencias.producto.index', $producto_id)
             ->with('success', 'Evidencia subida correctamente.');
+    }
+
+    /**
+     * Permiso: evidencias.listar
+     * Descarga una evidencia de proyecto. Verifica que pertenezca al semillero del asesor.
+     */
+    public function descargarEvidenciaProyecto(int $proyecto_id, int $evidencia_id): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    {
+        $semillero = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($proyecto_id);
+        $this->findProyecto($proyecto_id, $semillero);
+
+        $evidencia = ProjectEvidence::where('project_id', $proyecto_id)->findOrFail($evidencia_id);
+
+        if (! Storage::disk('public')->exists($evidencia->archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        return Storage::disk('public')->download(
+            $evidencia->archivo,
+            $evidencia->nombre ?? basename($evidencia->archivo)
+        );
+    }
+
+    /**
+     * Permiso: evidencias.listar
+     * Descarga una evidencia de producto. Verifica que pertenezca al semillero del asesor.
+     */
+    public function descargarEvidenciaProducto(int $producto_id, int $evidencia_id): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    {
+        $productoPre = Product::findOrFail($producto_id);
+        $semillero   = AsesorSemilleroContext::semilleroVinculadoAlProyectoParaAsesor($productoPre->project_id);
+        $this->findProducto($producto_id, $semillero);
+
+        $evidencia = ProductEvidence::where('product_id', $producto_id)->findOrFail($evidencia_id);
+
+        if (! Storage::disk('public')->exists($evidencia->archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        return Storage::disk('public')->download(
+            $evidencia->archivo,
+            $evidencia->nombre ?? basename($evidencia->archivo)
+        );
     }
 
     /**
@@ -148,15 +193,11 @@ class EvidenciaController extends Controller
      */
     private function findProyecto(int $projectId, ?Seedling $semillero): Project
     {
-        if (!$semillero) {
+        if (! $semillero) {
             abort(403, 'No tienes un semillero asignado.');
         }
 
-        $projectIds = DB::table('project_seedlings')
-            ->where('seedling_id', $semillero->id)
-            ->pluck('project_id');
-
-        if (!$projectIds->contains($projectId)) {
+        if (! $semillero->projectIds()->contains($projectId)) {
             abort(403, 'Este proyecto no pertenece a tu semillero.');
         }
 
@@ -168,17 +209,13 @@ class EvidenciaController extends Controller
      */
     private function findProducto(int $productId, ?Seedling $semillero): Product
     {
-        if (!$semillero) {
+        if (! $semillero) {
             abort(403, 'No tienes un semillero asignado.');
         }
 
-        $projectIds = DB::table('project_seedlings')
-            ->where('seedling_id', $semillero->id)
-            ->pluck('project_id');
-
         $product = Product::findOrFail($productId);
 
-        if (!$projectIds->contains($product->project_id)) {
+        if (! $semillero->projectIds()->contains($product->project_id)) {
             abort(403, 'Este producto no pertenece a tu semillero.');
         }
 

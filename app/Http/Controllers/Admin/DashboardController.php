@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\ResearchGroup;
 use App\Models\Seedling;
@@ -20,8 +21,8 @@ class DashboardController extends Controller
      */
     public function index(Request $request): View
     {
+        /** @var \App\Models\User $auth */
         $auth = Auth::user();
-        $auth->loadMissing('roles');
         $primaryRoleLabel = null;
         $roleModuleNav = null;
         if ($auth->roles->isNotEmpty()) {
@@ -47,9 +48,9 @@ class DashboardController extends Controller
             $seedlingQuery = Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId));
             $totalCentros = TrainingCenter::activos()->where('id', $centerId)->count();
         } elseif ($centroAdmin) {
-            $userQuery = User::query()->whereRaw('0 = 1');
-            $groupQuery = ResearchGroup::query()->whereRaw('0 = 1');
-            $seedlingQuery = Seedling::query()->whereRaw('0 = 1');
+            $userQuery = User::query()->where('id', 0);
+            $groupQuery = ResearchGroup::query()->where('id', 0);
+            $seedlingQuery = Seedling::query()->where('id', 0);
             $totalCentros = 0;
         } else {
             $userQuery = $centerId ? User::where('training_center_id', $centerId) : User::query();
@@ -69,7 +70,7 @@ class DashboardController extends Controller
 
         // Métricas: grupos de investigación
         $totalGrupos = (clone $groupQuery)->count();
-        $gruposActivos = (clone $groupQuery)->where('estado', 'activo')->count();
+        $gruposActivos = (clone $groupQuery)->where('estado', EstadoEnum::Activo)->count();
 
         // Métricas: semilleros (seedlings de grupos del centro)
         $totalSemilleros = (clone $seedlingQuery)->count();
@@ -85,7 +86,7 @@ class DashboardController extends Controller
         $recentUsers = User::with(['person', 'roles'])
             ->when($super, fn ($q) => $q)
             ->when(! $super && $scoped, fn ($q) => $q->where('training_center_id', $centerId))
-            ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->whereRaw('0 = 1'))
+            ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->where('id', 0))
             ->when(! $super && ! $scoped && ! $centroAdmin && $centerId, fn ($q) => $q->where('training_center_id', $centerId))
             ->latest()
             ->take(4)
@@ -95,7 +96,7 @@ class DashboardController extends Controller
         $recentResearchGroups = ResearchGroup::with('trainingCenter')
             ->when($super, fn ($q) => $q)
             ->when(! $super && $scoped, fn ($q) => $q->where('training_center_id', $centerId))
-            ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->whereRaw('0 = 1'))
+            ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->where('id', 0))
             ->when(! $super && ! $scoped && ! $centroAdmin && $centerId, fn ($q) => $q->where('training_center_id', $centerId))
             ->latest()
             ->take(4)

@@ -48,11 +48,11 @@ class TrainingProgramController extends Controller
     {
         $record = TrainingRecord::firstOrCreate(
             ['codigo' => trim($request->input('ficha'))],
-            ['descripccion' => '']
+            ['descripcion' => '']
         );
         $type = TrainingProgramType::firstOrCreate(
             ['nombre' => trim($request->input('tipo'))],
-            ['descripccion' => '']
+            ['descripcion' => '']
         );
         $data = $request->validated();
         unset($data['ficha'], $data['tipo']);
@@ -74,11 +74,11 @@ class TrainingProgramController extends Controller
     {
         $record = TrainingRecord::firstOrCreate(
             ['codigo' => trim($request->input('ficha'))],
-            ['descripccion' => '']
+            ['descripcion' => '']
         );
         $type = TrainingProgramType::firstOrCreate(
             ['nombre' => trim($request->input('tipo'))],
-            ['descripccion' => '']
+            ['descripcion' => '']
         );
         $data = $request->validated();
         unset($data['ficha'], $data['tipo']);

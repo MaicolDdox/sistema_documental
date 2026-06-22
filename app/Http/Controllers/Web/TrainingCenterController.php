@@ -11,20 +11,21 @@ use App\Http\Requests\StoreTrainingCenterRequest;
 use App\Http\Requests\UpdateTrainingCenterRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class TrainingCenterController extends Controller
 {
     public function index(Request $request): View
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $query = TrainingCenter::with(['department', 'city'])->orderBy('nombre');
 
         if (TrainingCenterAccess::scopedToTrainingCenter($request->user())) {
             $query->where('id', (int) $request->user()->training_center_id);
         } elseif (TrainingCenterAccess::isCentroAdmin($request->user())) {
-            $query->whereRaw('0 = 1');
+            $query->where('id', 0);
         }
 
         if ($request->filled('search')) {
@@ -48,7 +49,7 @@ class TrainingCenterController extends Controller
 
     public function show(TrainingCenter $training_center)
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $training_center->load(['department', 'city']);
         return response()->json($training_center);
@@ -56,7 +57,7 @@ class TrainingCenterController extends Controller
 
     public function toggle(TrainingCenter $training_center): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $training_center->update(['activo' => !$training_center->activo]);
         $estado = $training_center->activo ? 'activado' : 'desactivado';
@@ -66,7 +67,7 @@ class TrainingCenterController extends Controller
 
     public function create(): View
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
@@ -75,7 +76,7 @@ class TrainingCenterController extends Controller
 
     public function store(StoreTrainingCenterRequest $request): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         TrainingCenter::create($request->validated());
         return redirect()->route('admin.training-centers.index')
@@ -84,7 +85,7 @@ class TrainingCenterController extends Controller
 
     public function edit(TrainingCenter $training_center): View
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
@@ -93,7 +94,7 @@ class TrainingCenterController extends Controller
 
     public function update(UpdateTrainingCenterRequest $request, TrainingCenter $training_center): RedirectResponse
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $training_center->update($request->validated());
         return redirect()->route('admin.training-centers.index')
@@ -102,7 +103,7 @@ class TrainingCenterController extends Controller
 
     public function destroy(Request $request, TrainingCenter $training_center)
     {
-        abort_unless(auth()->user()->hasRole('super_administrador'), 403);
+        abort_unless($this->isSuperAdmin(), 403);
 
         $razones = [];
 
@@ -137,6 +138,13 @@ class TrainingCenterController extends Controller
             return redirect()->route('admin.training-centers.index')
                 ->with('delete_error', $mensaje);
         }
+    }
+
+    private function isSuperAdmin(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        return (bool) $user?->hasRole('super_administrador');
     }
 
 }

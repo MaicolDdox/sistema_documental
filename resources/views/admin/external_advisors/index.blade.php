@@ -65,16 +65,16 @@
                             'user_email' => $advisor->user?->email ?? '',
                         ];
                         $editData = [
-                            'nombre_completo' => $advisor->nombre_completo,
-                            'email' => $advisor->email ?? '',
-                            'telefono' => $advisor->telefono ?? '',
-                            'institucion' => $advisor->institucion ?? '',
+                            'nombre_completo'    => $advisor->nombre_completo,
+                            'email'              => $advisor->email ?? '',
+                            'telefono'           => $advisor->telefono ?? '',
+                            'training_center_id' => $advisor->training_center_id ?? '',
                         ];
                     @endphp
                     <tr class="hover:bg-slate-50/50 transition-colors">
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $advisor->nombre_completo }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $advisor->email ?? '—' }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ $advisor->institucion ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ $advisor->trainingCenter->nombre ?? $advisor->institucion ?? '—' }}</td>
                         <td class="px-4 py-3">
                             @if($advisor->user_id)
                                 <span class="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
@@ -199,8 +199,14 @@
                             <input type="text" name="telefono" id="edit_telefono" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                         </div>
                         <div>
-                            <label for="edit_institucion" class="block text-sm font-medium text-slate-700 mb-1">Institución</label>
-                            <input type="text" name="institucion" id="edit_institucion" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <label for="edit_training_center_id" class="block text-sm font-medium text-slate-700 mb-1">Centro de Formación / Institución</label>
+                            <select name="training_center_id" id="edit_training_center_id"
+                                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                                <option value="">Selecciona un centro...</option>
+                                @foreach($trainingCenters as $tc)
+                                    <option value="{{ $tc->id }}">{{ $tc->nombre }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-2">
@@ -237,9 +243,17 @@
                         @error('telefono')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modal_institucion" class="block text-sm font-medium text-slate-700 mb-1">Institución</label>
-                        <input type="text" name="institucion" id="modal_institucion" value="{{ old('institucion') }}" class="w-full border @error('institucion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('institucion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="modal_training_center_id" class="block text-sm font-medium text-slate-700 mb-1">Centro de Formación / Institución</label>
+                        <select name="training_center_id" id="modal_training_center_id"
+                                class="w-full border @error('training_center_id') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <option value="">Selecciona un centro...</option>
+                            @foreach($trainingCenters as $tc)
+                                <option value="{{ $tc->id }}" {{ old('training_center_id') == $tc->id ? 'selected' : '' }}>
+                                    {{ $tc->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('training_center_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalNuevo = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -284,7 +298,7 @@
                 confirmEliminarNombre: '',
                 pendingDeleteFormId: null,
                 detalle: null,
-                editData: { nombre_completo: '', email: '', telefono: '', institucion: '' },
+                editData: { nombre_completo: '', email: '', telefono: '', training_center_id: '' },
                 editFormAction: '',
                 openDetalle(data) {
                     this.detalle = data;
@@ -293,17 +307,17 @@
                 openEditar(id, data) {
                     this.editFormAction = baseUrl + '/' + id;
                     this.editData = {
-                        nombre_completo: data.nombre_completo || '',
-                        email: data.email || '',
-                        telefono: data.telefono || '',
-                        institucion: data.institucion || ''
+                        nombre_completo:    data.nombre_completo || '',
+                        email:              data.email || '',
+                        telefono:           data.telefono || '',
+                        training_center_id: data.training_center_id || ''
                     };
                     this.modalEditar = true;
                     this.$nextTick(() => {
-                        document.getElementById('edit_nombre_completo').value = this.editData.nombre_completo;
-                        document.getElementById('edit_email').value = this.editData.email;
-                        document.getElementById('edit_telefono').value = this.editData.telefono;
-                        document.getElementById('edit_institucion').value = this.editData.institucion;
+                        document.getElementById('edit_nombre_completo').value    = this.editData.nombre_completo;
+                        document.getElementById('edit_email').value              = this.editData.email;
+                        document.getElementById('edit_telefono').value           = this.editData.telefono;
+                        document.getElementById('edit_training_center_id').value = this.editData.training_center_id;
                     });
                 },
                 intentEliminar(formId, nombre) {

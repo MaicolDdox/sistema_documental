@@ -20,7 +20,7 @@ class TrainingProgram extends Model
         'training_record_id',
         'training_program_type_id',
         'nombre',
-        'descripccion',
+        'descripcion',
         'jornada',
         'modalidad',
         'estado',

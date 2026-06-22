@@ -5,11 +5,13 @@ namespace App\Http\Controllers\DirectorInvestigacion;
 use App\Enums\EstadoRevisionEnum;
 use App\Http\Controllers\Controller;
 use App\Models\GroupProduct;
+use App\Models\ProductEvidence;
 use App\Models\ResearchGroupUser;
 use App\Services\Director\RevisionProductoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProductoRevisionController extends Controller
@@ -132,6 +134,23 @@ class ProductoRevisionController extends Controller
         $this->service->marcarEnRevision($producto, Auth::id(), $this->getGrupoId());
 
         return back()->with('success', 'Producto marcado como en revisión.');
+    }
+
+    /**
+     * Descarga una evidencia de producto para revisión del director.
+     */
+    public function downloadEvidencia(GroupProduct $producto, ProductEvidence $evidencia): \Symfony\Component\HttpFoundation\StreamedResponse|RedirectResponse
+    {
+        $this->autorizarProducto($producto);
+
+        if (!Storage::disk('local')->exists($evidencia->archivo)) {
+            return back()->withErrors(['error' => 'El archivo no se encontró en el servidor.']);
+        }
+
+        return Storage::disk('local')->download(
+            $evidencia->archivo,
+            $evidencia->nombre ?? basename($evidencia->archivo)
+        );
     }
 
     /**

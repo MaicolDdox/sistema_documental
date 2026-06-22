@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers\DirectorSemilleros;
 
+use App\Enums\EstadoEnum;
+use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Seedling;
 use App\Models\User;
-use App\Enums\EstadoEnum;
+use App\Services\Admin\NotificacionService;
+use App\Services\Admin\UserCreationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class LiderSemilleroController extends Controller
 {
+    public function __construct(
+        private readonly UserCreationService $userCreation,
+        private readonly NotificacionService $notificacion,
+    ) {}
+
     public function index(Request $request)
     {
         $this->authorize('usuarios.listar');
@@ -60,44 +65,26 @@ class LiderSemilleroController extends Controller
         $this->authorize('usuarios.crear_lider_semillero');
 
         $validated = $request->validate([
-            'nombre'           => 'required|string|max:100',
-            'apellido'         => 'required|string|max:100',
-            'numero_documento' => 'required|unique:users,numero_documento',
-            'email'            => 'required|email|unique:users,email',
-            'semillero_id'     => 'nullable|exists:seedlings,id',
+            'nombre'              => 'required|string|max:100',
+            'apellido'            => 'required|string|max:100',
+            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento'    => 'required|unique:users,numero_documento',
+            'email'               => 'required|email|unique:users,email',
+            'semillero_id'        => 'nullable|exists:seedlings,id',
             'enviar_credenciales' => 'nullable|boolean',
         ]);
 
-        $password = Str::random(10);
+        $password = \Illuminate\Support\Str::random(10);
 
-        // Crear usuario principal
-        // Nota: En la DB actual hay models User y Person. Dependiendo de cómo the project handles signup.
-        // Asumiendo llenar los fillables de User
-        // User: training_center_id, email, tipo_documento, numero_documento, password, estado
-        // Los nombres (primer_nombre, etc.) van a Person
-        $newUser = User::create([
-            'training_center_id' => Auth::user()->training_center_id,
-            'email'              => $validated['email'],
-            'numero_documento'   => $validated['numero_documento'],
-            'tipo_documento'     => \App\Enums\TipoDocumentoEnum::CedulaCiudadana,
-            'password'           => Hash::make($password),
-            'estado'             => EstadoEnum::Activo,
-        ]);
-
-        // Crear persona asociada (campos requeridos de people sin valor en el formulario)
-        $newUser->person()->create([
-            'primer_nombre'        => $validated['nombre'],
-            'primer_apellido'      => $validated['apellido'],
-            'segundo_apellido'     => '',
-            'email_institucional' => $validated['email'],
-            'genero'               => 'prefiero no decirlo',
-            'celular'             => 0,
-            'eps'                 => '',
-        ]);
-
-        // Asignar rol
-        $newUser->assignRole('lider_semillero');
-        $newUser->forceFill(['primary_role_name' => 'lider_semillero'])->saveQuietly();
+        $newUser = $this->userCreation->crearUsuario([
+            'email'            => $validated['email'],
+            'numero_documento' => $validated['numero_documento'],
+            'tipo_documento'   => $validated['tipo_documento'],
+            'password'         => $password,
+            'primer_nombre'    => $validated['nombre'],
+            'primer_apellido'  => $validated['apellido'],
+            'rol'              => 'lider_semillero',
+        ], Auth::user()->training_center_id);
 
         // Asignar a semillero si se seleccionó (solo sin líder previo y del mismo centro)
         if (!empty($validated['semillero_id'])) {
@@ -115,27 +102,13 @@ class LiderSemilleroController extends Controller
             $semillero->update(['leader_id' => $newUser->id]);
         }
 
-        $quiereCorreo = $request->boolean('enviar_credenciales');
-        $puedeEnviarCorreo = $quiereCorreo && (
+        $puedeEnviarCorreo = $request->boolean('enviar_credenciales') && (
             Auth::user()->can('usuarios.asignar_credenciales')
             || Auth::user()->can('usuarios.crear_lider_semillero')
         );
 
         if ($puedeEnviarCorreo) {
-            try {
-                Mail::raw(
-                    "Bienvenido al sistema GIDESTH.\n\nTus credenciales de acceso:\n\nCorreo: {$newUser->email}\nContraseña temporal: {$password}\n\nPor favor cambia tu contraseña al ingresar por primera vez.",
-                    function ($message) use ($newUser) {
-                        $message->to($newUser->email)->subject('Credenciales de acceso — GIDESTH');
-                    }
-                );
-            } catch (\Throwable $e) {
-                Log::error('LiderSemillero: fallo al enviar credenciales por correo', [
-                    'nuevo_usuario_id' => $newUser->id,
-                    'email' => $newUser->email,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $this->notificacion->enviarCredenciales($newUser, $password);
         }
 
         $redirect = redirect()->route('dir-sem.lideres.index')

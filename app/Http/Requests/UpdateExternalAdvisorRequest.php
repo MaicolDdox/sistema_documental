@@ -20,10 +20,10 @@ class UpdateExternalAdvisorRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'email' => $this->filled('email') ? $this->email : null,
-            'telefono' => $this->filled('telefono') ? $this->telefono : null,
-            'institucion' => $this->filled('institucion') ? $this->institucion : null,
-            'user_id' => $this->filled('user_id') ? $this->user_id : null,
+            'email'              => $this->filled('email') ? $this->email : null,
+            'telefono'           => $this->filled('telefono') ? $this->telefono : null,
+            'user_id'            => $this->filled('user_id') ? $this->user_id : null,
+            'training_center_id' => $this->filled('training_center_id') ? $this->training_center_id : null,
         ]);
     }
 
@@ -35,11 +35,11 @@ class UpdateExternalAdvisorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nombre_completo' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'telefono' => ['nullable', 'string', 'max:50'],
-            'institucion' => ['nullable', 'string', 'max:255'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'nombre_completo'    => ['required', 'string', 'max:255'],
+            'email'              => ['nullable', 'email', 'max:255'],
+            'telefono'           => ['nullable', 'string', 'max:50'],
+            'training_center_id' => ['nullable', 'integer', 'exists:training_centers,id'],
+            'user_id'            => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 }

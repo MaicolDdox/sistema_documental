@@ -51,6 +51,9 @@ class DocumentoSemilleroController extends Controller
         ]);
 
         $path = $request->file('archivo')->store('documentos', 'public');
+        if ($path === false) {
+            return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+        }
 
         SeedlingFile::create([
             'seedling_id' => $validated['semillero_id'] ?? null,

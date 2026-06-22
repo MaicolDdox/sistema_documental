@@ -34,6 +34,8 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_in
             Route::get('/',                          [InvestigadorController::class, 'index'])->name('index');
             Route::get('/create',                    [InvestigadorController::class, 'create'])->name('create');
             Route::post('/',                         [InvestigadorController::class, 'store'])->name('store');
+            Route::get('/{investigador}/edit',       [InvestigadorController::class, 'edit'])->name('edit');
+            Route::put('/{investigador}',            [InvestigadorController::class, 'update'])->name('update');
             Route::patch('/{investigador}/estado',   [InvestigadorController::class, 'toggleEstado'])->name('toggle-estado');
             Route::patch('/{investigador}/reset-password',  [InvestigadorController::class, 'resetPassword'])->name('reset-password');
             Route::patch('/{investigador}/rol',      [InvestigadorController::class, 'cambiarRol'])->name('cambiar-rol');
@@ -47,13 +49,15 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_in
             Route::patch('/{producto}/aprobar',        [ProductoRevisionController::class, 'aprobar'])->name('aprobar');
             Route::patch('/{producto}/rechazar',       [ProductoRevisionController::class, 'rechazar'])->name('rechazar');
             Route::patch('/{producto}/en-revision',    [ProductoRevisionController::class, 'cambiarAEnRevision'])->name('en-revision');
+            Route::get('/{producto}/evidencias/{evidencia}/download', [ProductoRevisionController::class, 'downloadEvidencia'])->name('evidencias.download');
         });
 
         // ── Documentos del Grupo ─────────────────────────────────────
         Route::prefix('documentos')->name('documentos.')->group(function () {
-            Route::get('/',                   [DocumentoGrupoController::class, 'index'])->name('index');
-            Route::post('/',                  [DocumentoGrupoController::class, 'store'])->name('store');
-            Route::delete('/{documento}',     [DocumentoGrupoController::class, 'destroy'])->name('destroy');
+            Route::get('/',                            [DocumentoGrupoController::class, 'index'])->name('index');
+            Route::post('/',                           [DocumentoGrupoController::class, 'store'])->name('store');
+            Route::delete('/{documento}',              [DocumentoGrupoController::class, 'destroy'])->name('destroy');
+            Route::get('/{documento}/download',        [DocumentoGrupoController::class, 'download'])->name('download');
         });
 
         // ── Reportes ─────────────────────────────────────────────────

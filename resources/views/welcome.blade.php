@@ -5,15 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Red Nacional de Investigación Académica y Semilleros</title>
         
-        <!-- Fonts: Inter & Outfit for a modern institutional look -->
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap" rel="stylesheet">
-
-        <!-- TailwindCSS for layout, but custom CSS for the design system -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <!-- Alpine.js para interactividad del navbar móvil -->
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|outfit:500,600,700,900&display=swap" rel="stylesheet">
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
         
         <style>
             /* Alpine.js: hide elements with x-cloak until Alpine initializes */
@@ -241,8 +236,8 @@
         <nav class="glass-nav fixed top-0 w-full z-50 py-4" x-data="{ open: false }">
             <div class="max-w-7xl mx-auto px-6 flex items-center justify-between relative">
                 <div class="flex items-center gap-2 text-decoration-none">
-                    <img src="{{ asset('images/logo-sgd-icon.svg') }}" alt="SGD" class="w-8 h-8 rounded-lg shadow-sm">
-                    <span class="font-heading font-bold text-lg tracking-tight text-slate-900">Sistema de Gestión <span class="text-[#39A900]">Documental</span></span>
+                    <img src="{{ asset('images/sena-logo.png') }}" alt="SIGESI" class="w-8 h-8 rounded-lg shadow-sm">
+                    <span class="font-heading font-bold text-lg tracking-tight text-slate-900"><span class="text-[#39A900]">SIGESI</span></span>
                 </div>
                 
                 <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -527,14 +522,14 @@
         <footer class="py-12 border-t border-slate-200">
             <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
                 <div class="flex items-center gap-2">
-                    <img src="{{ asset('images/logo-sgd-icon.svg') }}" alt="SGD" class="w-6 h-6 rounded shadow-sm opacity-80 mix-blend-multiply">
-                    <span class="font-heading font-bold text-sm tracking-tight text-slate-900">Sistema de Gestión <span class="text-[#39A900]">Documental</span></span>
+                    <img src="{{ asset('images/sena-logo.png') }}" alt="SIGESI" class="w-6 h-6 rounded shadow-sm opacity-80 mix-blend-multiply">
+                    <span class="font-heading font-bold text-sm tracking-tight text-slate-900"><span class="text-[#39A900]">SIGESI</span></span>
                     <span class="text-slate-400 mx-2">|</span>
                     <span class="text-xs text-slate-500 font-medium uppercase tracking-tight">Public Facing Institutional Portal</span>
                 </div>
                 
                 <div class="text-xs text-slate-400">
-                    &copy; {{ date('Y') }} Sistema de Gestión Documental y Red Nacional de Semilleros. Todos los derechos reservados.
+                    &copy; {{ date('Y') }} SIGESI — Sistema de Gestión de Grupos y Semilleros de Investigación. Todos los derechos reservados.
                 </div>
             </div>
         </footer>

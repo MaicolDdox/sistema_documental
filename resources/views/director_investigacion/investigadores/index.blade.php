@@ -1,4 +1,4 @@
-﻿<x-app-layout>
+<x-app-layout>
     <x-slot name="header">Investigadores del Grupo</x-slot>
 
     <div x-data="{
@@ -117,15 +117,25 @@
                                         </button>
                                     </form>
 
-                                    {{-- Restablecer contraseÃ±a --}}
+                                    {{-- Restablecer contraseña --}}
                                     <button type="button"
                                             @click="abrirReset({{ $inv->id }}, '{{ addslashes($inv?->person?->primer_nombre ?? $inv?->email ?? '') }}', '{{ route('director.investigadores.reset-password', $inv) }}'); open = false"
                                             class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
                                         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
                                         </svg>
-                                        <span>Restablecer contraseÃ±a</span>
+                                        <span>Restablecer contraseña</span>
                                     </button>
+
+                                    {{-- Editar datos --}}
+                                    <a href="{{ route('director.investigadores.edit', $inv) }}"
+                                       @click="open = false"
+                                       class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50">
+                                        <svg class="w-4 h-4 text-[#39A900]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                                        </svg>
+                                        <span>Editar datos</span>
+                                    </a>
 
                                     <div class="border-t border-slate-100 my-1"></div>
 

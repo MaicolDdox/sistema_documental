@@ -14,7 +14,7 @@ class InvestigationType extends Model
 
     protected $fillable = [
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

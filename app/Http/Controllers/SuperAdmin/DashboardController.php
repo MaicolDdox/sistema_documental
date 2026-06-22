@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ResearchGroup;
@@ -25,7 +26,7 @@ class DashboardController extends Controller
             ->count();
 
         $totalGrupos = ResearchGroup::query()->count();
-        $gruposActivos = ResearchGroup::query()->where('estado', 'activo')->count();
+        $gruposActivos = ResearchGroup::query()->where('estado', EstadoEnum::Activo)->count();
 
         $totalSemilleros = Seedling::query()->count();
         $semestreInicio = now()->month <= 6 ? 1 : 7;

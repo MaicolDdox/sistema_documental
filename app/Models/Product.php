@@ -24,6 +24,7 @@ class Product extends Model
         'estado',
         'estado_revision',
         'observacion_revision',
+        'assigned_investigator_user_id',
     ];
 
     protected $casts = [

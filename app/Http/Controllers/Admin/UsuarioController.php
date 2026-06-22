@@ -3,23 +3,30 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\EstadoEnum;
+use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
 use App\Models\TrainingCenter;
 use App\Models\User;
+use App\Services\Admin\NotificacionService;
+use App\Services\Admin\ResearchGroupService;
+use App\Services\Admin\UserCreationService;
 use App\Support\RoleModuleLinks;
 use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Str;
 
 class UsuarioController extends Controller
 {
+    public function __construct(
+        private readonly UserCreationService $userCreation,
+        private readonly ResearchGroupService $researchGroup,
+        private readonly NotificacionService $notificacion,
+    ) {}
+
     /**
      * Display a listing of the users.
      * Permission: usuarios.listar
@@ -27,8 +34,6 @@ class UsuarioController extends Controller
     public function index(Request $request)
     {
         $this->authorize('usuarios.listar');
-
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $auth = $request->user();
         $query = TrainingCenterAccess::scopeUserQueryForList(
@@ -76,7 +81,13 @@ class UsuarioController extends Controller
     {
         $user = auth()->user();
         if ($user->can('usuarios.asignar_rol')) {
-            return Role::orderBy('name')->pluck('name')->all();
+            $excluded = TrainingCenterAccess::isSuperAdmin($user)
+                ? []
+                : ['administrador_sistema', 'super_administrador'];
+            return Role::orderBy('name')
+                ->when(! empty($excluded), fn ($q) => $q->whereNotIn('name', $excluded))
+                ->pluck('name')
+                ->all();
         }
         $names = [];
         if ($user->can('usuarios.crear_lider_semillero')) {
@@ -200,7 +211,7 @@ class UsuarioController extends Controller
         $hadRoles = $usuario->roles()->exists();
         RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($validated['rol']);
-        $this->autoAssignResearchGroup($usuario, $validated['rol']);
+        $this->researchGroup->autoVincularUsuario($usuario, $validated['rol']);
         if (! $hadRoles) {
             $usuario->refresh();
             $usuario->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
@@ -236,28 +247,33 @@ class UsuarioController extends Controller
     {
         $this->authorize('usuarios.crear');
 
+        $actor = auth()->user();
+        if (! TrainingCenterAccess::isSuperAdmin($actor)
+            && in_array($request->input('rol'), ['administrador_sistema', 'super_administrador'], true)
+        ) {
+            abort(403, 'No tienes permiso para crear usuarios con ese rol.');
+        }
+
         $validated = $request->validate([
-            'nombre'           => 'required|string|max:100',
-            'apellido'         => 'required|string|max:100',
-            'numero_documento' => 'required|string|max:20|unique:users,numero_documento',
-            'email'            => 'required|email|unique:users,email',
-            'password'         => 'required|string|min:8',
-            'rol'              => 'nullable|exists:roles,name',
+            'nombre'              => 'required|string|max:100',
+            'apellido'            => 'required|string|max:100',
+            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento'    => 'required|string|max:20|unique:users,numero_documento',
+            'email'               => 'required|email|unique:users,email',
+            'password'            => 'required|string|min:8',
+            'rol'                 => 'nullable|exists:roles,name',
+            'enviar_credenciales' => 'nullable|boolean',
         ]);
 
-        $actor = auth()->user();
         if (TrainingCenterAccess::isSuperAdmin($actor)) {
             $request->validate([
                 'training_center_id' => ['nullable', 'exists:training_centers,id'],
             ]);
         }
 
-        // Separar nombre y apellido en primer/segundo (para tabla people)
-        [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
-        [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
 
-        // Por defecto: quien crea no es super → hereda el centro del creador (usuarios de su sede).
-        // Super administrador: no copia su propio centro; elige en el formulario o queda sin centro (vinculación manual después).
         if (! TrainingCenterAccess::isSuperAdmin($actor)) {
             $trainingCenterId = $actor->training_center_id;
         } else {
@@ -278,42 +294,34 @@ class UsuarioController extends Controller
             }
         }
 
-        $user = User::create([
-            'training_center_id' => $trainingCenterId,
-            'email'              => $validated['email'],
-            'numero_documento'   => $validated['numero_documento'],
-            // Usamos el valor del enum por defecto: cédula de ciudadanía
-            'tipo_documento'     => \App\Enums\TipoDocumentoEnum::CedulaCiudadana->value,
-            'password'           => Hash::make($validated['password']),
-            'estado'             => EstadoEnum::Activo,
-        ]);
+        $plainPassword = $validated['password'];
 
-        // Guardar Persona (perfil mínimo; otros campos podrán completarse luego)
-        Person::create([
-            'user_id'             => $user->id,
-            'primer_nombre'       => $primerNombre,
-            'segundo_nombre'      => $segundoNombre,
-            'primer_apellido'     => $primerApellido,
-            'segundo_apellido'    => $segundoApellido,
-            'email_institucional' => $validated['email'],
-        ]);
+        $user = $this->userCreation->crearUsuario([
+            'email'            => $validated['email'],
+            'numero_documento' => $validated['numero_documento'],
+            'tipo_documento'   => $validated['tipo_documento'],
+            'password'         => $plainPassword,
+            'primer_nombre'    => $primerNombre,
+            'segundo_nombre'   => $segundoNombre,
+            'primer_apellido'  => $primerApellido,
+            'segundo_apellido' => $segundoApellido,
+            'rol'              => $validated['rol'] ?? null,
+        ], $trainingCenterId);
 
-        // Asignar rol solo si se envió
         if (! empty($validated['rol'])) {
-            $user->assignRole($validated['rol']);
-            $this->autoAssignResearchGroup($user, $validated['rol']);
-            $user->refresh();
-            $user->forceFill(['primary_role_name' => $validated['rol']])->saveQuietly();
+            $this->researchGroup->autoVincularUsuario($user, $validated['rol']);
         }
 
-        // Enviar credenciales (Si tiene permiso usuarios.asignar_credenciales)
-        if (auth()->user()->can('usuarios.asignar_credenciales')) {
-            // Nota: Aquí se debería crear un Mailable real
-            // Mail::to($user->email)->send(new \App\Mail\UserCredentialsMail($user, $validated['password']));
+        if ($request->boolean('enviar_credenciales')) {
+            $this->notificacion->enviarCredenciales($user, $plainPassword);
         }
 
-        return redirect()->route('admin.usuarios.index')
-                         ->with('success', 'Usuario creado correctamente.');
+        $nombre  = trim("{$primerNombre} {$primerApellido}");
+        $mensaje = $request->boolean('enviar_credenciales')
+            ? "Usuario {$nombre} creado. Se enviaron las credenciales por correo."
+            : "Usuario {$nombre} creado correctamente.";
+
+        return redirect()->route('admin.usuarios.index')->with('success', $mensaje);
     }
 
     /**
@@ -371,9 +379,8 @@ class UsuarioController extends Controller
             }
         }
 
-        // Separar nombre y apellido en primer/segundo
-        [$primerNombre, $segundoNombre] = $this->splitNombreCompleto($validated['nombre']);
-        [$primerApellido, $segundoApellido] = $this->splitNombreCompleto($validated['apellido']);
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
 
         $userAttrs = [
             'email'            => $validated['email'],
@@ -407,7 +414,7 @@ class UsuarioController extends Controller
                 'linkage_type_id'      => \App\Models\LinkageType::first()?->id,
                 'training_program_id'  => \App\Models\TrainingProgram::first()?->id,
                 'genero'               => 'prefiero no decirlo',
-                'celular'              => 0,
+                'celular'              => 0 ,
                 'eps'                  => '',
             ]);
         }
@@ -418,7 +425,7 @@ class UsuarioController extends Controller
         if (! $usuario->hasRole($validated['rol'])) {
             $usuario->assignRole($validated['rol']);
         }
-        $this->autoAssignResearchGroup($usuario, $validated['rol']);
+        $this->researchGroup->autoVincularUsuario($usuario, $validated['rol']);
         $usuario->primary_role_name = $validated['rol'];
         $usuario->save();
 
@@ -426,27 +433,10 @@ class UsuarioController extends Controller
                          ->with('success', 'Usuario actualizado correctamente.');
     }
 
-    /**
-     * Separa un nombre/apellido completo en primer y segundo componente.
-     * Ej: "Juan Carlos" => ["Juan", "Carlos"], "Pérez" => ["Pérez", null]
-     */
     private function findUserScoped(int $id): User
     {
         return TrainingCenterAccess::scopeUserQueryForList(User::query(), auth()->user())
             ->findOrFail($id);
-    }
-
-    private function splitNombreCompleto(string $valor): array
-    {
-        $valor = trim(preg_replace('/\s+/', ' ', $valor));
-        if ($valor === '') {
-            // Devolvemos cadenas vacías para evitar problemas con columnas NOT NULL
-            return ['', ''];
-        }
-        $partes = explode(' ', $valor, 2);
-        $primer = $partes[0] ?? '';
-        $segundo = $partes[1] ?? '';
-        return [$primer, $segundo];
     }
 
     /**
@@ -491,7 +481,7 @@ class UsuarioController extends Controller
         $hadRoles = $usuario->roles()->exists();
         RoleModuleLinks::lockPrimaryRoleBeforeAddingRole($usuario);
         $usuario->assignRole($request->rol);
-        $this->autoAssignResearchGroup($usuario, $request->rol);
+        $this->researchGroup->autoVincularUsuario($usuario, $request->rol);
         if (! $hadRoles) {
             $usuario->refresh();
             $usuario->forceFill(['primary_role_name' => $request->rol])->saveQuietly();
@@ -545,39 +535,6 @@ class UsuarioController extends Controller
         $usuario->delete();
 
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado correctamente.');
-    }
-
-    /**
-     * Autovincula al usuario al grupo de investigación de su centro si adquiere rol investigativo.
-     */
-    private function autoAssignResearchGroup(User $usuario, string $rol): void
-    {
-        if (!in_array($rol, ['director_investigacion', 'investigador_asociado'], true)) {
-            return;
-        }
-
-        if (!$usuario->training_center_id) {
-            return;
-        }
-
-        $researchGroup = \App\Models\ResearchGroup::where('training_center_id', $usuario->training_center_id)->first();
-        if (!$researchGroup) {
-            return;
-        }
-
-        $rolGrupo = $rol === 'director_investigacion'
-            ? \App\Enums\RolGrupoEnum::Director
-            : \App\Enums\RolGrupoEnum::InvestigadorAsociado;
-
-        \App\Models\ResearchGroupUser::firstOrCreate(
-            [
-                'research_group_id' => $researchGroup->id,
-                'user_id' => $usuario->id,
-            ],
-            [
-                'rol' => $rolGrupo,
-            ]
-        );
     }
 
     /**

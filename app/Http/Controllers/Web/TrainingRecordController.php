@@ -15,7 +15,7 @@ class TrainingRecordController extends Controller
     private function getFields() {
         return [
             'codigo' => ['type' => 'text', 'options' => []],
-            'descripccion' => ['type' => 'text', 'options' => []],
+            'descripcion' => ['type' => 'text', 'options' => []],
 
         ];
     }

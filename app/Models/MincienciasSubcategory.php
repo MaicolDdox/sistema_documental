@@ -16,7 +16,7 @@ class MincienciasSubcategory extends Model
     protected $fillable = [
         'minciencias_typology_id',
         'nombre',
-        'descripccion',
+        'descripcion',
     ];
 
     // ─────────────────────────────────────────────

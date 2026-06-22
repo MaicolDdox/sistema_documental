@@ -36,6 +36,37 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureAuthentication();
         $this->configureRateLimiting();
+        $this->configureTwoFactorDebugLogging();
+    }
+
+    /**
+     * TEMPORAL: registra en el log el detalle de cada intento de 2FA en login
+     * para diagnosticar BUG-20260616-03. Quitar una vez resuelto.
+     */
+    private function configureTwoFactorDebugLogging(): void
+    {
+        Event::listen(TwoFactorAuthenticationFailed::class, function (TwoFactorAuthenticationFailed $event) {
+            $engine = new Google2FA();
+            $secret = decrypt($event->user->two_factor_secret);
+
+            Log::info('[2FA-DEBUG] Intento FALLIDO', [
+                'user_id' => $event->user->id,
+                'numero_documento' => $event->user->numero_documento,
+                'codigo_enviado' => request()->input('code'),
+                'codigo_esperado_por_servidor_ahora' => $engine->getCurrentOtp($secret),
+                'login_id_en_sesion' => session('login.id'),
+                'hora_servidor' => now()->toDateTimeString(),
+            ]);
+        });
+
+        Event::listen(ValidTwoFactorAuthenticationCodeProvided::class, function (ValidTwoFactorAuthenticationCodeProvided $event) {
+            Log::info('[2FA-DEBUG] Intento EXITOSO', [
+                'user_id' => $event->user->id,
+                'numero_documento' => $event->user->numero_documento,
+                'codigo_enviado' => request()->input('code'),
+                'hora_servidor' => now()->toDateTimeString(),
+            ]);
+        });
     }
 
     /**
@@ -57,6 +88,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn () => view('livewire.auth.confirm-password'));
         Fortify::resetPasswordView(fn () => view('livewire.auth.reset-password'));
         Fortify::requestPasswordResetLinkView(fn () => view('livewire.auth.forgot-password'));
+        Fortify::verifyEmailView(fn () => view('livewire.auth.verify-email'));
     }
 
     /**

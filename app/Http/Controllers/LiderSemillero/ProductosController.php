@@ -16,7 +16,7 @@ use App\Models\ProductAuthor;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
 use App\Models\User;
-use App\Services\Investigador\ProductoService;
+use App\Services\LiderSemillero\ProductoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +26,7 @@ use Illuminate\View\View;
 
 class ProductosController extends Controller
 {
+    public function __construct(private readonly ProductoService $productoService) {}
     /**
      * Lista los productos del semillero del líder. Solo productos de su semillero; no puede aprobar los propios.
      */
@@ -37,9 +38,7 @@ class ProductosController extends Controller
         $investigadoresGrupo = collect();
 
         if ($semillero) {
-            $projectIds = DB::table('project_seedlings')
-                ->where('seedling_id', $semillero->id)
-                ->pluck('project_id');
+            $projectIds = $semillero->projectIds();
 
             $productos = Product::with([
                     'project',
@@ -51,13 +50,7 @@ class ProductosController extends Controller
                 ->whereIn('project_id', $projectIds)
                 ->orderBy('updated_at', 'desc')
                 ->get()
-                ->map(function ($prod) {
-                    $autorPrincipal = $prod->productAuthors->first()?->projectAuthor?->user;
-                    $prod->es_mio = $autorPrincipal && $autorPrincipal->id === Auth::id();
-                    $prod->autor = $autorPrincipal;
-                    $prod->ya_en_grupo = $prod->groupProducts->isNotEmpty();
-                    return $prod;
-                });
+                ->map(fn ($prod) => $this->productoService->anotarMetadatos($prod, Auth::id()));
 
             if ($semillero->research_group_id) {
                 $investigadoresGrupo = User::query()
@@ -116,9 +109,7 @@ class ProductosController extends Controller
                 ->with('error', 'No tienes un semillero asignado como líder.');
         }
 
-        $projectIds = DB::table('project_seedlings')
-            ->where('seedling_id', $semillero->id)
-            ->pluck('project_id');
+        $projectIds = $semillero->projectIds();
         if (!in_array((int) $request->input('project_id'), $projectIds->toArray())) {
             abort(403, 'El proyecto no pertenece a tu semillero.');
         }
@@ -147,6 +138,9 @@ class ProductosController extends Controller
             $archivoProducto = $validated['url_repositorio'];
         } else {
             $archivoProducto = $request->file('evidencia')->store('productos/evidencias', 'public');
+            if ($archivoProducto === false) {
+                return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
+            }
         }
 
         $product = Product::create([
@@ -190,16 +184,6 @@ class ProductosController extends Controller
             abort(403, 'El producto no pertenece a tu semillero.');
         }
 
-        if ($producto->groupProducts()->exists()) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'Este producto ya está vinculado al grupo de investigación.');
-        }
-
-        if ($producto->estado_revision !== EstadoRevisionEnum::Aprobado) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'Solo puedes asignar productos aprobados.');
-        }
-
         $validator = Validator::make($request->all(), [
             'assigned_investigator_user_id' => ['required', 'exists:users,id'],
         ], [
@@ -211,31 +195,14 @@ class ProductosController extends Controller
                 ->withInput()
                 ->with('open_asignar_product_id', $producto->id);
         }
-        $validated = $validator->validated();
 
-        $invId = (int) $validated['assigned_investigator_user_id'];
-        $investigador = User::with(['roles', 'researchGroups'])->findOrFail($invId);
+        $invId = (int) $validator->validated()['assigned_investigator_user_id'];
 
-        if (! $investigador->hasRole('investigador_asociado')) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'El usuario seleccionado no tiene rol de investigador asociado.');
+        try {
+            $this->productoService->asignarAInvestigador($producto, $invId, $semillero, Auth::user());
+        } catch (\DomainException $e) {
+            return redirect()->route('lider-sem.productos')->with('error', $e->getMessage());
         }
-
-        $idsGruposInv = $investigador->researchGroups->pluck('id')->map(fn ($id) => (int) $id)->all();
-        if (! in_array((int) $semillero->research_group_id, $idsGruposInv, true)) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'El investigador debe pertenecer al mismo grupo de investigación vinculado a tu semillero.');
-        }
-
-        if (Auth::user()->training_center_id
-            && (int) $investigador->training_center_id !== (int) Auth::user()->training_center_id) {
-            return redirect()->route('lider-sem.productos')
-                ->with('error', 'El investigador debe pertenecer a tu mismo centro de formación.');
-        }
-
-        $producto->update([
-            'assigned_investigator_user_id' => $invId,
-        ]);
 
         return redirect()
             ->route('lider-sem.productos')
@@ -253,10 +220,7 @@ class ProductosController extends Controller
         }
 
         // Verificar que el proyecto pertenece al semillero del líder
-        $pertenece = DB::table('project_seedlings')
-            ->where('project_id', $project_id)
-            ->where('seedling_id', $semillero->id)
-            ->exists();
+        $pertenece = $semillero->projectIds()->contains($project_id);
 
         if (!$pertenece) {
             return response()->json([]);
@@ -302,13 +266,9 @@ class ProductosController extends Controller
         $producto->observacion_revision = $request->input('observaciones');
         $producto->save();
 
-        // Sincronizar también con el registro en group_products (tablero del investigador)
-        $groupProduct = GroupProduct::where('product_id', $producto->id)->first();
-        if ($groupProduct) {
-            $groupProduct->estado_revision = EstadoRevisionEnum::Aprobado;
-            $groupProduct->observaciones_revision = $request->input('observaciones');
-            $groupProduct->save();
-        }
+        // La sincronización con group_products la maneja el observer en GroupProduct::booted().
+        // Si se desea propagar también al revés (Product → GroupProduct), los servicios
+        // del Director (RevisionProductoService) son la fuente de verdad para ese flujo.
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto aprobado correctamente.');
@@ -348,13 +308,7 @@ class ProductosController extends Controller
         $producto->observacion_revision = $validated['observaciones'];
         $producto->save();
 
-        // Sincronizar también con el registro en group_products (tablero del investigador)
-        $groupProduct = GroupProduct::where('product_id', $producto->id)->first();
-        if ($groupProduct) {
-            $groupProduct->estado_revision = EstadoRevisionEnum::Rechazado;
-            $groupProduct->observaciones_revision = $validated['observaciones'];
-            $groupProduct->save();
-        }
+        // La sincronización con group_products la maneja el observer en GroupProduct::booted().
 
         return redirect()->route('lider-sem.productos')
             ->with('success', 'Producto rechazado.');
@@ -362,12 +316,11 @@ class ProductosController extends Controller
 
     private function perteneceAlSemillero(Product $producto, int $seedlingId): bool
     {
-        if (!$producto->project_id) {
+        if (! $producto->project_id) {
             return false;
         }
-        return DB::table('project_seedlings')
-            ->where('project_id', $producto->project_id)
-            ->where('seedling_id', $seedlingId)
-            ->exists();
+        $semillero = \App\Models\Seedling::find($seedlingId);
+
+        return $semillero && $semillero->projectIds()->contains($producto->project_id);
     }
 }

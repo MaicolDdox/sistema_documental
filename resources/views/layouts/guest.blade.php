@@ -3,17 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'SGD Auth') }}</title>
+    <title>{{ config('app.name', 'SIGESI') }}</title>
 
-    <!-- Fonts: Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|outfit:500,600,700,900&display=swap" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Tailwind CSS (CDN for now, matching other views) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Custom Styles for SGD layout -->
+    <!-- Custom Styles -->
     <style>
         :root {
             --verdesena-base: #39A900;
@@ -55,7 +51,7 @@
 
         <!-- Imagen de fondo fullbleed -->
         <img src="{{ asset('images/login.png') }}"
-             alt="SGD Banner"
+             alt="SIGESI Banner"
              class="absolute inset-0 w-full h-full object-cover object-center">
 
         <!-- Overlay degradado para legibilidad -->
@@ -68,14 +64,14 @@
 
             <!-- Logo arriba -->
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/logo-sgd-icon.svg') }}"
-                     alt="SGD" class="w-10 h-10">
+                <img src="{{ asset('images/sena-logo.png') }}"
+                     alt="SIGESI" class="w-10 h-10">
                 <div>
                     <p class="text-white font-semibold text-sm leading-tight">
-                        Sistema de Gestión
+                        SIGESI
                     </p>
                     <p class="text-[#39A900] font-semibold text-sm leading-tight">
-                        Documental
+                        Grupos y Semilleros de Investigación
                     </p>
                 </div>
             </div>
@@ -105,8 +101,8 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative overflow-y-auto">
         <!-- Logo móvil solo visible en responsive (< lg) -->
         <a href="{{ url('/') }}" class="absolute top-8 left-6 sm:left-12 lg:hidden inline-flex items-center gap-2 decoration-transparent">
-            <img src="{{ asset('images/logo-sgd-icon.svg') }}" alt="SGD" class="w-8 h-8 rounded-lg shadow-sm">
-            <span class="font-heading font-bold text-lg tracking-tight text-slate-900">Sistema de Gestión <span class="text-[#39A900]">Documental</span></span>
+            <img src="{{ asset('images/sena-logo.png') }}" alt="SIGESI" class="w-8 h-8 rounded-lg shadow-sm">
+            <span class="font-heading font-bold text-lg tracking-tight text-slate-900"><span class="text-[#39A900]">SIGESI</span></span>
         </a>
 
         <!-- Contenedor del formulario (slot) -->

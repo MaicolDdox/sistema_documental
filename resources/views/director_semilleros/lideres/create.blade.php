@@ -44,10 +44,25 @@
                     @error('apellido') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- Tipo de Documento -->
+                <div>
+                    <label for="tipo_documento" class="block text-sm font-medium text-slate-700 mb-1.5">Tipo de Documento <span class="text-red-500">*</span></label>
+                    <select name="tipo_documento" id="tipo_documento" required
+                            class="w-full border @error('tipo_documento') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
+                        <option value="">Selecciona un tipo...</option>
+                        @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
+                            <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
+                                {{ ucfirst($tipo->value) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('tipo_documento') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
                 <!-- Documento -->
                 <div>
                     <label for="numero_documento" class="block text-sm font-medium text-slate-700 mb-1.5">No. de Documento <span class="text-red-500">*</span></label>
-                    <input type="text" name="numero_documento" id="numero_documento" value="{{ old('numero_documento') }}" required 
+                    <input type="text" name="numero_documento" id="numero_documento" value="{{ old('numero_documento') }}" required
                            class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
                     @error('numero_documento') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>

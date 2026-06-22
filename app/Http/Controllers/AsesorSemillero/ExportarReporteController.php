@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\AsesorSemillero;
 
+use App\Enums\EstadoEnum;
+use App\Enums\EstadoRevisionEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Product;
@@ -169,12 +171,12 @@ class ExportarReporteController extends Controller
         // Estadísticas generales
         $stats = [
             'totalProyectos'          => $proyectos->count(),
-            'proyectosActivos'        => $proyectos->where('estado.value', 'activo')->count(),
-            'proyectosInactivos'      => $proyectos->where('estado.value', 'inactivo')->count(),
+            'proyectosActivos'        => $proyectos->where('estado', EstadoEnum::Activo)->count(),
+            'proyectosInactivos'      => $proyectos->where('estado', EstadoEnum::Inactivo)->count(),
             'totalProductos'          => $productos->count(),
-            'productosPendientes'     => $productos->where('estado_revision', 'pendiente')->count(),
-            'productosAprobados'      => $productos->where('estado_revision', 'aprobado')->count(),
-            'productosRechazados'     => $productos->where('estado_revision', 'rechazado')->count(),
+            'productosPendientes'     => $productos->where('estado_revision', EstadoRevisionEnum::Pendiente)->count(),
+            'productosAprobados'      => $productos->where('estado_revision', EstadoRevisionEnum::Aprobado)->count(),
+            'productosRechazados'     => $productos->where('estado_revision', EstadoRevisionEnum::Rechazado)->count(),
             'totalAprendices'         => $aprendices->count(),
             'totalSemilleros'         => $semilleros->count(),
         ];

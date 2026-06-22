@@ -2,12 +2,12 @@
 
 namespace App\Livewire\Admin\Users;
 
-use App\Enums\EstadoEnum;
-use App\Models\User;
-use App\Support\TrainingCenterAccess;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Enums\EstadoEnum;
+use App\Models\User;
+use App\Support\TrainingCenterAccess;
 
 class UserIndex extends Component
 {
