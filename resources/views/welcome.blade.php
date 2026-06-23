@@ -4,12 +4,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Red Nacional de Investigación Académica y Semilleros</title>
-        
+
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any">
+        <link rel="icon" href="/favicon-32x32.png?v=2" type="image/png" sizes="32x32">
+        <link rel="icon" href="/favicon-16x16.png?v=2" type="image/png" sizes="16x16">
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700|outfit:500,600,700,900&display=swap" rel="stylesheet">
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
-        
+
         <style>
             /* Alpine.js: hide elements with x-cloak until Alpine initializes */
             [x-cloak] { display: none !important; }
@@ -535,31 +540,19 @@
         </footer>
         <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ════════════════════════════════════════════════════════════════════════
-            //  SCROLL-DRIVEN VIDEO — BLOB PRELOAD + LERP STRATEGY
-            //  P1: Lerp smoothing + adaptive throttle for Brave compatibility
-            //  P4: Skip video setup on mobile to save resources
-            //  Cambiar a false en producción para silenciar toda la consola.
-            // ════════════════════════════════════════════════════════════════════════
-            const DEBUG_MODE = true;
+            const DEBUG_MODE = false;
             const IS_MOBILE  = window.innerWidth < 768;
 
             const log   = (...args) => { if (DEBUG_MODE) console.log(...args); };
             const warn  = (...args) => { if (DEBUG_MODE) console.warn(...args); };
             const error = (...args) => { if (DEBUG_MODE) console.error(...args); };
 
-            // ─── ELEMENTOS DOM ───────────────────────────────────────────────────────
             const video           = document.getElementById('hero-video');
             const heroSection     = document.getElementById('hero-section');
             const scrollIndicator = document.getElementById('scroll-indicator');
             const auroraFallback  = document.getElementById('hero-aurora-fallback');
 
-            // P4 — On mobile, skip video entirely (aurora handles it via CSS)
             if (IS_MOBILE || !video || !heroSection) {
-                if (IS_MOBILE) log('📱 Móvil detectado — scrubbing de video desactivado, usando aurora CSS.');
-                else warn('⚠️ Elementos hero-video o hero-section no encontrados.');
-
-                // Still handle scroll indicator on mobile
                 if (scrollIndicator && heroSection) {
                     window.addEventListener('scroll', () => {
                         const fraction = heroSection.offsetHeight > 0
@@ -570,11 +563,17 @@
                     }, { passive: true });
                 }
             } else {
-                // ═══ DESKTOP VIDEO SCRUBBING ═══
+                let seekFailed    = false;
+                let seekChecks    = 0;
+                let scrollLogs    = 0;
+                let currentTarget = 0;
+                let lerpAnimId    = null;
+                let lastSeekTime  = 0;
+                let seekDurations = [];
+                let minInterval   = 32;
+                let rawTarget     = 0;
 
-                // ─── FALLBACK: mostrar aurora en escritorio y ocultar video ─────────
                 const activateFallback = () => {
-                    warn('🌌 Activando fallback aurora en TODOS los breakpoints.');
                     video.style.display = 'none';
                     if (auroraFallback) {
                         auroraFallback.classList.remove('md:hidden');
@@ -582,169 +581,88 @@
                     }
                 };
 
-                // ─── P1 — ADAPTIVE THROTTLE + LERP STATE ────────────────────────────
-                let seekFailed    = false;
-                let seekChecks    = 0;
-                let scrollLogs    = 0;
-                let currentTarget = 0;       // Lerp: smoothed target time
-                let lerpAnimId    = null;     // rAF id for lerp loop
-                let lastSeekTime  = 0;        // performance.now() of last seek
-                let seekDurations = [];       // Track seek performance
-                let minInterval   = 32;       // P1: start at ~30fps, may auto-downgrade
-
-                // ─── P1 — LERP ANIMATION LOOP ───────────────────────────────────────
-                // Instead of seeking directly on every scroll, maintain a smooth
-                // interpolation loop that gradually approaches the target time.
-                let rawTarget = 0;
-
                 const lerpLoop = () => {
                     if (seekFailed || video.readyState < 1) {
                         lerpAnimId = requestAnimationFrame(lerpLoop);
                         return;
                     }
-
-                    // Lerp: ease towards rawTarget
                     const diff = rawTarget - currentTarget;
                     if (Math.abs(diff) > 0.001) {
                         currentTarget += diff * 0.15;
-
-                        // Throttle actual seeks by minInterval
                         const now = performance.now();
                         if (now - lastSeekTime >= minInterval) {
                             const seekStart = now;
                             video.currentTime = currentTarget;
                             lastSeekTime = now;
-
-                            // P1: Track seek performance for adaptive throttle
                             if (seekDurations.length < 20) {
                                 requestAnimationFrame(() => {
                                     const seekEnd = performance.now();
                                     seekDurations.push(seekEnd - seekStart);
                                     if (seekDurations.length === 10) {
                                         const avg = seekDurations.reduce((a, b) => a + b, 0) / seekDurations.length;
-                                        if (avg > 50) {
-                                            minInterval = 64;
-                                            warn(`⚡ Seek avg ${avg.toFixed(1)}ms > 50ms — reduciendo a ~15fps para performance`);
-                                        } else {
-                                            log(`⚡ Seek avg ${avg.toFixed(1)}ms — manteniendo ~30fps`);
-                                        }
+                                        if (avg > 50) minInterval = 64;
                                     }
                                 });
                             }
                         }
                     }
-
                     lerpAnimId = requestAnimationFrame(lerpLoop);
                 };
 
-                // ─── ACTUALIZAR TARGET SEGÚN POSICIÓN DE SCROLL ─────────────────────
                 const updateVideoTime = () => {
                     if (video.readyState < 1 || seekFailed) return;
-
                     const scrollTop      = window.scrollY;
                     const heroOffsetTop  = heroSection.offsetTop;
                     const relativeScroll = Math.max(0, scrollTop - heroOffsetTop);
                     const maxScroll      = heroSection.offsetHeight - window.innerHeight;
-                    const scrollFraction = maxScroll > 0
-                        ? Math.min(relativeScroll / maxScroll, 1)
-                        : 0;
-
+                    const scrollFraction = maxScroll > 0 ? Math.min(relativeScroll / maxScroll, 1) : 0;
                     rawTarget = video.duration * scrollFraction;
-
-                    // ─── DETECCIÓN AUTOMÁTICA DE VIDEO NO-SEEKABLE ──────────────────
                     if (scrollFraction > 0.05 && seekChecks < 3) {
                         seekChecks++;
                         setTimeout(() => {
                             if (seekChecks >= 3 && Math.abs(video.currentTime) < 0.01 && rawTarget > 0.1) {
-                                error('❌ Video no-seekable detectado tras 3 intentos. currentTime no cambió.');
                                 seekFailed = true;
                                 if (lerpAnimId) cancelAnimationFrame(lerpAnimId);
                                 activateFallback();
                             }
                         }, 300);
                     }
-
-                    if (scrollLogs < 5) {
-                        log(`🎞 Scroll: fraction=${scrollFraction.toFixed(3)}, target=${rawTarget.toFixed(3)}, actual=${video.currentTime.toFixed(3)}, readyState=${video.readyState}`);
-                        scrollLogs++;
-                        if (scrollLogs === 5) log('(logs de scroll pausados para no saturar la consola)');
-                    }
-
                     if (scrollIndicator) {
                         scrollIndicator.style.opacity       = scrollFraction > 0.05 ? '0' : '1';
                         scrollIndicator.style.pointerEvents = scrollFraction > 0.05 ? 'none' : 'auto';
                     }
                 };
 
-                // ─── HANDLER DE SCROLL ───────────────────────────────────────────────
-                // P1: Use passive scroll listener, the lerp loop handles the actual
-                // video.currentTime updates at a controlled rate.
-                const onScroll = () => {
-                    updateVideoTime();
-                };
+                const onScroll = () => { updateVideoTime(); };
 
-                // ─── SETUP: registrar scroll SOLO cuando metadata disponible ────────
                 const setupScrollVideo = () => {
                     video.pause();
-
-                    log('✅ Metadata cargada');
-                    log('⏱ Duración total:', video.duration, 'segundos');
-                    log('📐 Dimensiones:', video.videoWidth, 'x', video.videoHeight);
-                    log('🎞 readyState:', video.readyState);
-
-                    // Verificar seekable ranges
                     if (video.seekable.length === 0) {
-                        warn('⚠️ Seekable range vacío al cargar metadata. Esperando más datos...');
                         video.addEventListener('progress', function onProgress() {
                             if (video.seekable.length > 0) {
                                 video.removeEventListener('progress', onProgress);
-                                log('📍 Seekable range (tras progress):', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
                                 finishSetup();
                             }
                         });
                         setTimeout(() => {
                             if (video.seekable.length === 0 && !seekFailed) {
-                                error('❌ Video sigue sin seekable ranges tras esperar datos adicionales.');
                                 seekFailed = true;
                                 activateFallback();
                             }
                         }, 3000);
                         return;
                     }
-
-                    log('📍 Seekable range:', video.seekable.start(0).toFixed(2), '→', video.seekable.end(0).toFixed(2));
                     finishSetup();
                 };
 
                 const finishSetup = () => {
                     video.currentTime = 0.001;
-
-                    // Test de seek al 50%
-                    setTimeout(() => {
-                        const testTarget = video.duration * 0.5;
-                        video.currentTime = testTarget;
-                        log('🧪 Test seek al 50%: target =', testTarget.toFixed(2));
-                        setTimeout(() => {
-                            log('🖼 currentTime real tras seek:', video.currentTime.toFixed(2));
-                            log('⚡ seekable:', video.seekable.length > 0
-                                ? `${video.seekable.start(0).toFixed(2)} → ${video.seekable.end(0).toFixed(2)}`
-                                : 'NO SEEKABLE ❌');
-                            video.currentTime = 0;
-                            currentTarget = 0;
-                        }, 500);
-                    }, 200);
-
-                    // Registrar scroll listener + start lerp loop
                     window.addEventListener('scroll', onScroll, { passive: true });
                     lerpAnimId = requestAnimationFrame(lerpLoop);
                     updateVideoTime();
                 };
 
-                // ═══ BLOB PRELOAD ═══
-                const MP4_URL  = '{{ asset("images/hero-v2.mp4") }}';
-                const WEBM_URL = '{{ asset("images/hero-scrubbing.webm") }}';
-
-                log('🔄 Iniciando descarga blob del video:', MP4_URL);
+                const MP4_URL = '{{ asset("images/hero-v2.mp4") }}';
 
                 fetch(MP4_URL)
                     .then(response => {
@@ -752,57 +670,36 @@
                         return response.blob();
                     })
                     .then(blob => {
-                        log('✅ Blob descargado:', (blob.size / 1024 / 1024).toFixed(2), 'MB');
                         const blobUrl = URL.createObjectURL(blob);
                         while (video.firstChild) video.removeChild(video.firstChild);
                         video.src = blobUrl;
                         video.load();
-
-                        const onMeta = () => {
-                            log('✅ Blob video metadata lista');
-                            setupScrollVideo();
-                        };
-                        if (video.readyState >= 1) {
-                            onMeta();
-                        } else {
-                            video.addEventListener('loadedmetadata', onMeta, { once: true });
-                        }
+                        const onMeta = () => { setupScrollVideo(); };
+                        if (video.readyState >= 1) onMeta();
+                        else video.addEventListener('loadedmetadata', onMeta, { once: true });
                     })
-                    .catch(err => {
-                        error('❌ Fetch blob falló:', err.message, '— intentando carga directa con <source>');
+                    .catch(() => {
                         video.load();
-                        if (video.readyState >= 1) {
-                            setupScrollVideo();
-                        } else {
-                            video.addEventListener('loadedmetadata', setupScrollVideo, { once: true });
-                        }
+                        if (video.readyState >= 1) setupScrollVideo();
+                        else video.addEventListener('loadedmetadata', setupScrollVideo, { once: true });
                     });
 
-                // Timeout global
                 setTimeout(() => {
                     if (video.readyState < 1 && !seekFailed) {
-                        error('❌ Video no cargó metadata en 10 segundos. Activando fallback.');
                         seekFailed = true;
                         activateFallback();
                     }
                 }, 10000);
 
-                // Fix Safari / WebKit
                 document.addEventListener('touchstart', () => { video.load(); }, { once: true });
-
-                // Cleanup
                 window.addEventListener('beforeunload', () => {
                     window.removeEventListener('scroll', onScroll);
                     if (lerpAnimId) cancelAnimationFrame(lerpAnimId);
-                    if (video.src && video.src.startsWith('blob:')) {
-                        URL.revokeObjectURL(video.src);
-                    }
+                    if (video.src && video.src.startsWith('blob:')) URL.revokeObjectURL(video.src);
                 });
             }
 
-            // ════════════════════════════════════════════════════════════════════════
-            //  P3 — INTERSECTION OBSERVER — ROLES CARDS (softReveal)
-            // ════════════════════════════════════════════════════════════════════════
+            // ROLES CARDS
             const roleCards = document.querySelectorAll('[data-role-card]');
             if (roleCards.length) {
                 const roleObserver = new IntersectionObserver((entries) => {
@@ -814,16 +711,13 @@
                         }
                     });
                 }, { threshold: 0.05 });
-
                 roleCards.forEach((card, index) => {
                     card.style.animationDelay = `${(index + 1) * 60}ms`;
                     roleObserver.observe(card);
                 });
             }
 
-            // ════════════════════════════════════════════════════════════════════════
-            //  P3 — INTERSECTION OBSERVER — TIMELINE STEPS (slideInLeft)
-            // ════════════════════════════════════════════════════════════════════════
+            // TIMELINE STEPS
             const timelineSteps = document.querySelectorAll('[data-timeline-step]');
             if (timelineSteps.length) {
                 const stepObserver = new IntersectionObserver((entries) => {
@@ -835,16 +729,13 @@
                         }
                     });
                 }, { threshold: 0.08 });
-
                 timelineSteps.forEach((step, index) => {
                     step.style.animationDelay = `${(index + 1) * 60}ms`;
                     stepObserver.observe(step);
                 });
             }
 
-            // ════════════════════════════════════════════════════════════════════════
-            //  TIMELINE LINE FILL — Progressive draw on scroll (with rAF)
-            // ════════════════════════════════════════════════════════════════════════
+            // TIMELINE LINE FILL
             const timelineFill = document.getElementById('timeline-fill');
             const timelineContainer = document.getElementById('timeline-container');
             if (timelineFill && timelineContainer) {
@@ -855,7 +746,6 @@
                     const fraction = Math.max(0, Math.min(scrolledPast / rect.height, 1));
                     timelineFill.style.height = (fraction * rect.height) + 'px';
                 };
-
                 window.addEventListener('scroll', () => {
                     if (!tlTicking) {
                         requestAnimationFrame(() => {
@@ -865,11 +755,9 @@
                         tlTicking = true;
                     }
                 }, { passive: true });
-
                 updateTimelineFill();
             }
         });
         </script>
-
     </body>
 </html>
