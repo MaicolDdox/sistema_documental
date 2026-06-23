@@ -106,6 +106,9 @@ final class TrainingCenterAccess
             return $query;
         }
 
+        // Los super administradores nunca son visibles fuera de su propio dashboard.
+        $query = $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super_administrador'));
+
         if ($user->training_center_id) {
             return $query->where('training_center_id', $user->training_center_id);
         }
