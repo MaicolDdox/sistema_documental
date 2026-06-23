@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd /home/u129679541/sistema_documental
             git pull origin main
             composer install --optimize-autoloader --no-dev
             php artisan migrate --force
