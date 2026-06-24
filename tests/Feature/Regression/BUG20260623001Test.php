@@ -21,6 +21,11 @@ use Tests\TestCase;
  * admin lo veía en su listado de usuarios y podía incluso cambiarle el estado.
  * Corregido: 2026-06-23 — whereDoesntHave('roles', 'super_administrador') cuando
  * el usuario autenticado no es super admin.
+ *
+ * El mismo defecto se repetía en Admin\DashboardController::index(), que
+ * reimplementaba el scope de training_center_id a mano (sin pasar por
+ * TrainingCenterAccess) para las métricas y el widget de usuarios recientes.
+ * Corregido: 2026-06-23 — ambos consumen scopeUserQueryForList().
  */
 class BUG20260623001Test extends TestCase
 {
@@ -117,5 +122,34 @@ class BUG20260623001Test extends TestCase
 
         $response->assertOk();
         $response->assertDontSee($superAdmin->email);
+    }
+
+    public function test_dashboard_admin_no_cuenta_ni_lista_super_admin_del_mismo_centro(): void
+    {
+        Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
+
+        $centro = $this->crearCentro();
+        $admin  = $this->crearAdminDeCentro($centro->id);
+
+        $superAdmin = User::factory()->create([
+            'training_center_id' => $centro->id,
+            'estado'              => EstadoEnum::Activo,
+        ]);
+        $superAdmin->assignRole('super_administrador');
+
+        $otroDelCentro = User::factory()->create([
+            'training_center_id' => $centro->id,
+            'estado'              => EstadoEnum::Activo,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+
+        $response->assertOk();
+        $response->assertDontSee($superAdmin->email);
+        $this->assertEquals(2, $response->viewData('totalUsuarios'), 'totalUsuarios no debe contar al super administrador');
+
+        $recentEmails = $response->viewData('recentUsers')->pluck('email');
+        $this->assertNotContains($superAdmin->email, $recentEmails);
+        $this->assertContains($otroDelCentro->email, $recentEmails);
     }
 }

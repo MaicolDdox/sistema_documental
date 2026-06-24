@@ -37,23 +37,23 @@ class DashboardController extends Controller
         $centroAdmin = TrainingCenterAccess::isCentroAdmin($auth);
         $scoped = TrainingCenterAccess::scopedToTrainingCenter($auth);
 
+        // Usuarios: siempre vía TrainingCenterAccess para excluir super_administrador
+        // de las métricas/listados cuando quien consulta no es super admin.
+        $userQuery = TrainingCenterAccess::scopeUserQueryForList(User::query(), $auth);
+
         if ($super) {
-            $userQuery = User::query();
             $groupQuery = ResearchGroup::query();
             $seedlingQuery = Seedling::query();
             $totalCentros = TrainingCenter::activos()->count();
         } elseif ($scoped) {
-            $userQuery = User::query()->where('training_center_id', $centerId);
             $groupQuery = ResearchGroup::query()->where('training_center_id', $centerId);
             $seedlingQuery = Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId));
             $totalCentros = TrainingCenter::activos()->where('id', $centerId)->count();
         } elseif ($centroAdmin) {
-            $userQuery = User::query()->where('id', 0);
             $groupQuery = ResearchGroup::query()->where('id', 0);
             $seedlingQuery = Seedling::query()->where('id', 0);
             $totalCentros = 0;
         } else {
-            $userQuery = $centerId ? User::where('training_center_id', $centerId) : User::query();
             $groupQuery = $centerId ? ResearchGroup::where('training_center_id', $centerId) : ResearchGroup::query();
             $seedlingQuery = $centerId
                 ? Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId))
@@ -83,11 +83,7 @@ class DashboardController extends Controller
             ->count();
 
         // Usuarios recientes (últimas cuentas creadas)
-        $recentUsers = User::with(['person', 'roles'])
-            ->when($super, fn ($q) => $q)
-            ->when(! $super && $scoped, fn ($q) => $q->where('training_center_id', $centerId))
-            ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->where('id', 0))
-            ->when(! $super && ! $scoped && ! $centroAdmin && $centerId, fn ($q) => $q->where('training_center_id', $centerId))
+        $recentUsers = TrainingCenterAccess::scopeUserQueryForList(User::with(['person', 'roles']), $auth)
             ->latest()
             ->take(4)
             ->get();
