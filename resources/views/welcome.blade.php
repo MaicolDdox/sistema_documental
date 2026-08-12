@@ -715,7 +715,7 @@
                     card.style.animationDelay = `${(index + 1) * 60}ms`;
                     roleObserver.observe(card);
                 });
-            }
+            } 
 
             // TIMELINE STEPS
             const timelineSteps = document.querySelectorAll('[data-timeline-step]');
