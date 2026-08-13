@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\LiderSemillero;
 
-use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\ExternalAdvisor;
@@ -45,9 +44,9 @@ class AsesoresController extends Controller
                 ->where(function ($q) {
                     $centroId = Auth::user()->training_center_id;
                     $q->whereNull('user_id')  // Asesores externos sin cuenta: siempre disponibles
-                      ->orWhereHas('user', function ($uq) use ($centroId) {
-                          $uq->where('training_center_id', $centroId);
-                      });
+                        ->orWhereHas('user', function ($uq) use ($centroId) {
+                            $uq->where('training_center_id', $centroId);
+                        });
                 })
                 ->orderBy('nombre_completo')
                 ->get(['id', 'nombre_completo', 'email'])
@@ -55,7 +54,7 @@ class AsesoresController extends Controller
 
         return view('lider_semillero.asesores.index', [
             'semillero' => $semillero,
-            'vinculos'  => $vinculos,
+            'vinculos' => $vinculos,
             'asesoresDisponibles' => $asesoresDisponibles,
         ]);
     }
@@ -67,21 +66,21 @@ class AsesoresController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero) {
+        if (! $semillero) {
             return redirect()->route('lider-sem.asesores')->with('error', 'No tienes un semillero asignado.');
         }
 
         $crearCuenta = $request->boolean('crear_cuenta');
         $rules = [
-            'nombre_completo'    => 'required|string|max:255',
-            'email'              => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
-            'telefono'           => 'nullable|string|max:50',
-            'institucion'        => 'nullable|string|max:255',
-            'crear_cuenta'       => 'nullable|boolean',
+            'nombre_completo' => 'required|string|max:255',
+            'email' => $crearCuenta ? 'required|email' : 'nullable|email|max:255',
+            'telefono' => 'nullable|string|max:50',
+            'institucion' => 'nullable|string|max:255',
+            'crear_cuenta' => 'nullable|boolean',
             'enviar_credenciales' => 'nullable|boolean',
         ];
         if ($crearCuenta) {
-            $rules['tipo_documento']   = ['required', Rule::enum(TipoDocumentoEnum::class)];
+            $rules['tipo_documento'] = ['required', Rule::enum(TipoDocumentoEnum::class)];
             $rules['numero_documento'] = 'required|numeric';
         }
         $validated = $request->validate($rules);
@@ -93,20 +92,27 @@ class AsesoresController extends Controller
 
         if ($crearCuenta) {
             $existingUser = User::where('email', $validated['email'])->first();
+
+            if ($existingUser && (int) $existingUser->training_center_id !== (int) Auth::user()->training_center_id) {
+                return redirect()->route('lider-sem.asesores')
+                    ->with('error', 'Ya existe un usuario con ese correo en otro centro de formación. No puede vincularse como asesor de este semillero.')
+                    ->withInput();
+            }
+
             if ($existingUser) {
                 // Ya existe usuario con ese email: reutilizar y solo vincular al semillero (puede estar en varios)
                 $eraUsuarioExistente = true;
                 $userId = $existingUser->id;
-                if (!$existingUser->hasRole('asesor_semillero')) {
+                if (! $existingUser->hasRole('asesor_semillero')) {
                     $existingUser->assignRole('asesor_semillero');
                 }
                 $advisor = ExternalAdvisor::firstOrCreate(
                     ['user_id' => $existingUser->id],
                     [
                         'nombre_completo' => $validated['nombre_completo'],
-                        'email'           => $validated['email'],
-                        'telefono'        => $validated['telefono'] ?? null,
-                        'institucion'     => $validated['institucion'] ?? null,
+                        'email' => $validated['email'],
+                        'telefono' => $validated['telefono'] ?? null,
+                        'institucion' => $validated['institucion'] ?? null,
                     ]
                 );
             } else {
@@ -116,35 +122,35 @@ class AsesoresController extends Controller
                 $leader = Auth::user();
                 $nombrePartes = preg_split('/\s+/', trim($validated['nombre_completo']), 2);
                 $newUser = $this->userCreation->crearUsuario([
-                    'email'            => $validated['email'],
+                    'email' => $validated['email'],
                     'numero_documento' => (int) $validated['numero_documento'],
-                    'tipo_documento'   => $validated['tipo_documento'],
-                    'password'         => $passwordTemporal,
-                    'primer_nombre'    => $nombrePartes[0] ?? $validated['nombre_completo'],
-                    'primer_apellido'  => $nombrePartes[1] ?? '',
-                    'rol'              => 'asesor_semillero',
+                    'tipo_documento' => $validated['tipo_documento'],
+                    'password' => $passwordTemporal,
+                    'primer_nombre' => $nombrePartes[0] ?? $validated['nombre_completo'],
+                    'primer_apellido' => $nombrePartes[1] ?? '',
+                    'rol' => 'asesor_semillero',
                 ], $leader->training_center_id);
                 $userId = $newUser->id;
                 $advisor = ExternalAdvisor::create([
-                    'user_id'         => $userId,
+                    'user_id' => $userId,
                     'nombre_completo' => $validated['nombre_completo'],
-                    'email'           => $validated['email'],
-                    'telefono'        => $validated['telefono'] ?? null,
-                    'institucion'     => $validated['institucion'] ?? null,
+                    'email' => $validated['email'],
+                    'telefono' => $validated['telefono'] ?? null,
+                    'institucion' => $validated['institucion'] ?? null,
                 ]);
             }
         } else {
             // Sin cuenta: buscar asesor externo por email (puede estar en varios semilleros)
-            if (!empty($validated['email'])) {
+            if (! empty($validated['email'])) {
                 $advisor = ExternalAdvisor::where('email', $validated['email'])->first();
             }
-            if (!$advisor) {
+            if (! $advisor) {
                 $advisor = ExternalAdvisor::create([
-                    'user_id'         => null,
+                    'user_id' => null,
                     'nombre_completo' => $validated['nombre_completo'],
-                    'email'           => $validated['email'] ?? null,
-                    'telefono'        => $validated['telefono'] ?? null,
-                    'institucion'     => $validated['institucion'] ?? null,
+                    'email' => $validated['email'] ?? null,
+                    'telefono' => $validated['telefono'] ?? null,
+                    'institucion' => $validated['institucion'] ?? null,
                 ]);
             }
         }
@@ -152,20 +158,20 @@ class AsesoresController extends Controller
         // Vincular asesor a este semillero (si ya estaba vinculado, no duplicar)
         $vinculo = SeedlingAdvisor::firstOrCreate(
             [
-                'seedling_id'         => $semillero->id,
+                'seedling_id' => $semillero->id,
                 'external_advisor_id' => $advisor->id,
             ],
             ['activo' => true]
         );
 
-        if (!$vinculo->wasRecentlyCreated) {
+        if (! $vinculo->wasRecentlyCreated) {
             return redirect()->route('lider-sem.asesores')
                 ->with('warning', 'Este asesor ya estaba vinculado a tu semillero.');
         }
 
         if ($crearCuenta && $passwordTemporal) {
             $enviado = false;
-            if ($request->boolean('enviar_credenciales') && !empty($validated['email'])) {
+            if ($request->boolean('enviar_credenciales') && ! empty($validated['email'])) {
                 $this->notificacion->enviarCredenciales($newUser, $passwordTemporal);
                 $enviado = true;
             }
@@ -177,7 +183,7 @@ class AsesoresController extends Controller
             return redirect()->route('lider-sem.asesores')
                 ->with('success', $mensaje)
                 ->with('credenciales', [
-                    'email'    => $validated['email'],
+                    'email' => $validated['email'],
                     'password' => $passwordTemporal,
                 ]);
         }
@@ -199,14 +205,15 @@ class AsesoresController extends Controller
 
         $semillero = Auth::user()->ledSeedlings()->first();
 
-        if (!$semillero || $vinculo->seedling_id !== $semillero->id) {
+        if (! $semillero || $vinculo->seedling_id !== $semillero->id) {
             abort(403, 'No puedes modificar este asesor.');
         }
 
-        $vinculo->activo = !($vinculo->activo ?? true);
+        $vinculo->activo = ! ($vinculo->activo ?? true);
         $vinculo->save();
 
         $estado = $vinculo->activo ? 'activado' : 'desactivado';
+
         return redirect()->route('lider-sem.asesores')
             ->with('success', "Asesor {$estado} correctamente.");
     }
@@ -217,16 +224,16 @@ class AsesoresController extends Controller
     public function update(Request $request, SeedlingAdvisor $vinculo): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || $vinculo->seedling_id !== $semillero->id) {
+        if (! $semillero || $vinculo->seedling_id !== $semillero->id) {
             abort(403, 'No puedes modificar este asesor.');
         }
 
         $advisor = $vinculo->externalAdvisor;
         $validated = $request->validate([
             'nombre_completo' => 'required|string|max:255',
-            'email'           => 'nullable|email|max:255',
-            'telefono'        => 'nullable|string|max:50',
-            'institucion'     => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'telefono' => 'nullable|string|max:50',
+            'institucion' => 'nullable|string|max:255',
         ]);
 
         $advisor->update($validated);
@@ -241,7 +248,7 @@ class AsesoresController extends Controller
     public function destroy(SeedlingAdvisor $vinculo): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || $vinculo->seedling_id !== $semillero->id) {
+        if (! $semillero || $vinculo->seedling_id !== $semillero->id) {
             abort(403, 'No puedes eliminar este asesor.');
         }
 

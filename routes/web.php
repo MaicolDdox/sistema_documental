@@ -1,26 +1,25 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Actions\Fortify\SendPasswordResetLink;
-
+use App\Http\Controllers\Web\CityController;
 // ─── Imports ─────────────────────────────────────────────────────────────────
 use App\Http\Controllers\Web\DepartmentController;
-use App\Http\Controllers\Web\CityController;
-use App\Http\Controllers\Web\TrainingCenterController;
 use App\Http\Controllers\Web\EntityPositionController;
+use App\Http\Controllers\Web\ExternalAdvisorController;
+use App\Http\Controllers\Web\GroupProductController;
 use App\Http\Controllers\Web\LinkageTypeController;
-use App\Http\Controllers\Web\TrainingProgramController;
+use App\Http\Controllers\Web\PersonController;
+use App\Http\Controllers\Web\ProductController;
+use App\Http\Controllers\Web\ProjectController;
+use App\Http\Controllers\Web\ResearchGroupController;
 use App\Http\Controllers\Web\ResearchLineController;
+use App\Http\Controllers\Web\SeedlingController;
 use App\Http\Controllers\Web\TechnologicalLineController;
 use App\Http\Controllers\Web\ThematicAreaController;
-use App\Http\Controllers\Web\ResearchGroupController;
+use App\Http\Controllers\Web\TrainingCenterController;
+use App\Http\Controllers\Web\TrainingProgramController;
 use App\Http\Controllers\Web\UserController;
-use App\Http\Controllers\Web\PersonController;
-use App\Http\Controllers\Web\ExternalAdvisorController;
-use App\Http\Controllers\Web\SeedlingController;
-use App\Http\Controllers\Web\ProjectController;
-use App\Http\Controllers\Web\ProductController;
-use App\Http\Controllers\Web\GroupProductController;
+use Illuminate\Support\Facades\Route;
 
 // ─── Ruta pública ────────────────────────────────────────────────────────────
 Route::get('/', function () {
@@ -55,7 +54,7 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     if ($user->hasRole('super_administrador')) {
         return redirect()->to('/super-admin/dashboard', 302);
     }
-    if ($user->hasAnyRole(['administrador_sistema', 'admin'])) {
+    if ($user->hasRole('administrador_sistema')) {
         return app(\App\Http\Controllers\Admin\DashboardController::class)->index($request);
     }
     if ($user->hasRole('director_investigacion')) {
@@ -67,9 +66,7 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
     if ($user->hasRole('asesor_semillero')) {
         return redirect()->to('/asesor-semillero/dashboard', 302);
     }
-    if ($user->hasRole('asesor')) {
-        return redirect()->to('/seedlings', 302);
-    }
+
     return view('dashboard.home');
 })->middleware(['auth', 'ensure.active', 'redirect.director'])->name('dashboard');
 
@@ -121,29 +118,29 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
     });
 
     // ─── Módulo: Investigación ───────────────────────────────────────────────
-    Route::middleware(['role:director_investigacion|investigador_asociado|admin'])
+    Route::middleware(['role:director_investigacion|investigador_asociado|administrador_sistema'])
         ->prefix('research')->name('research.')->group(function () {
 
-        // Route::view('dashboard', 'research.dashboard')->name('dashboard');
-        Route::resource('groups', ResearchGroupController::class)->names('groups');
-        Route::resource('projects', ProjectController::class)->names('projects');
-    });
+            // Route::view('dashboard', 'research.dashboard')->name('dashboard');
+            Route::resource('groups', ResearchGroupController::class)->names('groups');
+            Route::resource('projects', ProjectController::class)->names('projects');
+        });
 
     // ─── Módulo: Semilleros ──────────────────────────────────────────────────
-    Route::middleware(['role:director_semilleros|lider_semillero|asesor|admin'])
+    Route::middleware(['role:director_semilleros|lider_semillero|asesor_semillero|administrador_sistema'])
         ->prefix('seedlings')->name('seedlings.')->group(function () {
 
-        // Route::view('dashboard', 'seedlings.dashboard')->name('dashboard');
-        Route::resource('/', SeedlingController::class)->names('index')->parameters(['' => 'seedling']);
-    });
+            // Route::view('dashboard', 'seedlings.dashboard')->name('dashboard');
+            Route::resource('/', SeedlingController::class)->names('index')->parameters(['' => 'seedling']);
+        });
 
     // ─── Módulo: Productos ───────────────────────────────────────────────────
-    Route::middleware(['role:admin|director_investigacion|investigador_asociado'])
+    Route::middleware(['role:administrador_sistema|director_investigacion|investigador_asociado'])
         ->prefix('products')->name('products.')->group(function () {
 
-        Route::resource('/', ProductController::class)->names('index')->parameters(['' => 'product']);
-        Route::resource('group-products', GroupProductController::class)->names('group-products');
-    });
+            Route::resource('/', ProductController::class)->names('index')->parameters(['' => 'product']);
+            Route::resource('group-products', GroupProductController::class)->names('group-products');
+        });
 
 });
 

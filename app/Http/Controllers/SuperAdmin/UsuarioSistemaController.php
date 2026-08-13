@@ -44,10 +44,10 @@ class UsuarioSistemaController extends Controller
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('email', 'like', "%{$term}%")
-                  ->orWhere('numero_documento', 'like', "%{$term}%")
-                  ->orWhereHas('person', fn ($q2) => $q2
-                      ->where('primer_nombre', 'like', "%{$term}%")
-                      ->orWhere('primer_apellido', 'like', "%{$term}%"));
+                    ->orWhere('numero_documento', 'like', "%{$term}%")
+                    ->orWhereHas('person', fn ($q2) => $q2
+                        ->where('primer_nombre', 'like', "%{$term}%")
+                        ->orWhere('primer_apellido', 'like', "%{$term}%"));
             });
         }
 
@@ -60,8 +60,8 @@ class UsuarioSistemaController extends Controller
         }
 
         $usuarios = $query->latest()->paginate(15)->withQueryString();
-        $roles    = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
-        $estados  = EstadoEnum::cases();
+        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $estados = EstadoEnum::cases();
 
         return view('super-admin.usuarios-sistema.index', compact('usuarios', 'roles', 'estados'));
     }
@@ -72,7 +72,7 @@ class UsuarioSistemaController extends Controller
 
     public function create(): View
     {
-        $roles   = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
         $centros = TrainingCenter::activos()->orderBy('nombre')->get();
 
         return view('super-admin.usuarios-sistema.create', compact('roles', 'centros'));
@@ -81,18 +81,18 @@ class UsuarioSistemaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre'              => 'required|string|max:100',
-            'apellido'            => 'required|string|max:100',
-            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
-            'numero_documento'    => 'required|string|max:20|unique:users,numero_documento',
-            'email'               => 'required|email|unique:users,email',
-            'password'            => 'required|string|min:8|confirmed',
-            'rol'                 => ['nullable', 'exists:roles,name', Rule::notIn(self::ROLES_EXCLUIDOS)],
-            'training_center_id'  => 'nullable|exists:training_centers,id',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
+            'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento' => 'required|string|max:20|unique:users,numero_documento',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'rol' => ['nullable', 'exists:roles,name', Rule::notIn(self::ROLES_EXCLUIDOS)],
+            'training_center_id' => 'nullable|exists:training_centers,id',
             'enviar_credenciales' => 'nullable|boolean',
         ]);
 
-        $rol  = $validated['rol'] ?? null;
+        $rol = $validated['rol'] ?? null;
         $tcId = ($validated['training_center_id'] ?? null) ?: null;
 
         if (TrainingCenterAccess::roleRequiresTrainingCenter($rol) && $tcId === null) {
@@ -101,21 +101,21 @@ class UsuarioSistemaController extends Controller
                 ->withInput();
         }
 
-        [$primerNombre, $segundoNombre]     = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
         [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
 
         $plainPassword = $validated['password'];
 
         $user = $this->userCreation->crearUsuario([
-            'email'            => $validated['email'],
+            'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-            'tipo_documento'   => $validated['tipo_documento'],
-            'password'         => $plainPassword,
-            'primer_nombre'    => $primerNombre,
-            'segundo_nombre'   => $segundoNombre,
-            'primer_apellido'  => $primerApellido,
+            'tipo_documento' => $validated['tipo_documento'],
+            'password' => $plainPassword,
+            'primer_nombre' => $primerNombre,
+            'segundo_nombre' => $segundoNombre,
+            'primer_apellido' => $primerApellido,
             'segundo_apellido' => $segundoApellido,
-            'rol'              => $rol,
+            'rol' => $rol,
         ], $tcId);
 
         if ($rol) {
@@ -126,7 +126,7 @@ class UsuarioSistemaController extends Controller
             $this->notificacion->enviarCredenciales($user, $plainPassword);
         }
 
-        $nombre  = trim("{$primerNombre} {$primerApellido}");
+        $nombre = trim("{$primerNombre} {$primerApellido}");
         $mensaje = $request->boolean('enviar_credenciales')
             ? "Usuario {$nombre} creado. Se enviaron las credenciales por correo."
             : "Usuario {$nombre} creado correctamente.";
@@ -154,5 +154,25 @@ class UsuarioSistemaController extends Controller
         $usuario->save();
 
         return back()->with('success', 'Estado del usuario actualizado.');
+    }
+
+    // ─────────────────────────────────────────────────
+    // Eliminar
+    // ─────────────────────────────────────────────────
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $usuario = User::whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::ROLES_EXCLUIDOS))
+            ->findOrFail($id);
+
+        if ($usuario->id === auth()->id()) {
+            return back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        $usuario->syncRoles([]);
+        $usuario->person?->delete();
+        $usuario->delete();
+
+        return redirect()->route('super-admin.usuarios-sistema.index')->with('success', 'Usuario eliminado correctamente.');
     }
 }

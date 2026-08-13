@@ -32,15 +32,15 @@ class AdminUsuarioController extends Controller
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('email', 'like', "%{$term}%")
-                  ->orWhere('numero_documento', 'like', "%{$term}%")
-                  ->orWhereHas('person', fn ($q2) => $q2
-                      ->where('primer_nombre', 'like', "%{$term}%")
-                      ->orWhere('primer_apellido', 'like', "%{$term}%"));
+                    ->orWhere('numero_documento', 'like', "%{$term}%")
+                    ->orWhereHas('person', fn ($q2) => $q2
+                        ->where('primer_nombre', 'like', "%{$term}%")
+                        ->orWhere('primer_apellido', 'like', "%{$term}%"));
             });
         }
 
         $usuarios = $query->latest()->paginate(15)->withQueryString();
-        $estados  = EstadoEnum::cases();
+        $estados = EstadoEnum::cases();
 
         return view('super-admin.usuarios.index', compact('usuarios', 'estados'));
     }
@@ -55,39 +55,39 @@ class AdminUsuarioController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre'              => 'required|string|max:100',
-            'apellido'            => 'required|string|max:100',
-            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
-            'numero_documento'    => 'required|string|max:20|unique:users,numero_documento',
-            'email'               => 'required|email|unique:users,email',
-            'password'            => 'required|string|min:8|confirmed',
-            'training_center_id'  => 'nullable|exists:training_centers,id',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
+            'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento' => 'required|string|max:20|unique:users,numero_documento',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'training_center_id' => 'nullable|exists:training_centers,id',
             'enviar_credenciales' => 'nullable|boolean',
         ]);
 
-        [$primerNombre, $segundoNombre]     = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
         [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
 
-        $tcId          = ($validated['training_center_id'] ?? null) ?: null;
+        $tcId = ($validated['training_center_id'] ?? null) ?: null;
         $plainPassword = $validated['password'];
 
         $user = $this->userCreation->crearUsuario([
-            'email'            => $validated['email'],
+            'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-            'tipo_documento'   => $validated['tipo_documento'],
-            'password'         => $plainPassword,
-            'primer_nombre'    => $primerNombre,
-            'segundo_nombre'   => $segundoNombre,
-            'primer_apellido'  => $primerApellido,
+            'tipo_documento' => $validated['tipo_documento'],
+            'password' => $plainPassword,
+            'primer_nombre' => $primerNombre,
+            'segundo_nombre' => $segundoNombre,
+            'primer_apellido' => $primerApellido,
             'segundo_apellido' => $segundoApellido,
-            'rol'              => self::ROL,
+            'rol' => self::ROL,
         ], $tcId);
 
         if ($request->boolean('enviar_credenciales')) {
             $this->notificacion->enviarCredenciales($user, $plainPassword);
         }
 
-        $nombre  = trim("{$primerNombre} {$primerApellido}");
+        $nombre = trim("{$primerNombre} {$primerApellido}");
         $mensaje = $request->boolean('enviar_credenciales')
             ? "Administrador {$nombre} creado. Se enviaron las credenciales por correo."
             : "Administrador {$nombre} creado correctamente.";
@@ -113,4 +113,19 @@ class AdminUsuarioController extends Controller
         return back()->with('success', 'Estado del administrador actualizado.');
     }
 
+    public function destroy(int $id): RedirectResponse
+    {
+        $usuario = User::whereHas('roles', fn ($q) => $q->where('name', self::ROL))
+            ->findOrFail($id);
+
+        if ($usuario->id === auth()->id()) {
+            return back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        $usuario->syncRoles([]);
+        $usuario->person?->delete();
+        $usuario->delete();
+
+        return redirect()->route('super-admin.administradores.index')->with('success', 'Administrador eliminado correctamente.');
+    }
 }

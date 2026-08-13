@@ -20,10 +20,12 @@ Route::middleware(['auth', 'ensure.active', 'role:super_administrador'])
         Route::get('/administradores/crear', [AdminUsuarioController::class, 'create'])->name('administradores.create');
         Route::post('/administradores', [AdminUsuarioController::class, 'store'])->name('administradores.store');
         Route::post('/administradores/{id}/toggle-estado', [AdminUsuarioController::class, 'toggleEstado'])->name('administradores.toggle_estado');
+        Route::delete('/administradores/{id}', [AdminUsuarioController::class, 'destroy'])->name('administradores.destroy');
 
         // Usuarios del sistema (todos los roles excepto administrador_sistema y super_administrador)
         Route::get('/usuarios-sistema', [UsuarioSistemaController::class, 'index'])->name('usuarios-sistema.index');
         Route::get('/usuarios-sistema/crear', [UsuarioSistemaController::class, 'create'])->name('usuarios-sistema.create');
         Route::post('/usuarios-sistema', [UsuarioSistemaController::class, 'store'])->name('usuarios-sistema.store');
         Route::post('/usuarios-sistema/{id}/toggle-estado', [UsuarioSistemaController::class, 'toggleEstado'])->name('usuarios-sistema.toggle_estado');
+        Route::delete('/usuarios-sistema/{id}', [UsuarioSistemaController::class, 'destroy'])->name('usuarios-sistema.destroy');
     });
