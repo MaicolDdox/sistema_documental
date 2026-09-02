@@ -16,11 +16,11 @@ class DashboardController extends Controller
         $user = Auth::user();
         $centerId = $user->training_center_id;
 
-        // Semilleros del centro: los que pertenecen a un grupo de investigación de este centro
-        $semillerosQuery = Seedling::with(['leader.person', 'members', 'advisors', 'researchGroup'])
+        // Semilleros del centro
+        $semillerosQuery = Seedling::with(['leader.person', 'members', 'advisors'])
             ->when(
                 $centerId,
-                fn ($q) => $q->whereHas('researchGroup', fn ($r) => $r->where('training_center_id', $centerId)),
+                fn ($q) => $q->where('training_center_id', $centerId),
                 fn ($q) => $q->whereRaw('0 = 1')
             );
 
@@ -45,7 +45,7 @@ class DashboardController extends Controller
         $integrantesTotales = $semilleros->sum(fn ($s) => $s->members->count());
         $integrantesNuevos = 0;
         $seedlingIds = $semilleros->pluck('id')->toArray();
-        if (!empty($seedlingIds)) {
+        if (! empty($seedlingIds)) {
             $integrantesNuevos = DB::table('seedling_members')
                 ->whereIn('seedling_id', $seedlingIds)
                 ->whereMonth('created_at', now()->month)
@@ -53,48 +53,28 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        $asesoresVinculados = 0;
-        if (!empty($seedlingIds)) {
-            $asesoresVinculados = (int) DB::table('seedling_advisors')
-                ->whereIn('seedling_id', $seedlingIds)
-                ->selectRaw('count(distinct external_advisor_id) as c')
+        $coinvestigadoresAsociados = 0;
+        if (! empty($seedlingIds)) {
+            $coinvestigadoresAsociados = (int) DB::table('project_authors')
+                ->join('projects', 'projects.id', '=', 'project_authors.project_id')
+                ->whereIn('projects.seedling_id', $seedlingIds)
+                ->where('project_authors.activo', true)
+                ->selectRaw('count(distinct project_authors.user_id) as c')
                 ->value('c');
         }
 
         $misSemilleros = $semilleros->sortBy('nombre')->take(6)->values();
 
-        $chartResumenLabels = collect([
-            'Semilleros activos',
-            'Líderes',
-            'Integrantes',
-            'Asesores',
-        ]);
-        $chartResumenSeries = collect([
-            $semillerosActivos,
-            $totalLideres,
-            $integrantesTotales,
-            $asesoresVinculados,
-        ]);
-        $chartEstadoSemillerosLabels = collect(['Activos', 'Inactivos']);
-        $chartEstadoSemillerosSeries = collect([
-            $semillerosActivos,
-            max($totalSemilleros - $semillerosActivos, 0),
-        ]);
-
         return view('director_semilleros.dashboard', [
-            'totalSemilleros'     => $totalSemilleros,
-            'semillerosActivos'   => $semillerosActivos,
-            'totalLideres'        => $totalLideres,
-            'lideresEsteMes'      => $lideresEsteMes,
-            'integrantesTotales'  => $integrantesTotales,
-            'integrantesNuevos'   => $integrantesNuevos,
-            'asesoresVinculados'  => $asesoresVinculados,
-            'misSemilleros'       => $misSemilleros,
-            'misLideres'          => $misLideres,
-            'chartResumenLabels'  => $chartResumenLabels,
-            'chartResumenSeries'  => $chartResumenSeries,
-            'chartEstadoSemillerosLabels' => $chartEstadoSemillerosLabels,
-            'chartEstadoSemillerosSeries' => $chartEstadoSemillerosSeries,
+            'totalSemilleros' => $totalSemilleros,
+            'semillerosActivos' => $semillerosActivos,
+            'totalLideres' => $totalLideres,
+            'lideresEsteMes' => $lideresEsteMes,
+            'integrantesTotales' => $integrantesTotales,
+            'integrantesNuevos' => $integrantesNuevos,
+            'coinvestigadoresAsociados' => $coinvestigadoresAsociados,
+            'misSemilleros' => $misSemilleros,
+            'misLideres' => $misLideres,
         ]);
     }
 }

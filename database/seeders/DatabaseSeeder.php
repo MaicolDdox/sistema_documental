@@ -13,7 +13,12 @@ class DatabaseSeeder extends Seeder
      * 1. Departments → sin FK
      * 2. Cities → depende de Department
      * 3. TrainingCenters → depende de Department + City
-     * 4. Users → depende de TrainingCenter
+     * 4. SuperAdmin → depende de TrainingCenter + roles
+     *
+     * No siembra usuarios de prueba con datos ficticios (nombre, email,
+     * contraseña compartida) — eso quedaría publicado en el repo público.
+     * Para poblar usuarios de prueba en un entorno local, créalos a mano
+     * o con un seeder/script propio no versionado.
      */
     public function run(): void
     {
@@ -22,12 +27,10 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             CitySeeder::class,
             TrainingCenterSeeder::class,
-            RolesAndPermissionsSeeder::class, // ← debe ir ANTES de UserSeeder
-            ResearchGroupSeeder::class,
-            UserSeeder::class,
+            RolesAndPermissionsSeeder::class, // ← debe ir ANTES de SuperAdminSeeder
             SuperAdminSeeder::class,
 
-            // Catálogos módulo Asesor Semillero
+            // Catálogos
             LineasInvestigacionesSeeder::class,
             LineasTecnologicasSeeder::class,
             AreasTematicasSeeder::class,
@@ -37,7 +40,6 @@ class DatabaseSeeder extends Seeder
             LinkageTypesSeeder::class,
             TrainingProgramsSeeder::class,
             MincienciasSeeder::class,
-            KnowledgeAreasSeeder::class,
         ]);
     }
 }

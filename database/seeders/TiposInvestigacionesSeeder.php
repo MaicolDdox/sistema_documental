@@ -9,20 +9,17 @@ class TiposInvestigacionesSeeder extends Seeder
     public function run(): void
     {
         $tipos = [
-            [
-                'nombre'       => 'Aplicada',
-                'descripccion' => 'Investigación orientada a resolver problemas prácticos concretos.',
-            ],
-            [
-                'nombre'       => 'Innovación',
-                'descripccion' => 'Investigación orientada a desarrollar nuevos productos, procesos o servicios.',
-            ],
+            'Investigación Aplicada',
+            'Investigación Formativa',
+            'Desarrollo Tecnológico',
+            'Investigación Exploratoria',
+            'Innovación',
         ];
 
-        foreach ($tipos as $tipo) {
+        foreach ($tipos as $nombre) {
             \App\Models\InvestigationType::firstOrCreate(
-                ['nombre' => $tipo['nombre']],
-                ['descripccion' => $tipo['descripccion']]
+                ['nombre' => $nombre],
+                ['descripccion' => null]
             );
         }
     }

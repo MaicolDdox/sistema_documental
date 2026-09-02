@@ -12,7 +12,7 @@
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h2 class="text-xl font-semibold text-slate-900">Nuevo Programa de Formación</h2>
-            <p class="text-sm text-slate-500 mt-1">Vincula ficha y tipo de programa.</p>
+            <p class="text-sm text-slate-500 mt-1">Registra el tipo de programa.</p>
         </div>
         <a href="{{ route('admin.training-programs.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">
             Volver al listado
@@ -35,30 +35,10 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="ficha" class="block text-sm font-medium text-slate-700 mb-1.5">Ficha <span class="text-red-500">*</span></label>
-                    <input type="text" name="ficha" id="ficha" value="{{ old('ficha') }}" required placeholder="Ej: 262100"
-                           class="w-full border @error('ficha') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                    @error('ficha')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
                     <label for="tipo" class="block text-sm font-medium text-slate-700 mb-1.5">Tipo <span class="text-red-500">*</span></label>
                     <input type="text" name="tipo" id="tipo" value="{{ old('tipo') }}" required placeholder="Ej: Técnico"
                            class="w-full border @error('tipo') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     @error('tipo')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="jornada" class="block text-sm font-medium text-slate-700 mb-1.5">Jornada <span class="text-red-500">*</span></label>
-                    <select name="jornada" id="jornada" required
-                            class="w-full border @error('jornada') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        <option value="diurna" {{ old('jornada') == 'diurna' ? 'selected' : '' }}>Diurna</option>
-                        <option value="nocturna" {{ old('jornada') == 'nocturna' ? 'selected' : '' }}>Nocturna</option>
-                        <option value="presencial" {{ old('jornada') == 'presencial' ? 'selected' : '' }}>Presencial</option>
-                    </select>
-                    @error('jornada')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>

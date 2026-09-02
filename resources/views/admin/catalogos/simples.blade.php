@@ -14,10 +14,10 @@
 
     <div x-data="catalogosSimples()">
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {{-- Cargos en Entidad --}}
+        {{-- Cargo / Posición --}}
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-slate-900">Cargos en Entidad</h3>
+                <h3 class="text-sm font-semibold text-slate-900">Cargo / Posición</h3>
                 @can('catalogos.crear')
                 <button type="button" @click="modalCargo = true" class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-white bg-[#39A900] hover:bg-[#2d8500] transition-all" title="Nuevo">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -46,7 +46,7 @@
                                  @click.away="open = false"
                                  class="absolute right-0 mt-1 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
                                 <button type="button"
-                                        @click="open = false; openDetalle($event.target.closest('li'), 'Cargo en entidad')"
+                                        @click="open = false; openDetalle($event.target.closest('li'), 'Cargo / Posición')"
                                         class="w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-50">
                                     <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <span>Ver detalle</span>
@@ -419,12 +419,12 @@
 
     {{-- Modales de registro (solo crear) — dentro del mismo x-data para que Alpine los controle --}}
     @can('catalogos.crear')
-    {{-- Modal Cargos en Entidad --}}
+    {{-- Modal Cargo / Posición --}}
     <div x-show="modalCargo" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalCargo" @click.self="modalCargo = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalCargo" class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6" x-transition>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4">Nuevo cargo en entidad</h3>
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Nuevo Cargo / Posición</h3>
                 <form method="POST" action="{{ route('admin.entity-positions.store') }}" class="space-y-4">
                     @csrf
                     <input type="hidden" name="_from_simples" value="1">
@@ -624,7 +624,7 @@
         <div class="flex min-h-full items-center justify-center p-4">
             <div x-show="modalEditCargo" @click.self="modalEditCargo = false" class="fixed inset-0 bg-black/40" x-transition></div>
             <div x-show="modalEditCargo" class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6" x-transition>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4">Editar cargo en entidad</h3>
+                <h3 class="text-lg font-semibold text-slate-900 mb-4">Editar Cargo / Posición</h3>
                 <form :action="'{{ url('admin/entity-positions') }}/' + editCargo.id" method="POST" class="space-y-4" x-show="editCargo.id">
                     @csrf
                     @method('PUT')

@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\ExternalAdvisor;
 use App\Http\Requests\StoreExternalAdvisorRequest;
 use App\Http\Requests\UpdateExternalAdvisorRequest;
-use App\Models\TrainingCenter;
+use App\Models\ExternalAdvisor;
 use App\Support\TrainingCenterAccess;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ExternalAdvisorController extends Controller
@@ -23,7 +22,7 @@ class ExternalAdvisorController extends Controller
             $query->where(function ($q) use ($cid) {
                 $q->where('training_center_id', $cid)
                     ->orWhereHas('user', fn ($u) => $u->where('training_center_id', $cid))
-                    ->orWhereHas('seedlings.researchGroup', fn ($r) => $r->where('training_center_id', $cid));
+                    ->orWhereHas('seedlings', fn ($s) => $s->where('training_center_id', $cid));
             });
         }
 
@@ -31,12 +30,12 @@ class ExternalAdvisorController extends Controller
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('nombre_completo', 'like', "%{$term}%")
-                  ->orWhere('email', 'like', "%{$term}%")
-                  ->orWhereHas('trainingCenter', fn ($tc) => $tc->where('nombre', 'like', "%{$term}%"));
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhereHas('trainingCenter', fn ($tc) => $tc->where('nombre', 'like', "%{$term}%"));
             });
         }
 
-        $advisors    = $query->paginate(15)->withQueryString();
+        $advisors = $query->paginate(15)->withQueryString();
         $trainingCenters = TrainingCenterAccess::centersForSelect($request->user());
 
         return view('admin.external_advisors.index', compact('advisors', 'trainingCenters'));
@@ -45,12 +44,14 @@ class ExternalAdvisorController extends Controller
     public function create(): View
     {
         $trainingCenters = TrainingCenterAccess::centersForSelect(auth()->user());
+
         return view('admin.external_advisors.create', compact('trainingCenters'));
     }
 
     public function store(StoreExternalAdvisorRequest $request): RedirectResponse
     {
         ExternalAdvisor::create($request->validated());
+
         return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo creado correctamente.');
     }
 
@@ -58,6 +59,7 @@ class ExternalAdvisorController extends Controller
     {
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
         $externalAdvisor->load(['user', 'seedlings', 'trainingCenter']);
+
         return view('admin.external_advisors.show', compact('externalAdvisor'));
     }
 
@@ -65,6 +67,7 @@ class ExternalAdvisorController extends Controller
     {
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
         $trainingCenters = TrainingCenterAccess::centersForSelect(auth()->user());
+
         return view('admin.external_advisors.edit', compact('externalAdvisor', 'trainingCenters'));
     }
 
@@ -72,6 +75,7 @@ class ExternalAdvisorController extends Controller
     {
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
         $externalAdvisor->update($request->validated());
+
         return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo actualizado correctamente.');
     }
 
@@ -80,6 +84,7 @@ class ExternalAdvisorController extends Controller
         $this->authorizeExternalAdvisorForUserCenter($externalAdvisor);
         try {
             $externalAdvisor->delete();
+
             return redirect()->route('admin.external-advisors.index')->with('success', 'Asesor externo eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException) {
             return redirect()->route('admin.external-advisors.index')
@@ -108,7 +113,7 @@ class ExternalAdvisorController extends Controller
             return;
         }
 
-        if ($externalAdvisor->seedlings()->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $cid))->exists()) {
+        if ($externalAdvisor->seedlings()->where('training_center_id', $cid)->exists()) {
             return;
         }
 

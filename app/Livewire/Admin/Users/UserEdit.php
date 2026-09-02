@@ -5,9 +5,11 @@ namespace App\Livewire\Admin\Users;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\User;
+use App\Support\RoleAssignmentMatrix;
 use App\Support\RoleModuleLinks;
 use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
+use App\Support\UserOwnershipAccess;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -18,20 +20,32 @@ class UserEdit extends Component
 
     // User fields
     public ?int $training_center_id = null;
+
     public string $email = '';
+
     public string $tipo_documento = '';
+
     public string $numero_documento = '';
+
     public string $estado = '';
 
     // Person fields
     public string $primer_nombre = '';
+
     public string $segundo_nombre = '';
+
     public string $primer_apellido = '';
+
     public string $segundo_apellido = '';
+
     public string $genero = '';
+
     public string $telefono = '';
+
     public string $celular = '';
+
     public string $eps = '';
+
     public string $email_institucional = '';
 
     // Role
@@ -39,7 +53,9 @@ class UserEdit extends Component
 
     // Optional relations
     public ?int $entity_position_id = null;
+
     public ?int $linkage_type_id = null;
+
     public ?int $training_program_id = null;
 
     public function mount(User $user): void
@@ -53,6 +69,9 @@ class UserEdit extends Component
             }
             if ($user->hasRole('administrador_sistema') && $auth->id !== $user->id) {
                 abort(403);
+            }
+            if ($auth->id !== $user->id && ! UserOwnershipAccess::canManage($auth, $user)) {
+                abort(403, 'Solo quien creó esta cuenta puede gestionarla.');
             }
         }
 
@@ -100,11 +119,12 @@ class UserEdit extends Component
 
         $roleRules = ['required', 'string', 'exists:roles,name'];
         if ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
-            $forbidden = ['super_administrador', 'administrador_sistema'];
             if ($auth->id === $this->user->id && $this->user->hasRole('administrador_sistema')) {
-                $forbidden = ['super_administrador'];
+                // El propio administrador_sistema editando su perfil conserva su rol actual.
+                $roleRules[] = Rule::in([$this->user->primary_role_name]);
+            } else {
+                $roleRules[] = Rule::in(RoleAssignmentMatrix::assignableRolesFor($auth));
             }
-            $roleRules[] = Rule::notIn($forbidden);
         }
 
         Validator::make([
@@ -129,8 +149,16 @@ class UserEdit extends Component
             'training_center_id' => $trainingCenterRules,
         ])->validate();
 
-        if ($allowedCenters !== null) {
-            $this->training_center_id = $allowedCenters[0];
+        // BUG-20260813-034 — esto forzaba el centro del admin en CUALQUIER
+        // rol editado, incluido co_investigador, que por diseño debe quedar
+        // sin centro (rol global, fuera de CENTRO_BOUND_ROLE_NAMES). Solo
+        // aplica cuando el rol del usuario editado realmente exige centro.
+        if (TrainingCenterAccess::roleRequiresTrainingCenter($this->role)) {
+            if ($allowedCenters !== null) {
+                $this->training_center_id = $allowedCenters[0];
+            }
+        } else {
+            $this->training_center_id = null;
         }
 
         if (TrainingCenterAccess::isSuperAdmin($auth)
@@ -189,11 +217,14 @@ class UserEdit extends Component
     public function render()
     {
         $auth = auth()->user();
-        $includeAdminRol = $auth->id === $this->user->id && $this->user->hasRole('administrador_sistema');
+        $selfEditingAdminRole = $auth->id === $this->user->id && $this->user->hasRole('administrador_sistema');
+        $assignableRoleNames = $selfEditingAdminRole
+            ? [$this->user->primary_role_name]
+            : RoleAssignmentMatrix::assignableRolesFor($auth);
 
         return view('livewire.admin.users.user-edit', [
             'tiposDocumento' => TipoDocumentoEnum::cases(),
-            'roles' => TrainingCenterAccess::rolesForUserForm($auth, $includeAdminRol),
+            'roles' => \Spatie\Permission\Models\Role::whereIn('name', $assignableRoleNames)->orderBy('name')->get(),
             'trainingCenters' => TrainingCenterAccess::centersForSelect($auth),
             'estados' => EstadoEnum::cases(),
             'centerSelectReadonly' => TrainingCenterAccess::isCentroAdmin($auth) && $auth->training_center_id,

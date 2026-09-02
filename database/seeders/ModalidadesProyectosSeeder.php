@@ -9,24 +9,16 @@ class ModalidadesProyectosSeeder extends Seeder
     public function run(): void
     {
         $modalidades = [
-            [
-                'nombre'       => 'Propuesta',
-                'descripccion' => 'El proyecto se encuentra en fase de propuesta, aún no ha iniciado.',
-            ],
-            [
-                'nombre'       => 'En curso',
-                'descripccion' => 'El proyecto está actualmente en ejecución.',
-            ],
-            [
-                'nombre'       => 'Finalizado',
-                'descripccion' => 'El proyecto ha concluido su ejecución.',
-            ],
+            'Capacidad Instalada',
+            'Recursos Internos SENA',
+            'Recursos Externos Convenios',
+            'Otros',
         ];
 
-        foreach ($modalidades as $modalidad) {
+        foreach ($modalidades as $nombre) {
             \App\Models\ProjectModality::firstOrCreate(
-                ['nombre' => $modalidad['nombre']],
-                ['descripccion' => $modalidad['descripccion']]
+                ['nombre' => $nombre],
+                ['descripccion' => null]
             );
         }
     }

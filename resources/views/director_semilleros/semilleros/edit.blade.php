@@ -19,10 +19,13 @@
             <p class="text-xs text-slate-500 mt-1">Modifica los datos del semillero.</p>
         </div>
         
-        <form action="{{ route('dir-sem.semilleros.update', $semillero) }}" method="POST" enctype="multipart/form-data" class="p-6">
+        <form action="{{ route('dir-sem.semilleros.update', $semillero) }}" method="POST" class="p-6">
             @csrf
             @method('PUT')
-            
+            @if(request()->has('embedded'))
+                <input type="hidden" name="embedded" value="1">
+            @endif
+
             <div class="space-y-6">
                 
                 <!-- Nombre -->
@@ -51,24 +54,6 @@
                         </div>
                     </div>
                     @error('lider_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
-                </div>
-
-                <!-- Logo -->
-                <div>
-                    <label for="logo" class="block text-sm font-medium text-slate-700 mb-1.5">Logo del semillero (opcional)</label>
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
-                            @if(!empty($semillero->logo))
-                                <img src="{{ asset('storage/' . $semillero->logo) }}" alt="Logo semillero" class="w-full h-full object-cover">
-                            @else
-                                <span class="text-xs text-slate-400">Sin logo</span>
-                            @endif
-                        </div>
-                        <input type="file" name="logo" id="logo" accept="image/jpeg,image/png,image/gif,image/webp"
-                               class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('logo') border-red-300 @enderror">
-                    </div>
-                    <p class="text-xs text-slate-500 mt-1">Si cargas uno nuevo, reemplazará el actual. Máximo 2 MB.</p>
-                    @error('logo') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- Descripción -->

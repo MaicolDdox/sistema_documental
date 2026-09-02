@@ -155,18 +155,37 @@
                             @error('linkage_type_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Programa de Formación</label>
-                            <select name="training_program_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white transition-all focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">CVLAC</label>
+                            <input type="text" name="cvlac_link" value="{{ old('cvlac_link', $person?->cvlac_link) }}"
+                                   placeholder="https://scienti.minciencias.gov.co/cvlac/..."
+                                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 transition-all focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            @error('cvlac_link') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+
+                    @if(auth()->user()->hasRole('co_investigador'))
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Nivel de Formación</label>
+                            <select name="nivel_formacion" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white transition-all focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                                 <option value="">Selecciona...</option>
-                                @foreach($trainingPrograms as $tp)
-                                    <option value="{{ $tp->id }}" {{ old('training_program_id', $person?->training_program_id) == $tp->id ? 'selected' : '' }}>
-                                        {{ $tp->nombre }}
+                                @foreach(\App\Enums\NivelFormacionEnum::cases() as $nf)
+                                    <option value="{{ $nf->value }}" {{ old('nivel_formacion', $person?->nivel_formacion?->value) == $nf->value ? 'selected' : '' }}>
+                                        {{ $nf->label() }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('training_program_id') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                            @error('nivel_formacion') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Fecha de Vinculación</label>
+                            <input type="date" name="fecha_vinculacion"
+                                   value="{{ old('fecha_vinculacion', $person?->fecha_vinculacion?->format('Y-m-d')) }}"
+                                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 transition-all focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            @error('fecha_vinculacion') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         </div>
                     </div>
+                    @endif
                 </div>
 
                 @if($errors->has('general'))

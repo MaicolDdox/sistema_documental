@@ -74,7 +74,7 @@
                 @endif
             </div>
             <div class="min-w-0">
-                <a href="{{ $url }}" target="_blank" class="block font-medium text-slate-800 truncate hover:underline">{{ $f->archivo ?? '—' }}</a>
+                <a href="{{ route('lider-sem.archivos.descargar', $f) }}" class="block font-medium text-slate-800 truncate hover:underline">{{ $f->archivo ?? '—' }}</a>
                 <p class="text-xs text-slate-500 mt-0.5">
                     @if($f->subido_por_mi ?? false)
                         Subido por: tú
@@ -86,9 +86,6 @@
             </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-            <a href="{{ route('lider-sem.archivos.ver', $f) }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900">
-                Ver
-            </a>
             <a href="{{ route('lider-sem.archivos.descargar', $f) }}" class="inline-flex items-center gap-1 text-xs font-medium text-[#2d7d00] hover:text-[#39A900]">
                 Descargar
             </a>

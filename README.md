@@ -28,13 +28,16 @@ El sistema está organizado por rol de usuario, replicando la misma estructura e
 
 | Rol | Responsabilidad principal |
 |---|---|
-| `SuperAdmin` | Administración global del sistema |
-| `Admin` | Gestión de usuarios, roles y configuración por centro de formación |
-| `DirectorSemilleros` | Supervisión de semilleros de investigación |
-| `LiderSemillero` | Gestión operativa de un semillero |
-| `AsesorSemillero` | Acompañamiento y validación de proyectos |
-| `DirectorInvestigacion` | Aprobación de productos de investigación |
-| `InvestigadorAsociado` | Participación en proyectos y productos |
+| `SuperAdmin` | Administración global: centros de formación, administradores del sistema y cualquier otro usuario |
+| `Admin` (`administrador_sistema`) | Gestión de usuarios, catálogos y aprobación de productos Minciencias de un centro de formación |
+| `DirectorSemilleros` | Creación de semilleros y asignación de líderes en su centro |
+| `LiderSemillero` | Gestión operativa de un semillero: asigna líderes de proyecto y revisa evidencias |
+| `LiderProyecto` | Ejecución de un proyecto: aprendices, evidencias y co-investigadores vinculados |
+| `Coinvestigador` | Rol global (sin centro fijo): colabora en proyectos vinculados y gestiona sus propios productos Minciencias |
+
+Un usuario puede tener, además de su rol principal, uno o varios **roles adicionales** y cambiar de "rol activo" desde el menú "Mis roles" — el acceso a cada módulo queda aislado al rol activo en cada momento.
+
+> Los roles `AsesorSemillero`, `DirectorInvestigacion` e `InvestigadorAsociado` de un diseño anterior del sistema fueron eliminados y reemplazados por `LiderProyecto` y `Coinvestigador` en el rediseño de roles de agosto de 2026.
 
 ## Stack tecnológico
 

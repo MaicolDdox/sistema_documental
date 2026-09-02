@@ -33,14 +33,14 @@ class BUG20260623001Test extends TestCase
 
     private function crearCentro(): TrainingCenter
     {
-        $dpto   = Department::firstOrCreate(['nombre' => 'Depto Regresion']);
+        $dpto = Department::firstOrCreate(['nombre' => 'Depto Regresion']);
         $ciudad = City::firstOrCreate(['nombre' => 'Ciudad Regresion', 'department_id' => $dpto->id]);
 
         return TrainingCenter::create([
             'department_id' => $dpto->id,
-            'city_id'       => $ciudad->id,
-            'nombre'        => 'Centro Regresion',
-            'codigo'        => 777,
+            'city_id' => $ciudad->id,
+            'nombre' => 'Centro Regresion',
+            'codigo' => 777,
         ]);
     }
 
@@ -50,7 +50,7 @@ class BUG20260623001Test extends TestCase
 
         $admin = User::factory()->create([
             'training_center_id' => $centroId,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
         $admin->assignRole('administrador_sistema');
 
@@ -66,13 +66,13 @@ class BUG20260623001Test extends TestCase
 
         $superAdmin = User::factory()->create([
             'training_center_id' => $centro->id,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
         $superAdmin->assignRole('super_administrador');
 
         $otroDelCentro = User::factory()->create([
             'training_center_id' => $centro->id,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
 
         $resultado = TrainingCenterAccess::scopeUserQueryForList(User::query(), $admin)
@@ -92,7 +92,7 @@ class BUG20260623001Test extends TestCase
 
         $superAdmin = User::factory()->create([
             'training_center_id' => null,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
         $superAdmin->assignRole('super_administrador');
 
@@ -110,11 +110,11 @@ class BUG20260623001Test extends TestCase
         Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
 
         $centro = $this->crearCentro();
-        $admin  = $this->crearAdminDeCentro($centro->id);
+        $admin = $this->crearAdminDeCentro($centro->id);
 
         $superAdmin = User::factory()->create([
             'training_center_id' => $centro->id,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
         $superAdmin->assignRole('super_administrador');
 
@@ -129,24 +129,28 @@ class BUG20260623001Test extends TestCase
         Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
 
         $centro = $this->crearCentro();
-        $admin  = $this->crearAdminDeCentro($centro->id);
+        $admin = $this->crearAdminDeCentro($centro->id);
 
         $superAdmin = User::factory()->create([
             'training_center_id' => $centro->id,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
         $superAdmin->assignRole('super_administrador');
 
         $otroDelCentro = User::factory()->create([
             'training_center_id' => $centro->id,
-            'estado'              => EstadoEnum::Activo,
+            'estado' => EstadoEnum::Activo,
         ]);
 
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk();
         $response->assertDontSee($superAdmin->email);
-        $this->assertEquals(2, $response->viewData('totalUsuarios'), 'totalUsuarios no debe contar al super administrador');
+        // Desde BUG-20260813-035, el contador "Total Usuarios" usa
+        // scopeUserQueryForMetrics() (no scopeUserQueryForList()): el propio
+        // admin SÍ cuenta como usuario real de su centro — solo el super
+        // administrador queda excluido. Antes de ese fix subcontaba en 1.
+        $this->assertEquals(2, $response->viewData('totalUsuarios'), 'totalUsuarios debe contar al propio admin y a otroDelCentro, pero no al super administrador');
 
         $recentEmails = $response->viewData('recentUsers')->pluck('email');
         $this->assertNotContains($superAdmin->email, $recentEmails);

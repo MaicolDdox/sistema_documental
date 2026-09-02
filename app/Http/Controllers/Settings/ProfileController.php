@@ -7,7 +7,6 @@ use App\Enums\GeneroEnum;
 use App\Http\Controllers\Controller;
 use App\Models\EntityPosition;
 use App\Models\LinkageType;
-use App\Models\TrainingProgram;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,7 +27,6 @@ class ProfileController extends Controller
             'person'           => $person,
             'entityPositions'  => EntityPosition::orderBy('nombre')->get(),
             'linkageTypes'     => LinkageType::orderBy('nombre')->get(),
-            'trainingPrograms' => TrainingProgram::orderBy('nombre')->get(),
             'generos'          => GeneroEnum::cases(),
         ]);
     }
@@ -60,7 +58,11 @@ class ProfileController extends Controller
             'email_institucional' => $validated['email_institucional'] ?: null,
             'entity_position_id'  => $validated['entity_position_id'] ?: null,
             'linkage_type_id'     => $validated['linkage_type_id'] ?: null,
-            'training_program_id' => $validated['training_program_id'] ?: null,
+            'cvlac_link'          => $validated['cvlac_link'] ?: null,
+            // Solo se renderizan en el formulario para co_investigador; para
+            // el resto de roles el campo ni siquiera llega en el request.
+            'nivel_formacion'     => $validated['nivel_formacion'] ?? null,
+            'fecha_vinculacion'   => $validated['fecha_vinculacion'] ?? null,
         ];
 
         if ($person) {

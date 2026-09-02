@@ -6,9 +6,9 @@ use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\Seedling;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -26,23 +26,10 @@ class ReporteSemilleroController extends Controller
     protected function semillerosQuery()
     {
         $centerId = Auth::user()->training_center_id;
-        return Seedling::with(['leader.person', 'researchGroup'])
-            ->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId))
+
+        return Seedling::with(['leader.person'])
+            ->where('training_center_id', $centerId)
             ->orderBy('nombre');
-    }
-
-    public function index()
-    {
-        if (!Auth::user()->canAny([
-            'reportes.semilleros_con_metricas',
-            'reportes.aprendices_por_semillero',
-            'reportes.proyectos_por_estado'
-        ])) {
-            abort(403, 'No tienes permisos para ver reportes.');
-        }
-
-        $semilleros = $this->semillerosQuery()->get(['id', 'nombre', 'codigo']);
-        return view('director_semilleros.reportes.index', compact('semilleros'));
     }
 
     public function exportar(Request $request)
@@ -51,14 +38,14 @@ class ReporteSemilleroController extends Controller
 
         $validated = $request->validate([
             'tipo_reporte' => 'required|string|in:Semilleros con Métricas,Aprendices por Semillero,Proyectos por Estado',
-            'formato'      => 'required|in:pdf,excel',
+            'formato' => 'required|in:pdf,excel',
             'semillero_id' => ['nullable', 'integer', Rule::in($this->semillerosQuery()->pluck('id')->all())],
-            'fecha_desde'  => 'nullable|date',
-            'fecha_hasta'  => 'nullable|date|after_or_equal:fecha_desde',
+            'fecha_desde' => 'nullable|date',
+            'fecha_hasta' => 'nullable|date|after_or_equal:fecha_desde',
         ]);
 
         $query = $this->semillerosQuery();
-        if (!empty($validated['semillero_id'])) {
+        if (! empty($validated['semillero_id'])) {
             $query->where('id', $validated['semillero_id']);
         }
 
@@ -71,6 +58,7 @@ class ReporteSemilleroController extends Controller
         if ($formato === 'pdf') {
             return $this->exportarPdf($tipo, $query->get(), $fechaDesde, $fechaHasta);
         }
+
         return $this->exportarExcel($tipo, $query->get(), $fechaDesde, $fechaHasta);
     }
 
@@ -79,14 +67,15 @@ class ReporteSemilleroController extends Controller
         $data = $this->buildDatosReporte($tipo, $semilleros, $fechaDesde, $fechaHasta);
         $data['meta'] = $this->metaReporte($tipo, $fechaDesde, $fechaHasta);
         $vista = match ($tipo) {
-            'Semilleros con Métricas'   => 'director_semilleros.reportes.pdf.semilleros_metricas',
-            'Aprendices por Semillero'  => 'director_semilleros.reportes.pdf.aprendices_por_semillero',
-            'Proyectos por Estado'      => 'director_semilleros.reportes.pdf.proyectos_por_estado',
+            'Semilleros con Métricas' => 'director_semilleros.reportes.pdf.semilleros_metricas',
+            'Aprendices por Semillero' => 'director_semilleros.reportes.pdf.aprendices_por_semillero',
+            'Proyectos por Estado' => 'director_semilleros.reportes.pdf.proyectos_por_estado',
             default => abort(400, 'Tipo de reporte no válido'),
         };
 
         $pdf = Pdf::loadView($vista, $data);
         $nombre = $this->nombreArchivo($tipo, 'pdf');
+
         return $pdf->download($nombre);
     }
 
@@ -97,7 +86,7 @@ class ReporteSemilleroController extends Controller
         $nombre = $this->nombreArchivo($tipo, 'xlsx');
 
         return new StreamedResponse(function () use ($tipo, $data, $meta) {
-            $spreadsheet = new Spreadsheet();
+            $spreadsheet = new Spreadsheet;
             $spreadsheet->getDefaultStyle()->getFont()->setName('Calibri')->setSize(11);
             $hojaReporte = $spreadsheet->getActiveSheet();
             $hojaReporte->setTitle('Reporte');
@@ -133,7 +122,7 @@ class ReporteSemilleroController extends Controller
             $hojaReporte->setCellValue('A6', 'Generado en');
             $hojaReporte->setCellValue('B6', $meta['generado_en'] ?? '—');
             $hojaReporte->setCellValue('A7', 'Filtro fechas');
-            $hojaReporte->setCellValue('B7', ($meta['fecha_desde'] ?? 'Sin filtro') . ' - ' . ($meta['fecha_hasta'] ?? 'Sin filtro'));
+            $hojaReporte->setCellValue('B7', ($meta['fecha_desde'] ?? 'Sin filtro').' - '.($meta['fecha_hasta'] ?? 'Sin filtro'));
             $hojaReporte->getStyle('A3:A7')->getFont()->setBold(true);
             $hojaReporte->getStyle('A3:B7')->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFD1D5DB']]],
@@ -181,7 +170,7 @@ class ReporteSemilleroController extends Controller
                 $hojaReporte->setCellValue("B{$row}", $item['value']);
                 $row++;
             }
-            $hojaReporte->getStyle("A10:B" . max(10, $row - 1))->applyFromArray([
+            $hojaReporte->getStyle('A10:B'.max(10, $row - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFE5E7EB']]],
             ]);
 
@@ -189,7 +178,7 @@ class ReporteSemilleroController extends Controller
             $colIndex = 1;
             foreach ($titles as $title) {
                 $col = Coordinate::stringFromColumnIndex($colIndex);
-                $hojaReporte->setCellValue($col . $tableStartRow, $title);
+                $hojaReporte->setCellValue($col.$tableStartRow, $title);
                 $colIndex++;
             }
 
@@ -205,7 +194,7 @@ class ReporteSemilleroController extends Controller
                 $colIndex = 1;
                 foreach ($keys as $key) {
                     $col = Coordinate::stringFromColumnIndex($colIndex);
-                    $hojaReporte->setCellValue($col . $currentRow, $fila[$key] ?? '—');
+                    $hojaReporte->setCellValue($col.$currentRow, $fila[$key] ?? '—');
                     $colIndex++;
                 }
                 $currentRow++;
@@ -217,7 +206,7 @@ class ReporteSemilleroController extends Controller
                 $currentRow++;
             }
 
-            $tableBodyRange = "A{$tableStartRow}:{$lastHeaderColumn}" . ($currentRow - 1);
+            $tableBodyRange = "A{$tableStartRow}:{$lastHeaderColumn}".($currentRow - 1);
             $hojaReporte->getStyle($tableBodyRange)->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFE5E7EB']]],
             ]);
@@ -245,7 +234,7 @@ class ReporteSemilleroController extends Controller
                 $hojaReporte->mergeCells("C{$analysisRow}:D{$analysisRow}");
                 $analysisRow++;
             }
-            $hojaReporte->getStyle("A" . ($currentRow + 3) . ":D" . ($analysisRow - 1))->applyFromArray([
+            $hojaReporte->getStyle('A'.($currentRow + 3).':D'.($analysisRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFE5E7EB']]],
             ]);
 
@@ -282,10 +271,10 @@ class ReporteSemilleroController extends Controller
                 $hojaReporte->setCellValue("D{$rankingRow}", '0.00%');
                 $rankingRow++;
             }
-            $hojaReporte->getStyle("A" . ($analysisRow + 3) . ":D" . ($rankingRow - 1))->applyFromArray([
+            $hojaReporte->getStyle('A'.($analysisRow + 3).':D'.($rankingRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => 'FFE5E7EB']]],
             ]);
-            $hojaReporte->getStyle("D" . ($analysisRow + 5) . ":D" . ($rankingRow - 1))->getNumberFormat()->setFormatCode('0.00%');
+            $hojaReporte->getStyle('D'.($analysisRow + 5).':D'.($rankingRow - 1))->getNumberFormat()->setFormatCode('0.00%');
 
             // Hallazgos automáticos
             $insights = $this->buildInsights($data);
@@ -298,7 +287,7 @@ class ReporteSemilleroController extends Controller
             ]);
             $insightRow++;
             foreach ($insights as $line) {
-                $hojaReporte->setCellValue("A{$insightRow}", '- ' . $line);
+                $hojaReporte->setCellValue("A{$insightRow}", '- '.$line);
                 $hojaReporte->mergeCells("A{$insightRow}:{$lastHeaderColumn}{$insightRow}");
                 $hojaReporte->getStyle("A{$insightRow}:{$lastHeaderColumn}{$insightRow}")->getAlignment()->setWrapText(true);
                 $insightRow++;
@@ -308,15 +297,15 @@ class ReporteSemilleroController extends Controller
                 $col = Coordinate::stringFromColumnIndex($i);
                 $hojaReporte->getColumnDimension($col)->setAutoSize(true);
             }
-            $hojaReporte->freezePane('A' . ($tableStartRow + 1));
+            $hojaReporte->freezePane('A'.($tableStartRow + 1));
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, 200, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition'  => 'attachment; filename="'.$nombre.'"',
-            'Cache-Control'       => 'max-age=0, no-cache, no-store, must-revalidate',
-            'Pragma'              => 'public',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$nombre.'"',
+            'Cache-Control' => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma' => 'public',
         ]);
     }
 
@@ -332,17 +321,18 @@ class ReporteSemilleroController extends Controller
             foreach ($semilleros as $s) {
                 $integrantes = $s->members()->count();
                 $proyectos = $s->projects()->where('estado', EstadoEnum::Activo)->count();
-                $productos = $s->projects()->where('estado', EstadoEnum::Activo)->withCount('products')->get()->sum('products_count');
+                $productos = \App\Models\ProjectEvidence::where('tipo', \App\Enums\TipoEvidenciaEnum::ProductoFinal)
+                    ->whereHas('project', fn ($q) => $q->where('seedling_id', $s->id)->where('estado', EstadoEnum::Activo))
+                    ->count();
 
                 $filas[] = [
-                    'nombre'      => $s->nombre,
-                    'codigo'      => $s->codigo ?? '—',
-                    'grupo'       => $s->researchGroup?->nombre ?? '—',
-                    'lider'       => $s->leader?->person?->nombre_completo ?? $s->leader?->email ?? 'Sin líder',
-                    'asesores'    => $s->advisors()->count(),
+                    'nombre' => $s->nombre,
+                    'codigo' => $s->codigo ?? '—',
+                    'lider' => $s->leader?->person?->nombre_completo ?? $s->leader?->email ?? 'Sin líder',
+                    'asesores' => $s->advisors()->count(),
                     'integrantes' => $integrantes,
-                    'proyectos'   => $proyectos,
-                    'productos'   => $productos,
+                    'proyectos' => $proyectos,
+                    'productos' => $productos,
                 ];
                 $totIntegrantes += $integrantes;
                 $totProyectos += $proyectos;
@@ -354,6 +344,7 @@ class ReporteSemilleroController extends Controller
                 ->values()
                 ->map(fn ($f) => ['label' => $f['nombre'], 'value' => (int) $f['integrantes']])
                 ->all();
+
             return [
                 'titulo' => $titulo,
                 'filas' => $filas,
@@ -374,18 +365,22 @@ class ReporteSemilleroController extends Controller
 
         if ($tipo === 'Aprendices por Semillero') {
             $contadorSemilleros = [];
-            foreach ($semilleros as $s) {
-                foreach ($s->members()->with('person')->get() as $user) {
-                    $filas[] = [
-                        'semillero'  => $s->nombre,
-                        'codigo'     => $s->codigo ?? '—',
-                        'documento'  => $user->numero_documento ?? '',
-                        'nombre'     => $user->person?->nombre_completo ?? $user->email,
-                        'email'      => $user->email ?? '',
-                        'estado'     => (string) ($user->estado?->value ?? '—'),
-                    ];
-                    $contadorSemilleros[$s->nombre] = ($contadorSemilleros[$s->nombre] ?? 0) + 1;
-                }
+            $aprendices = \App\Models\ProjectLearner::query()
+                ->whereHas('project', fn ($q) => $q->whereIn('seedling_id', $semilleros->pluck('id')))
+                ->with('project.seedling', 'trainingProgram')
+                ->get();
+
+            foreach ($aprendices as $a) {
+                $semilleroNombre = $a->project?->seedling?->nombre ?? '—';
+                $filas[] = [
+                    'semillero' => $semilleroNombre,
+                    'proyecto' => $a->project?->nombre ?? '—',
+                    'documento' => $a->numero_documento ?? '',
+                    'nombre' => $a->nombre_completo ?? '',
+                    'ficha' => $a->ficha ?? '',
+                    'tecnologo' => $a->trainingProgram?->nombre ?? '',
+                ];
+                $contadorSemilleros[$semilleroNombre] = ($contadorSemilleros[$semilleroNombre] ?? 0) + 1;
             }
             $chartItems = collect($contadorSemilleros)
                 ->sortDesc()
@@ -393,6 +388,7 @@ class ReporteSemilleroController extends Controller
                 ->map(fn ($value, $label) => ['label' => $label, 'value' => (int) $value])
                 ->values()
                 ->all();
+
             return [
                 'titulo' => $titulo,
                 'filas' => $filas,
@@ -411,8 +407,8 @@ class ReporteSemilleroController extends Controller
 
         // Proyectos por Estado
         $proyectosQuery = Project::query()
-            ->whereHas('seedlings', fn ($q) => $q->whereIn('seedlings.id', $semilleros->pluck('id')))
-            ->with(['seedlings:id,nombre', 'projectCreator.person']);
+            ->whereIn('seedling_id', $semilleros->pluck('id'))
+            ->with(['seedling:id,nombre', 'liderProyecto.person']);
         if ($fechaDesde) {
             $proyectosQuery->whereDate('fecha_inicio', '>=', $fechaDesde);
         }
@@ -421,17 +417,17 @@ class ReporteSemilleroController extends Controller
         }
         $proyectos = $proyectosQuery->orderBy('estado')->orderBy('nombre')->get();
         foreach ($proyectos as $p) {
-            $semilleroNombres = $p->seedlings->pluck('nombre')->implode(', ');
             $filas[] = [
-                'semillero'     => $semilleroNombres,
-                'proyecto'      => $p->nombre,
-                'estado'        => $this->estadoProyectoLabel($p->estado),
-                'responsable'   => $p->projectCreator?->person?->nombre_completo ?? $p->projectCreator?->email ?? '—',
-                'productos'     => (int) $p->products()->count(),
-                'fecha_inicio'  => $p->fecha_inicio?->format('d/m/Y') ?? '—',
-                'fecha_fin'     => $p->fecha_fin?->format('d/m/Y') ?? '—',
+                'semillero' => $p->seedling?->nombre ?? '—',
+                'proyecto' => $p->nombre,
+                'estado' => $this->estadoProyectoLabel($p->estado),
+                'responsable' => $p->liderProyecto?->person?->nombre_completo ?? $p->liderProyecto?->email ?? '—',
+                'productos' => (int) $p->projectEvidences()->where('tipo', \App\Enums\TipoEvidenciaEnum::ProductoFinal)->count(),
+                'fecha_inicio' => $p->fecha_inicio?->format('d/m/Y') ?? '—',
+                'fecha_fin' => $p->fecha_fin?->format('d/m/Y') ?? '—',
             ];
         }
+
         return [
             'titulo' => $titulo,
             'filas' => $filas,
@@ -466,12 +462,14 @@ class ReporteSemilleroController extends Controller
     {
         $slug = str_replace(' ', '_', $tipo);
         $fecha = now()->format('Y-m-d_H-i');
+
         return "reporte_{$slug}_{$fecha}.{$ext}";
     }
 
     protected function metaReporte(string $tipo, ?string $fechaDesde, ?string $fechaHasta): array
     {
         $usuario = Auth::user();
+
         return [
             'tipo' => $tipo,
             'generado_en' => now('America/Bogota')->format('d/m/Y H:i'),
@@ -488,7 +486,6 @@ class ReporteSemilleroController extends Controller
             return [
                 'nombre' => 'Semillero',
                 'codigo' => 'Código',
-                'grupo' => 'Grupo',
                 'lider' => 'Líder',
                 'asesores' => 'Asesores',
                 'integrantes' => 'Integrantes',
@@ -500,11 +497,11 @@ class ReporteSemilleroController extends Controller
         if ($tipo === 'Aprendices por Semillero') {
             return [
                 'semillero' => 'Semillero',
-                'codigo' => 'Código',
+                'proyecto' => 'Proyecto',
                 'documento' => 'Documento',
                 'nombre' => 'Nombre',
-                'email' => 'Email',
-                'estado' => 'Estado',
+                'ficha' => 'Ficha',
+                'tecnologo' => 'Tecnólogo',
             ];
         }
 
@@ -526,10 +523,11 @@ class ReporteSemilleroController extends Controller
             if (is_array($v)) {
                 foreach ($v as $subK => $subV) {
                     $items[] = [
-                        'label' => ucwords(str_replace('_', ' ', (string) $k)) . ' - ' . (string) $subK,
+                        'label' => ucwords(str_replace('_', ' ', (string) $k)).' - '.(string) $subK,
                         'value' => (string) $subV,
                     ];
                 }
+
                 continue;
             }
             $items[] = [
@@ -598,12 +596,12 @@ class ReporteSemilleroController extends Controller
             [
                 'label' => 'Mayor categoría',
                 'value' => ($max['label'] ?? 'Sin datos'),
-                'detalle' => 'Valor: ' . (string) ($max['value'] ?? 0),
+                'detalle' => 'Valor: '.(string) ($max['value'] ?? 0),
             ],
             [
                 'label' => 'Menor categoría',
                 'value' => ($min['label'] ?? 'Sin datos'),
-                'detalle' => 'Valor: ' . (string) ($min['value'] ?? 0),
+                'detalle' => 'Valor: '.(string) ($min['value'] ?? 0),
             ],
         ];
     }
@@ -626,5 +624,4 @@ class ReporteSemilleroController extends Controller
 
         return $rows;
     }
-
 }

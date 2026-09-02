@@ -12,7 +12,8 @@
         editUrl: '',
         deleteOpen: false,
         deleteUrl: '',
-        deleteName: ''
+        deleteName: '',
+        deleteActivo: false
     }">
 {{-- Breadcrumbs --}}
 <nav class="text-sm text-slate-500 mb-2">
@@ -73,7 +74,6 @@
                     <th class="text-left">Nombre</th>
                     <th class="text-left">Código</th>
                     <th class="text-left">Líder</th>
-                    <th class="text-left">Grupo Inv.</th>
                     <th class="text-center">Integrantes</th>
                     <th class="text-center">Estado</th>
                     <th class="text-right">Acciones</th>
@@ -101,15 +101,6 @@
                             }
                         @endphp
                         <p class="text-sm text-slate-700">{{ $leaderName }}</p>
-                    </td>
-                    <td class="px-4 py-3">
-                        @if($semillero->researchGroup)
-                        <span class="inline-flex px-2.5 py-0.5 rounded-md text-xs font-medium bg-[#39A900]/15 text-[#2d8500]">
-                            {{ $semillero->researchGroup->nombre }}
-                        </span>
-                        @else
-                        <span class="text-slate-400 text-xs">—</span>
-                        @endif
                     </td>
                     <td class="px-4 py-3 text-center">
                         <span class="text-sm font-medium text-blue-600">{{ $semillero->members->count() }}</span>
@@ -161,12 +152,15 @@
                                     <span>Editar</span>
                                 </button>
                                 <button type="button"
-                                        @click="open = false; deleteUrl = '{{ route('dir-sem.semilleros.destroy', $semillero) }}'; deleteName = '{{ addslashes($semillero->nombre) }}'; deleteOpen = true;"
-                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166M4.772 5.79a48.11 48.11 0 013.478-.397m0 0V4.5c0-1.18.91-2.164 2.09-2.201a51.964 51.964 0 013.22 0C15.74 2.336 16.65 3.32 16.65 4.5v.893m0 0a48.108 48.108 0 013.478.397M4.772 5.79L4.5 19.5A2.25 2.25 0 006.75 21h10.5a2.25 2.25 0 002.25-2.25L19.228 5.79" />
-                                    </svg>
-                                    <span>Eliminar</span>
+                                        @click="open = false; deleteUrl = '{{ route('dir-sem.semilleros.toggle-estado', $semillero) }}'; deleteName = '{{ addslashes($semillero->nombre) }}'; deleteActivo = {{ $semillero->estado === \App\Enums\EstadoEnum::Activo ? 'true' : 'false' }}; deleteOpen = true;"
+                                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-xs {{ $semillero->estado === \App\Enums\EstadoEnum::Activo ? 'text-red-600 hover:bg-red-50' : 'text-[#39A900] hover:bg-green-50' }}">
+                                    @if($semillero->estado === \App\Enums\EstadoEnum::Activo)
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    <span>Desactivar</span>
+                                    @else
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span>Activar</span>
+                                    @endif
                                 </button>
                                 @endcan
                             </div>
@@ -216,23 +210,11 @@
                                    class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('nombre') border-red-300 @enderror">
                             @error('nombre') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="modal_codigo" class="block text-sm font-medium text-slate-700 mb-1">Código</label>
-                                <input type="number" name="codigo" id="modal_codigo" value="{{ old('codigo', $siguienteCodigo ?? '') }}" min="1" step="1" placeholder="{{ $siguienteCodigo ?? 'Auto' }}"
-                                       class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('codigo') border-red-300 @enderror">
-                                @error('codigo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                            </div>
-                            <div>
-                                <label for="modal_research_group_id" class="block text-sm font-medium text-slate-700 mb-1">Grupo de Investigación</label>
-                                <select name="research_group_id" id="modal_research_group_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('research_group_id') border-red-300 @enderror">
-                                    <option value="">Ninguno</option>
-                                    @foreach($gruposInvestigacion ?? [] as $grupo)
-                                        <option value="{{ $grupo->id }}" {{ old('research_group_id') == $grupo->id ? 'selected' : '' }}>{{ $grupo->nombre }} @if($grupo->codigo)({{ $grupo->codigo }})@endif</option>
-                                    @endforeach
-                                </select>
-                                @error('research_group_id') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                            </div>
+                        <div>
+                            <label for="modal_codigo" class="block text-sm font-medium text-slate-700 mb-1">Código</label>
+                            <input type="text" name="codigo" id="modal_codigo" value="{{ old('codigo', $siguienteCodigo ?? '') }}" maxlength="50" placeholder="{{ $siguienteCodigo ?? 'Auto' }}"
+                                   class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('codigo') border-red-300 @enderror">
+                            @error('codigo') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label for="modal_lider_id" class="block text-sm font-medium text-slate-700 mb-1">Líder Asignado (opcional)</label>
@@ -286,27 +268,27 @@
         </div>
     </div>
 
-    {{-- Modal eliminar semillero (estilo administrador) --}}
+    {{-- Modal activar/desactivar semillero --}}
     <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
-            <div class="px-6 py-4 border-b border-slate-100 bg-red-50 flex items-center justify-between">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between" :class="deleteActivo ? 'bg-red-50' : 'bg-green-50'">
                 <div class="flex items-center gap-2">
-                    <span class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <span class="w-7 h-7 rounded-full flex items-center justify-center" :class="deleteActivo ? 'bg-red-100' : 'bg-green-100'">
+                        <svg class="w-4 h-4" :class="deleteActivo ? 'text-red-600' : 'text-[#39A900]'" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.007v.008H12v-.008z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l7.5-15 7.5 15h-15z" />
                         </svg>
                     </span>
-                    <h2 class="text-sm font-semibold text-red-800">Eliminar semillero</h2>
+                    <h2 class="text-sm font-semibold" :class="deleteActivo ? 'text-red-800' : 'text-green-800'" x-text="deleteActivo ? 'Desactivar semillero' : 'Activar semillero'"></h2>
                 </div>
-                <button type="button" @click="deleteOpen = false" class="p-1.5 rounded-lg hover:bg-red-100 text-red-500" aria-label="Cerrar">
+                <button type="button" @click="deleteOpen = false" class="p-1.5 rounded-lg hover:bg-black/5 text-slate-500" aria-label="Cerrar">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
             <div class="px-6 py-4 space-y-2">
-                <p class="text-sm text-slate-700">¿Estás seguro de que deseas eliminar el semillero:</p>
+                <p class="text-sm text-slate-700" x-text="deleteActivo ? '¿Estás seguro de que deseas desactivar el semillero:' : '¿Estás seguro de que deseas activar el semillero:'"></p>
                 <p class="text-sm font-semibold text-slate-900" x-text="deleteName"></p>
-                <p class="text-xs text-slate-500 mt-1">Esta acción no se puede deshacer y puede afectar registros relacionados.</p>
+                <p class="text-xs text-slate-500 mt-1" x-show="deleteActivo">Un semillero con proyectos activos no se puede desactivar. Puedes reactivarlo cuando quieras.</p>
             </div>
             <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button type="button"
@@ -316,10 +298,10 @@
                 </button>
                 <form :action="deleteUrl" method="POST" class="inline-flex">
                     @csrf
-                    @method('DELETE')
                     <button type="submit"
-                            class="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700">
-                        Sí, eliminar
+                            class="px-4 py-2 rounded-xl text-white text-sm font-semibold"
+                            :class="deleteActivo ? 'bg-red-600 hover:bg-red-700' : 'bg-[#39A900] hover:bg-[#2d8500]'"
+                            x-text="deleteActivo ? 'Sí, desactivar' : 'Sí, activar'">
                     </button>
                 </form>
             </div>

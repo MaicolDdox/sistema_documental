@@ -4,15 +4,24 @@
 @section('header', '')
 
 @section('content')
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-900">Proyectos</h1>
-    <p class="text-sm text-slate-500 mt-0.5">
-        @if($semillero)
-            Proyectos vinculados al semillero {{ $semillero->nombre }}
-        @else
-            Proyectos del semillero
-        @endif
-    </p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">Proyectos</h1>
+        <p class="text-sm text-slate-500 mt-0.5">
+            @if($semillero)
+                Proyectos del semillero {{ $semillero->nombre }}
+            @else
+                Proyectos del semillero
+            @endif
+        </p>
+    </div>
+    @if($semillero)
+    <a href="{{ route('lider-sem.proyectos.create') }}"
+       class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        Nuevo proyecto
+    </a>
+    @endif
 </div>
 
 @if(!$semillero)
@@ -28,21 +37,22 @@
 </div>
 @else
 <div>
-    <div class="mb-4">
-        <h2 class="text-base font-semibold text-slate-900">Proyectos del Semillero</h2>
-        <p class="text-xs text-slate-500 mt-0.5">Proyectos vinculados a {{ $semillero->nombre }} con resumen de fechas, productos y avance.</p>
+    @if(session('success'))
+    <div class="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+        {{ session('success') }}
     </div>
+    @endif
 
     <div class="sgd-table-card bg-white overflow-hidden">
         <div class="overflow-x-auto">
             <table class="sgd-table text-sm">
                 <thead>
                     <tr>
-                        <th class="text-left">Título</th>
-                        <th class="text-left">Asesor</th>
+                        <th class="text-left">Nombre</th>
+                        <th class="text-left">Líder de Proyecto</th>
                         <th class="text-left">Fechas</th>
                         <th class="text-left">Integrantes</th>
-                        <th class="text-left">Productos</th>
+                        <th class="text-left">Aprendices</th>
                         <th class="text-left">Estado</th>
                         <th class="text-left">Avance</th>
                         <th class="text-left">Acciones</th>
@@ -51,20 +61,20 @@
                 <tbody>
                     @forelse($proyectos as $proyecto)
                     @php
-                        $creador = $proyecto->projectCreator;
-                        $asesorNombre = $creador?->person?->nombre_completo ?? $creador?->email ?? '—';
+                        $lider = $proyecto->liderProyecto;
+                        $liderNombre = $lider?->person?->nombre_completo ?? $lider?->email ?? 'Sin asignar';
                         $estadoVal = $proyecto->estado->value ?? $proyecto->estado;
                         $avance = $proyecto->avance ?? 0;
                         $avanceLabel = $proyecto->avance_label ?? 'Sin iniciar';
                     @endphp
                     <tr>
                         <td class="px-5 py-3 font-medium text-slate-800">{{ $proyecto->nombre ?? '—' }}</td>
-                        <td class="px-5 py-3 text-slate-600">{{ $asesorNombre }}</td>
+                        <td class="px-5 py-3 text-slate-600">{{ $liderNombre }}</td>
                         <td class="px-5 py-3 text-slate-600 text-xs">
                             {{ $proyecto->fecha_inicio?->format('d/m/Y') ?? '—' }} - {{ $proyecto->fecha_fin?->format('d/m/Y') ?? '—' }}
                         </td>
                         <td class="px-5 py-3 text-slate-600">{{ $proyecto->integrantes_count ?? 0 }}</td>
-                        <td class="px-5 py-3 text-slate-600">{{ $proyecto->productos_count ?? 0 }}</td>
+                        <td class="px-5 py-3 text-slate-600">{{ $proyecto->aprendices_count ?? 0 }}</td>
                         <td class="px-5 py-3">
                             @if($estadoVal === 'activo')
                             <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Activo</span>
@@ -81,7 +91,10 @@
                             </div>
                             <p class="text-[11px] text-slate-500 mt-1">{{ $avanceLabel }}</p>
                         </td>
-                        <td class="px-5 py-3 text-xs text-slate-400">Sin acciones</td>
+                        <td class="px-5 py-3">
+                            <a href="{{ route('lider-sem.proyectos.edit', $proyecto) }}"
+                               class="text-xs font-medium text-[#39A900] hover:text-[#2d8500]">Editar</a>
+                        </td>
                     </tr>
                     @empty
                     <tr>

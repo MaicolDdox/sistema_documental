@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\EstadoEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MacroProject extends Model
@@ -13,7 +12,6 @@ class MacroProject extends Model
     use HasFactory;
 
     protected $fillable = [
-        'research_group_id',
         'codigo',
         'nombre',
         'estado',
@@ -26,11 +24,6 @@ class MacroProject extends Model
     // ─────────────────────────────────────────────
     // RELACIONES
     // ─────────────────────────────────────────────
-
-    public function researchGroup(): BelongsTo
-    {
-        return $this->belongsTo(ResearchGroup::class);
-    }
 
     public function projects(): HasMany
     {

@@ -35,9 +35,9 @@
             <p class="text-xs text-slate-500 mt-1">Activos / total registrados</p>
         </div>
         <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-            <p class="text-sm font-medium text-slate-500">Grupos de investigación</p>
-            <p class="text-2xl font-bold text-slate-900 mt-1">{{ $totalGrupos }}</p>
-            <p class="text-xs text-slate-500 mt-1">{{ $gruposActivos }} activo(s)</p>
+            <p class="text-sm font-medium text-slate-500">Líderes de Proyecto</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">{{ $totalLideresProyecto }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ $proyectosActivos }} proyecto(s) activo(s)</p>
         </div>
         <div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <p class="text-sm font-medium text-slate-500">Semilleros</p>
@@ -51,8 +51,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 space-y-6">
+    <div class="space-y-6">
             <div class="sgd-table-card bg-white overflow-hidden">
                 <div class="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-amber-50/40 flex items-center justify-between">
                     <div>
@@ -112,29 +111,26 @@
 
             <div class="sgd-table-card bg-white overflow-hidden">
                 <div class="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-amber-50/40 flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-slate-900">Grupos de investigación recientes</h3>
-                    @if(\Illuminate\Support\Facades\Route::has('admin.research-groups.index'))
-                    <a href="{{ route('admin.research-groups.index') }}" class="text-sm font-medium text-[#39A900] hover:text-[#2d8500]">Ver catálogo</a>
-                    @endif
+                    <h3 class="text-sm font-semibold text-slate-900">Proyectos recientes</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="sgd-table text-sm">
                         <thead>
                             <tr>
                                 <th class="text-left">Nombre</th>
-                                <th class="text-left">Código</th>
+                                <th class="text-left">Semillero</th>
                                 <th class="text-left">Centro</th>
                                 <th class="text-left">Estado</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($recentResearchGroups as $group)
+                            @forelse($recentProjects as $project)
                             <tr>
-                                <td class="px-4 py-2.5 font-medium text-slate-900">{{ $group->nombre }}</td>
-                                <td class="px-4 py-2.5 text-slate-600">{{ $group->codigo ?? '—' }}</td>
-                                <td class="px-4 py-2.5 text-slate-600">{{ $group->trainingCenter?->nombre ?? '—' }}</td>
+                                <td class="px-4 py-2.5 font-medium text-slate-900">{{ $project->nombre }}</td>
+                                <td class="px-4 py-2.5 text-slate-600">{{ $project->seedling?->nombre ?? '—' }}</td>
+                                <td class="px-4 py-2.5 text-slate-600">{{ $project->seedling?->trainingCenter?->nombre ?? '—' }}</td>
                                 <td class="px-4 py-2.5">
-                                    @if($group->estado && $group->estado->value === 'activo')
+                                    @if($project->estado && $project->estado->value === 'activo')
                                     <span class="inline-flex items-center gap-1 text-xs font-medium text-green-700"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Activo</span>
                                     @else
                                     <span class="inline-flex items-center gap-1 text-xs font-medium text-slate-600"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Inactivo</span>
@@ -142,51 +138,11 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500 text-sm">No hay grupos registrados.</td></tr>
+                            <tr><td colspan="4" class="px-4 py-6 text-center text-slate-500 text-sm">No hay proyectos registrados.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <div class="space-y-6">
-            <div class="sgd-card bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div class="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-amber-50/40">
-                    <h3 class="text-sm font-semibold text-slate-900">Accesos rápidos</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Administración y datos paramétricos</p>
-                </div>
-                <div class="p-4 grid grid-cols-1 gap-2">
-                    <a href="{{ route('super-admin.centros-administradores') }}" class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2.5 text-sm font-medium text-amber-950 hover:bg-amber-100/80 transition-colors">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-200/80 text-amber-900">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
-                        </span>
-                        Vincular centro con administrador
-                    </a>
-                    <a href="{{ route('super-admin.dashboard') }}" class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
-                        </span>
-                        Panel admin (tu centro)
-                    </a>
-                    <a href="{{ route('super-admin.administradores.index') }}"
-                       class="sgd-btn-primary inline-flex w-full items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium cursor-pointer no-underline hover:text-white">
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                        Gestión de usuarios
-                    </a>
-                    @if(\Illuminate\Support\Facades\Route::has('admin.training-centers.index'))
-                    <a href="{{ route('admin.training-centers.index') }}" class="sgd-btn-primary flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-sm font-medium">
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008V21z"/></svg>
-                        Centros de formación
-                    </a>
-                    @endif
-                    @if(\Illuminate\Support\Facades\Route::has('admin.departments.index'))
-                    <a href="{{ route('admin.departments.index') }}" class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                        Datos paramétricos
-                    </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
 </x-app-layout>

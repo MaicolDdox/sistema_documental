@@ -1,11 +1,16 @@
 @php
-    // Redirección de seguridad: si el usuario tiene rol con módulo propio, enviar ahí (por si falló middleware/caché)
+    // Redirección de seguridad: si el rol ACTIVO tiene módulo propio, enviar
+    // ahí (por si falló middleware/caché). BUG-20260813-056: antes usaba
+    // hasRole() (cualquier rol asignado), el mismo patrón que ya causó 403
+    // en otros puntos del sistema para usuarios multi-rol — se alinea al
+    // rol activo de sesión.
     if (Auth::check()) {
         $u = Auth::user();
-        if ($u->hasRole('lider_semillero')) {
+        $activo = \App\Support\ActiveRoleContext::current();
+        if ($activo === 'lider_semillero') {
             throw new \Illuminate\Http\Exceptions\HttpResponseException(redirect()->to('/lider-semillero', 302));
         }
-        if ($u->hasRole('director_semilleros')) {
+        if ($activo === 'director_semilleros') {
             throw new \Illuminate\Http\Exceptions\HttpResponseException(redirect()->to('/director-semilleros', 302));
         }
     }

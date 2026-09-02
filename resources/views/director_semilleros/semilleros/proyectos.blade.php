@@ -1,33 +1,143 @@
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    @forelse($semillero->projects as $proyecto)
-    <div class="border border-slate-200 rounded-lg p-4 hover:border-[#39A900]/30 hover:shadow-sm transition-all bg-white flex flex-col h-full">
-        <div class="flex justify-between items-start mb-3">
-            <h4 class="text-sm font-bold text-slate-900 leading-tight">
-                {{ $proyecto->title }}
-            </h4>
-            <span class="ml-3 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 shrink-0">
-                {{ $proyecto->status }}
-            </span>
-        </div>
-        
-        <div class="text-xs text-slate-500 mb-4 line-clamp-3 flex-grow">
-            {{ $proyecto->description ?? 'Sin descripción.' }}
-        </div>
-        
-        <div class="flex items-center gap-3 pt-3 border-t border-slate-100 mt-auto text-xs text-slate-400">
-            <div class="flex items-center gap-1" title="Fecha inicio">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
-                {{ $proyecto->start_date ? \Carbon\Carbon::parse($proyecto->start_date)->format('d/m/Y') : 'N/A' }}
-            </div>
-            <div class="flex items-center gap-1" title="Autores">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
-                {{ $proyecto->projectAuthors ? $proyecto->projectAuthors->count() : 0 }} Autores
-            </div>
-        </div>
+<div x-data="{ filtro: '', seleccionado: {{ $semillero->projects->first()?->id ?? 'null' }} }">
+    <div class="mb-4 relative max-w-sm">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+        </svg>
+        <input type="text" x-model="filtro" placeholder="Buscar proyecto por nombre..."
+               class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">
     </div>
-    @empty
-    <div class="col-span-full py-8 text-center text-slate-500 border border-slate-100 border-dashed rounded-lg bg-slate-50">
+
+    @if($semillero->projects->isEmpty())
+    <div class="py-8 text-center text-slate-500 border border-slate-100 border-dashed rounded-lg bg-slate-50">
         <p>No hay proyectos asociados a este semillero.</p>
     </div>
-    @endforelse
+    @else
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {{-- Lista de proyectos (filtrable) --}}
+        <div class="lg:col-span-1 space-y-1.5 max-h-[32rem] overflow-y-auto pr-1">
+            @foreach($semillero->projects as $proyecto)
+            @php $nombreProyectoJs = \Illuminate\Support\Js::from($proyecto->nombre); @endphp
+            <button type="button"
+                    @click="seleccionado = {{ $proyecto->id }}"
+                    x-show="filtro === '' || {{ $nombreProyectoJs }}.toLowerCase().includes(filtro.toLowerCase())"
+                    class="w-full text-left px-3.5 py-2.5 rounded-lg border transition-colors"
+                    :class="seleccionado === {{ $proyecto->id }} ? 'border-[#39A900] bg-[#39A900]/5' : 'border-slate-200 hover:bg-slate-50'">
+                <p class="text-sm font-medium text-slate-900 truncate">{{ $proyecto->nombre }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ $proyecto->estado?->value }}</p>
+            </button>
+            @endforeach
+        </div>
+
+        {{-- Detalle del proyecto seleccionado --}}
+        <div class="lg:col-span-2 space-y-4">
+            @foreach($semillero->projects as $proyecto)
+            <div x-show="seleccionado === {{ $proyecto->id }}" x-cloak class="border border-slate-200 rounded-lg bg-white p-4 space-y-5">
+                <div>
+                    <h4 class="text-base font-bold text-slate-900">{{ $proyecto->nombre }}</h4>
+                    <p class="text-xs text-slate-500 mt-1">{{ $proyecto->descripcion ?? 'Sin descripción.' }}</p>
+                    <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-slate-500">
+                        <span>Estado: <strong class="text-slate-700">{{ $proyecto->estado?->value }}</strong></span>
+                        <span>Inicio: <strong class="text-slate-700">{{ $proyecto->fecha_inicio?->format('d/m/Y') ?? 'N/A' }}</strong></span>
+                        <span>Líder de Proyecto: <strong class="text-slate-700">{{ $proyecto->liderProyecto?->person?->nombre_completo ?? $proyecto->liderProyecto?->email ?? 'Sin asignar' }}</strong></span>
+                    </div>
+                </div>
+
+                {{-- Integrantes (aprendices) --}}
+                <div>
+                    <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Integrantes del Proyecto ({{ $proyecto->learners->count() }})</h5>
+                    <div class="space-y-1.5">
+                        @forelse($proyecto->learners as $aprendiz)
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs">
+                            <span class="font-medium text-slate-800">{{ $aprendiz->nombre_completo }}</span>
+                            <span class="text-slate-500">Doc: {{ $aprendiz->numero_documento }} @if($aprendiz->ficha) · Ficha: {{ $aprendiz->ficha }} @endif</span>
+                        </div>
+                        @empty
+                        <p class="text-xs text-slate-400">Sin aprendices registrados.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Co-investigadores --}}
+                <div>
+                    <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Co-investigadores Asociados ({{ $proyecto->authors->count() }})</h5>
+                    <div class="space-y-1.5">
+                        @forelse($proyecto->authors as $coinvestigador)
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs">
+                            <span class="font-medium text-slate-800">{{ $coinvestigador->person?->nombre_completo ?? $coinvestigador->email }}</span>
+                            <span class="text-slate-500">{{ $coinvestigador->email }}</span>
+                        </div>
+                        @empty
+                        <p class="text-xs text-slate-400">Sin co-investigadores vinculados.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Evidencias de desarrollo --}}
+                <div>
+                    <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Evidencias Cargadas ({{ $proyecto->evidenciasDesarrollo->count() }})</h5>
+                    <div class="space-y-1.5">
+                        @forelse($proyecto->evidenciasDesarrollo as $evidencia)
+                        <div class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium text-slate-800 truncate">{{ $evidencia->nombre }}</p>
+                                @if($evidencia->descripcion)
+                                <p class="text-xs text-slate-500 truncate">{{ $evidencia->descripcion }}</p>
+                                @endif
+                            </div>
+                            @if($evidencia->archivo)
+                            <a href="{{ route('dir-sem.evidencias.descargar', $evidencia) }}" class="text-[#39A900] hover:underline text-xs font-medium shrink-0">Descargar</a>
+                            @endif
+                        </div>
+                        @empty
+                        <p class="text-xs text-slate-400">Sin evidencias de desarrollo subidas.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Producto final --}}
+                <div>
+                    <h5 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Producto Final ({{ $proyecto->evidenciasProductoFinal->count() }})</h5>
+                    <div class="space-y-2">
+                        @forelse($proyecto->evidenciasProductoFinal as $producto)
+                        @php
+                            $eLider = $producto->estado_revision_lider?->value;
+                            $eDirector = $producto->estado_revision_director?->value;
+                        @endphp
+                        <div class="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2.5">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <p class="text-xs font-medium text-slate-800 truncate">{{ $producto->nombre }}</p>
+                                @if($producto->archivo)
+                                <a href="{{ route('dir-sem.evidencias.descargar', $producto) }}" class="text-[#39A900] hover:underline text-xs font-medium shrink-0">Descargar</a>
+                                @endif
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs">
+                                <span class="text-slate-500">Líder Semillero:</span>
+                                @if($eLider === 'aprobado')
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800">Aprobado</span>
+                                @elseif($eLider === 'rechazado')
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800">Rechazado</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800">Pendiente</span>
+                                @endif
+                                <span class="text-slate-300">|</span>
+                                <span class="text-slate-500">Director:</span>
+                                @if($eDirector === 'aprobado')
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-800">Aprobado</span>
+                                @elseif($eDirector === 'rechazado')
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800">Rechazado</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-800">Pendiente</span>
+                                @endif
+                            </div>
+                        </div>
+                        @empty
+                        <p class="text-xs text-slate-400">Sin producto final subido todavía.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
 </div>

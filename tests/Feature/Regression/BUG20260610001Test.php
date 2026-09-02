@@ -36,11 +36,7 @@ class BUG20260610001Test extends TestCase
     public function test_dashboards_no_cargan_chartjs_desde_cdn(): void
     {
         $vistas = [
-            resource_path('views/asesor_semillero/dashboard.blade.php'),
-            resource_path('views/director_investigacion/dashboard.blade.php'),
-            resource_path('views/director_investigacion/reportes/index.blade.php'),
             resource_path('views/director_semilleros/dashboard.blade.php'),
-            resource_path('views/investigador/dashboard.blade.php'),
         ];
 
         foreach ($vistas as $ruta) {
@@ -81,30 +77,6 @@ class BUG20260610001Test extends TestCase
     }
 
     // ─────────────────────────────────────────────────
-    // P6 — AsesorSemillero dashboard no duplica query de productos
-    // ─────────────────────────────────────────────────
-
-    public function test_asesor_dashboard_controller_no_duplica_query_productos(): void
-    {
-        $contenido = file_get_contents(app_path('Http/Controllers/AsesorSemillero/DashboardController.php'));
-
-        // Solo debe haber una llamada a Product:: (la que eager-load 'project')
-        $ocurrencias = substr_count($contenido, 'Product::');
-        $this->assertSame(
-            1,
-            $ocurrencias,
-            'DashboardController de AsesorSemillero debe hacer una sola query de productos, no dos'
-        );
-
-        // La colección $productos debe reutilizarse para los rechazados
-        $this->assertStringContainsString(
-            'sortByDesc',
-            $contenido,
-            'Los productos rechazados deben filtrarse de la colección en memoria (sortByDesc), no con una segunda query'
-        );
-    }
-
-    // ─────────────────────────────────────────────────
     // P8 — DirectorSemilleros dashboard no duplica query de semilleros
     // ─────────────────────────────────────────────────
 
@@ -119,5 +91,4 @@ class BUG20260610001Test extends TestCase
             'misSemilleros debe filtrarse de la colección $semilleros ya cargada, no con un clone de la query'
         );
     }
-
 }

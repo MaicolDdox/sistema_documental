@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -18,17 +18,16 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // Lista de permisos agrupados por módulo
         $permissionsByModule = [
-            // MÓDULO: USUARIOS
+            // MÓDULO: USUARIOS — matriz de creación exclusiva (un solo rol crea cada rol)
             'usuarios' => [
                 'usuarios.listar',
-                'usuarios.crear',
                 'usuarios.editar',
                 'usuarios.activar_desactivar',
-                'usuarios.asignar_rol',
-                'usuarios.revocar_rol',
-                'usuarios.crear_investigador_asociado',
-                'usuarios.crear_lider_semillero',
                 'usuarios.asignar_credenciales',
+                'usuarios.crear_director_semilleros',
+                'usuarios.crear_co_investigador',
+                'usuarios.crear_lider_semillero',
+                'usuarios.crear_lider_proyecto',
             ],
             // MÓDULO: CATÁLOGOS
             'catalogos' => [
@@ -36,17 +35,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'catalogos.leer',
                 'catalogos.editar',
                 'catalogos.eliminar',
-            ],
-            // MÓDULO: GRUPOS DE INVESTIGACIÓN
-            'grupos' => [
-                'grupos.crear',
-                'grupos.leer',
-                'grupos.editar',
-                'grupos.activar_desactivar',
-                'grupos.gestionar_miembros',
-                'grupos.vincular_investigador',
-                'grupos.desvincular_investigador',
-                'grupos.cambiar_rol_interno',
             ],
             // MÓDULO: SEMILLEROS
             'semilleros' => [
@@ -72,7 +60,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'proyectos.activar_desactivar',
                 'proyectos.ver_ajeno',
                 'proyectos.gestionar_autores',
-                // Módulo asesor_semillero
                 'proyectos.listar_semillero',
                 'proyectos.crear_semillero',
                 'proyectos.vincular_integrantes',
@@ -84,7 +71,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'aprendices.vincular_proyecto',
                 'aprendices.desvincular_proyecto',
                 'aprendices.listar_autores',
-                // Módulo asesor_semillero
                 'aprendices.listar',
                 'aprendices.editar',
                 'aprendices.ver_detalle',
@@ -97,11 +83,20 @@ class RolesAndPermissionsSeeder extends Seeder
                 'productos.editar',
                 'productos.aprobar',
                 'productos.rechazar',
+                'productos.aprobar_final',
+                'productos.rechazar_final',
                 'productos.cambiar_a_en_revision',
                 'productos.ver_estado_revision',
                 'productos.ver_observaciones',
-                // Módulo asesor_semillero
                 'productos.registrar',
+            ],
+            // MÓDULO: PRODUCTOS MINCIENCIAS (BUG-20260813-029) — personales del
+            // co-investigador, aprobados por el administrador_sistema de su centro.
+            'minciencias' => [
+                'minciencias.listar',
+                'minciencias.ver_detalle',
+                'minciencias.aprobar',
+                'minciencias.rechazar',
             ],
             // MÓDULO: EVIDENCIAS
             'evidencias' => [
@@ -125,23 +120,15 @@ class RolesAndPermissionsSeeder extends Seeder
                 'archivos_semillero.listar',
                 'archivos_semillero.eliminar',
             ],
-            // MÓDULO: ASESORES EXTERNOS
-            'asesores_externos' => [
-                'asesores_externos.registrar',
-                'asesores_externos.vincular_semillero',
-                'asesores_externos.desvincular_semillero',
-                'asesores_externos.listar',
-            ],
             // MÓDULO: REPORTES
             'reportes' => [
                 'reportes.globales_centro',
                 'reportes.usuarios_por_rol',
-                'reportes.grupos_con_metricas',
                 'reportes.semilleros_con_metricas',
                 'reportes.proyectos_por_estado',
                 'reportes.productos_por_estado',
                 'reportes.exportar_pdf_excel',
-                'reportes.productos_por_investigador',
+                'reportes.productos_por_lider_proyecto',
                 'reportes.productos_por_anio',
                 'reportes.aprobados_vs_rechazados',
                 'reportes.aprendices_por_semillero',
@@ -156,152 +143,98 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // ROL 0: super_administrador — permisos exclusivos de gestión global de la instancia.
-        // Acceso: dashboard global, centros de formación (CRUD) y vinculación centro↔admin.
-        // No gestiona usuarios ni catálogos de centro (eso es del administrador_sistema).
+        // Acceso: dashboard global, centros de formación (CRUD), vinculación centro↔admin,
+        // y creación de CUALQUIER usuario/rol (protegido por middleware de rol, no por permisos Spatie).
+        // No gestiona semilleros ni catálogos de centro (eso es de administrador_sistema / director_semilleros).
         $rolSuperAdmin = Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
         $rolSuperAdmin->syncPermissions([]);
 
         // Definición de Roles y sus permisos
-        
+
         // ROL 1: administrador_sistema
-        // Gestión total del centro de formación. Opera sobre todos los módulos dentro de su centro_formacion_id.
+        // Gestión del centro de formación. Solo puede crear cuentas de Director de Semilleros
+        // y Co-investigador (matriz de creación exclusiva). Ya no crea semilleros directamente
+        // (queda exclusivo de director_semilleros) ni gestiona grupos de investigación (el
+        // concepto desaparece del sistema).
         $adminSistemaPermissions = [
-            'usuarios.listar', 'usuarios.crear', 'usuarios.editar', 'usuarios.activar_desactivar', 'usuarios.asignar_rol', 'usuarios.revocar_rol', 'usuarios.asignar_credenciales',
+            'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar', 'usuarios.asignar_credenciales',
+            'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador',
             'catalogos.crear', 'catalogos.leer', 'catalogos.editar', 'catalogos.eliminar',
-            'grupos.crear', 'grupos.leer', 'grupos.editar', 'grupos.activar_desactivar', 'grupos.gestionar_miembros',
-            'semilleros.crear', 'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.editar', 'semilleros.activar_desactivar', 'semilleros.reasignar_lider', 'semilleros.gestionar_miembros', 'semilleros.ver_integrantes', 'semilleros.ver_asesores', 'semilleros.ver_proyectos', 'semilleros.ver_productos', 'semilleros.ver_evidencias',
-            'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.activar_desactivar', 'proyectos.ver_ajeno',
-            'productos.listar', 'productos.ver_detalle', 'productos.aprobar', 'productos.rechazar', 'productos.cambiar_a_en_revision', 'productos.ver_estado_revision', 'productos.ver_observaciones',
-            'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_cualquiera', 'evidencias.ver_del_grupo', 'evidencias.ver_del_semillero',
-            'reportes.globales_centro', 'reportes.usuarios_por_rol', 'reportes.grupos_con_metricas', 'reportes.semilleros_con_metricas', 'reportes.proyectos_por_estado', 'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
+            'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.ver_integrantes', 'semilleros.ver_asesores',
+            'semilleros.ver_proyectos', 'semilleros.ver_productos', 'semilleros.ver_evidencias',
+            'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.ver_ajeno',
+            'productos.listar', 'productos.ver_detalle', 'productos.ver_estado_revision', 'productos.ver_observaciones',
+            'minciencias.listar', 'minciencias.ver_detalle', 'minciencias.aprobar', 'minciencias.rechazar',
+            'evidencias.listar', 'evidencias.ver_del_semillero',
+            'reportes.globales_centro', 'reportes.usuarios_por_rol', 'reportes.semilleros_con_metricas',
+            'reportes.proyectos_por_estado', 'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
         ];
 
         $rolAdminSistema = Role::firstOrCreate(['name' => 'administrador_sistema', 'guard_name' => 'web']);
         $rolAdminSistema->syncPermissions($adminSistemaPermissions);
 
-        // ROL 2: investigador_asociado
-        // Registra proyectos y productos del grupo. Solo opera sobre sus propios proyectos y productos.
-        $invAsocPermissions = [
-            'grupos.leer',
-            'proyectos.crear', 'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.editar', 'proyectos.activar_desactivar', 'proyectos.gestionar_autores',
-            'productos.crear', 'productos.listar', 'productos.ver_detalle', 'productos.editar', 'productos.ver_estado_revision', 'productos.ver_observaciones',
-            'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_propia',
-            'catalogos.leer',
-            'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
-        ];
-
-        $rolInvAsoc = Role::firstOrCreate(['name' => 'investigador_asociado', 'guard_name' => 'web']);
-        $rolInvAsoc->syncPermissions($invAsocPermissions);
-
-        // ROL 3: director_investigacion
-        // Gestiona el grupo, aprueba/rechaza productos.
-        // INCLUYE todos los permisos de investigador_asociado más los propios.
-        $directorInvExclusives = [
-            'grupos.gestionar_miembros', 'grupos.vincular_investigador', 'grupos.desvincular_investigador', 'grupos.cambiar_rol_interno',
-            'usuarios.crear_investigador_asociado', 'usuarios.asignar_credenciales', 'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar',
-            'proyectos.ver_ajeno',
-            'productos.aprobar', 'productos.rechazar', 'productos.cambiar_a_en_revision',
-            'evidencias.ver_del_grupo',
+        // ROL 2: director_semilleros
+        // "Administrador" operativo de TODOS los semilleros del centro. Único que crea/edita
+        // semilleros y crea Líderes de Semillero. Da la aprobación FINAL (segunda etapa) de
+        // productos. Ve todo: semilleros, líderes de proyecto, proyectos y su estado.
+        $dirSemPermissions = [
+            'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar', 'usuarios.asignar_credenciales',
+            'usuarios.crear_lider_semillero',
+            'semilleros.crear', 'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.editar',
+            'semilleros.activar_desactivar', 'semilleros.reasignar_lider', 'semilleros.gestionar_miembros',
+            'semilleros.ver_integrantes', 'semilleros.ver_asesores', 'semilleros.ver_proyectos',
+            'semilleros.ver_productos', 'semilleros.ver_evidencias',
+            'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.editar', 'proyectos.activar_desactivar', 'proyectos.ver_ajeno',
+            'productos.listar', 'productos.ver_detalle', 'productos.aprobar_final', 'productos.rechazar_final',
+            'productos.ver_estado_revision', 'productos.ver_observaciones',
+            'evidencias.listar', 'evidencias.ver_del_semillero',
             'documentos.subir', 'documentos.listar', 'documentos.eliminar_propio',
-            'reportes.productos_por_investigador', 'reportes.productos_por_anio', 'reportes.aprobados_vs_rechazados', 'reportes.exportar_pdf_excel',
-        ];
-        $dirInvPermissions = array_merge($invAsocPermissions, $directorInvExclusives);
-
-        $rolDirInv = Role::firstOrCreate(['name' => 'director_investigacion', 'guard_name' => 'web']);
-        $rolDirInv->syncPermissions($dirInvPermissions);
-
-        // ROL 4: asesor_semillero
-        // Actor operativo del semillero. Gestiona proyectos propios, registra aprendices y productos.
-        $asesorSemPermissions = [
-            'proyectos.crear', 'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.editar', 'proyectos.activar_desactivar', 'proyectos.gestionar_autores',
-            'proyectos.listar_semillero', 'proyectos.crear_semillero', 'proyectos.vincular_integrantes',
-            'aprendices.registrar', 'aprendices.buscar_por_documento', 'aprendices.vincular_proyecto', 'aprendices.desvincular_proyecto', 'aprendices.listar_autores',
-            'aprendices.listar', 'aprendices.editar', 'aprendices.ver_detalle',
-            'productos.crear', 'productos.listar', 'productos.ver_detalle', 'productos.editar', 'productos.ver_estado_revision', 'productos.ver_observaciones',
-            'productos.registrar',
-            'evidencias.subir_proyecto', 'evidencias.subir_producto', 'evidencias.listar', 'evidencias.eliminar_propia',
-            'asesores_externos.registrar', 'asesores_externos.vincular_semillero', 'asesores_externos.desvincular_semillero', 'asesores_externos.listar',
-            'catalogos.leer',
-        ];
-
-        $rolAsesorSem = Role::firstOrCreate(['name' => 'asesor_semillero', 'guard_name' => 'web']);
-        $rolAsesorSem->syncPermissions($asesorSemPermissions);
-
-        // ROL 5: lider_semillero
-        // Coordina su semillero específico.
-        // INCLUYE todos los permisos de asesor_semillero más los propios.
-        $liderSemExclusives = [
-            'semilleros.ver_detalle', 'semilleros.editar', 'semilleros.ver_integrantes', 'semilleros.ver_asesores', 'semilleros.ver_proyectos', 'semilleros.ver_productos',
-            'productos.aprobar', 'productos.rechazar', 'productos.cambiar_a_en_revision',
             'archivos_semillero.subir', 'archivos_semillero.listar', 'archivos_semillero.eliminar',
-            'evidencias.ver_del_semillero',
+            'reportes.semilleros_con_metricas', 'reportes.aprendices_por_semillero', 'reportes.proyectos_por_estado',
+            'reportes.productos_por_lider_proyecto', 'reportes.aprobados_vs_rechazados', 'reportes.exportar_pdf_excel',
         ];
-        $liderSemPermissions = array_merge($asesorSemPermissions, $liderSemExclusives);
-
-        $rolLiderSem = Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
-        $rolLiderSem->syncPermissions($liderSemPermissions);
-
-        // ROL 6: director_semilleros
-        // Coordina todos los semilleros del centro.
-        // INCLUYE todos los permisos de asesor_semillero más los propios.
-        $dirSemExclusives = [
-            'semilleros.crear', 'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.editar', 'semilleros.activar_desactivar', 'semilleros.reasignar_lider', 'semilleros.gestionar_miembros', 'semilleros.ver_integrantes', 'semilleros.ver_asesores', 'semilleros.ver_proyectos', 'semilleros.ver_productos', 'semilleros.ver_evidencias',
-            'usuarios.crear_lider_semillero', 'usuarios.asignar_credenciales', 'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar',
-            'documentos.subir', 'documentos.listar', 'documentos.eliminar_propio',
-            'reportes.semilleros_con_metricas', 'reportes.aprendices_por_semillero', 'reportes.proyectos_por_estado', 'reportes.exportar_pdf_excel',
-            'evidencias.ver_del_semillero',
-        ];
-        $dirSemPermissions = array_merge($asesorSemPermissions, $dirSemExclusives);
 
         $rolDirSem = Role::firstOrCreate(['name' => 'director_semilleros', 'guard_name' => 'web']);
         $rolDirSem->syncPermissions($dirSemPermissions);
 
-        // Asignar roles a los usuarios de prueba
-        // Usuario ydmoreno@sena.edu.co -> administrador_sistema
-        $user1 = \App\Models\User::where('numero_documento', 34327134)->first();
-        if ($user1 && !$user1->hasRole('administrador_sistema')) {
-            $user1->assignRole('administrador_sistema');
-            $this->command->info(
-                "👤 Rol administrador_sistema asignado a: {$user1->email}"
-            );
-        }
+        // ROL 3: lider_semillero
+        // A cargo de TODOS los proyectos de su semillero. Crea proyectos y crea Líderes de
+        // Proyecto (matriz de creación exclusiva). Da la primera aprobación de productos.
+        $liderSemPermissions = [
+            'usuarios.crear_lider_proyecto',
+            'proyectos.crear', 'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.editar',
+            'proyectos.activar_desactivar', 'proyectos.crear_semillero', 'proyectos.listar_semillero',
+            'productos.listar', 'productos.ver_detalle', 'productos.aprobar', 'productos.rechazar',
+            'productos.ver_estado_revision', 'productos.ver_observaciones',
+            'evidencias.listar', 'evidencias.ver_del_semillero',
+            'reportes.semilleros_con_metricas', 'reportes.aprendices_por_semillero', 'reportes.exportar_pdf_excel',
+        ];
 
-        // Usuario jovalenciap@sena.edu.co -> administrador_sistema
-        $user2 = \App\Models\User::where('numero_documento', 10304952)->first();
-        if ($user2 && !$user2->hasRole('administrador_sistema')) {
-            $user2->assignRole('administrador_sistema');
-            $this->command->info(
-                "👤 Rol administrador_sistema asignado a: {$user2->email}"
-            );
-        }
+        $rolLiderSem = Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
+        $rolLiderSem->syncPermissions($liderSemPermissions);
 
-        // Usuarios con rol director_semilleros
-        foreach (['directorsem@sena.edu.co', 'dirsemillero@sena.edu.co'] as $email) {
-            $userDirSem = \App\Models\User::where('email', $email)->first();
-            if ($userDirSem && !$userDirSem->hasRole('director_semilleros')) {
-                $userDirSem->assignRole('director_semilleros');
-                $this->command->info(
-                    "👤 Rol director_semilleros asignado a: {$userDirSem->email}"
-                );
-            }
-        }
+        // ROL 4: lider_proyecto
+        // Rol nuevo del rediseño. Sus permisos funcionales (subir evidencias, registrar
+        // aprendices como datos, vincular co-investigadores) se definen en la fase del
+        // rediseño que construye el modelo de datos de proyectos — por ahora solo existe
+        // como rol asignable, sin permisos propios.
+        $rolLiderProyecto = Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
+        $rolLiderProyecto->syncPermissions([]);
 
-        // Usuario con rol lider_semillero
-        $userLider = \App\Models\User::where('email', 'lidersem@sena.edu.co')->first();
-        if ($userLider && !$userLider->hasRole('lider_semillero')) {
-            $userLider->assignRole('lider_semillero');
-            $this->command->info(
-                "👤 Rol lider_semillero asignado a: {$userLider->email}"
-            );
-        }
+        // ROL 5: co_investigador
+        // Rol nuevo del rediseño, fuera de la jerarquía de semilleros. Sin training_center_id
+        // (ver TrainingCenterAccess). Sus permisos funcionales se definen junto con
+        // lider_proyecto en una fase posterior — por ahora solo existe como rol asignable.
+        $rolCoInvestigador = Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        $rolCoInvestigador->syncPermissions([]);
 
         // ─── Totales globales ───────────────────────────────────────
         $totalPermisos = \Spatie\Permission\Models\Permission::count();
-        $totalRoles    = \Spatie\Permission\Models\Role::count();
+        $totalRoles = \Spatie\Permission\Models\Role::count();
 
         $this->command->newLine();
         $this->command->info('╔══════════════════════════════════════════╗');
-        $this->command->info('║   SIGESI — Roles y Permisos cargados    ║');
+        $this->command->info('║   GIDESTH — Roles y Permisos cargados    ║');
         $this->command->info('╚══════════════════════════════════════════╝');
         $this->command->newLine();
 
@@ -311,15 +244,11 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // ─── Tabla: permisos por módulo ─────────────────────────────
         $this->command->info('📋 Permisos por módulo:');
-        $modulos = [
-            'usuarios', 'catalogos', 'grupos', 'semilleros', 'proyectos',
-            'aprendices', 'productos', 'evidencias', 'documentos',
-            'archivos_semillero', 'asesores_externos', 'reportes',
-        ];
+        $modulos = array_keys($permissionsByModule);
 
         $tablaModulos = [];
         foreach ($modulos as $modulo) {
-            $count = \Spatie\Permission\Models\Permission::where('name', 'like', $modulo . '.%')->count();
+            $count = \Spatie\Permission\Models\Permission::where('name', 'like', $modulo.'.%')->count();
             $tablaModulos[] = [$modulo, $count];
         }
         $this->command->table(['Módulo', 'Permisos'], $tablaModulos);
@@ -328,7 +257,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->command->newLine();
         $this->command->info('👥 Permisos asignados por rol:');
         $roles = \Spatie\Permission\Models\Role::with('permissions')->get();
-        $tablaRoles = $roles->map(fn($r) => [
+        $tablaRoles = $roles->map(fn ($r) => [
             $r->name,
             $r->permissions->count(),
         ])->toArray();
@@ -339,9 +268,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $this->command->info('🔍 Verificación de integridad:');
 
         $rolesEsperados = [
-            'super_administrador', 'administrador_sistema', 'director_investigacion',
-            'investigador_asociado', 'director_semilleros',
-            'lider_semillero', 'asesor_semillero',
+            'super_administrador', 'administrador_sistema', 'director_semilleros',
+            'lider_semillero', 'lider_proyecto', 'co_investigador',
         ];
 
         foreach ($rolesEsperados as $nombreRol) {
@@ -353,50 +281,6 @@ class RolesAndPermissionsSeeder extends Seeder
             } else {
                 $this->command->error("  ❌ ROL FALTANTE: {$nombreRol}");
             }
-        }
-
-        // ─── Verificar roles compuestos ─────────────────────────────
-        $this->command->newLine();
-        $this->command->info('🔗 Verificación de roles compuestos:');
-
-        $dirInv   = Role::findByName('director_investigacion');
-        $invAsoc  = Role::findByName('investigador_asociado');
-        $permInvAsoc = $invAsoc->permissions->pluck('name');
-        $faltantes = $permInvAsoc->diff($dirInv->permissions->pluck('name'));
-        if ($faltantes->isEmpty()) {
-            $this->command->line(
-                '  ✅ director_investigacion incluye todos los permisos de investigador_asociado'
-            );
-        } else {
-            $this->command->warn(
-                '  ⚠️  Faltan permisos de investigador_asociado en director_investigacion: '
-                . $faltantes->implode(', ')
-            );
-        }
-
-        $dirSem    = Role::findByName('director_semilleros');
-        $asesorSem = Role::findByName('asesor_semillero');
-        $liderSem  = Role::findByName('lider_semillero');
-        $permAsesor = $asesorSem->permissions->pluck('name');
-
-        $faltDir = $permAsesor->diff($dirSem->permissions->pluck('name'));
-        if ($faltDir->isEmpty()) {
-            $this->command->line(
-                '  ✅ director_semilleros incluye todos los permisos de asesor_semillero'
-            );
-        } else {
-            $this->command->warn('  ⚠️  Faltan en director_semilleros: '
-                . $faltDir->implode(', '));
-        }
-
-        $faltLid = $permAsesor->diff($liderSem->permissions->pluck('name'));
-        if ($faltLid->isEmpty()) {
-            $this->command->line(
-                '  ✅ lider_semillero incluye todos los permisos de asesor_semillero'
-            );
-        } else {
-            $this->command->warn('  ⚠️  Faltan en lider_semillero: '
-                . $faltLid->implode(', '));
         }
 
         $this->command->newLine();

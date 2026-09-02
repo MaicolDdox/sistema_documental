@@ -89,8 +89,17 @@
             $roleLabel = $sidebarPrimaryRole
                 ? \App\Support\RoleModuleLinks::labelForRoleName($sidebarPrimaryRole->name)
                 : 'Usuario';
+            // BUG-20260813-056: antes usaba siempre el rol PRINCIPAL
+            // (dashboardUrlForUser), sin importar el rol ACTIVO de sesión —
+            // un usuario multi-rol que cambiaba de rol y luego hacía clic en
+            // el logo (o en "Dashboard" del menú) volvía siempre al módulo
+            // de su rol principal sin pasar por roles.switch, y el
+            // aislamiento de la Fase 2 lo bloqueaba con 403. Ahora "inicio"
+            // significa el dashboard del rol activo actual — nunca puede
+            // dar 403 porque siempre navega dentro de tu propio contexto.
             $dashboardUrl = $sidebarUser
-                ? \App\Support\RoleModuleLinks::dashboardUrlForUser($sidebarUser)
+                ? (\App\Support\RoleModuleLinks::urlForRoleName(\App\Support\ActiveRoleContext::current())
+                    ?? \App\Support\RoleModuleLinks::dashboardUrlForUser($sidebarUser))
                 : route('dashboard');
 
             $sidebarRoleModuleLinks = ($sidebarUser && $sidebarUser->roles->count() > 1)
@@ -108,34 +117,45 @@
                 $routeMenuContext = 'super_administrador';
             } elseif (request()->routeIs('admin.*')) {
                 $routeMenuContext = 'administrador_sistema';
-            } elseif (request()->routeIs('director.*')) {
-                $routeMenuContext = 'director_investigacion';
             } elseif (request()->routeIs('dir-sem.*')) {
                 $routeMenuContext = 'director_semilleros';
             } elseif (request()->routeIs('lider-sem.*')) {
                 $routeMenuContext = 'lider_semillero';
-            } elseif (request()->routeIs('investigador.*')) {
-                $routeMenuContext = 'investigador_asociado';
-            } elseif (request()->routeIs('asesor.*')) {
-                $routeMenuContext = 'asesor_semillero';
+            } elseif (request()->routeIs('lider-proyecto.*')) {
+                $routeMenuContext = 'lider_proyecto';
+            } elseif (request()->routeIs('co-investigador.*')) {
+                $routeMenuContext = 'co_investigador';
             }
 
-            $menuContext = $routeMenuContext ?: ($sidebarPrimaryRole?->name);
-
-            // Super administrador: menú propio exclusivo (dashboard global, centros, vinculación).
-            // No comparte secciones de usuarios/catálogos con el administrador_sistema.
-            if ($sidebarUser && $sidebarUser->hasRole('super_administrador')) {
-                $menuContext = 'super_administrador';
-            }
+            // FEAT-20260830-001 (multi-rol): el rol activo en sesión manda
+            // sobre la ruta actual, así el sidebar refleja el panel que el
+            // usuario eligió desde el selector de roles — no solo la URL en
+            // la que está (relevante en páginas compartidas fuera de los
+            // prefijos por rol, como /settings/profile). Si el usuario no
+            // tiene ningún rol activo resuelto, se cae al criterio anterior.
+            $activeRoleName = $sidebarUser ? \App\Support\ActiveRoleContext::current() : null;
+            $menuContext = $activeRoleName ?: ($routeMenuContext ?: ($sidebarPrimaryRole?->name));
 
             $showSuperAdmin = $sidebarUser && $sidebarUser->hasRole('super_administrador') && $menuContext === 'super_administrador';
             $showAdmin = $sidebarUser && $sidebarUser->hasAnyRole('administrador_sistema', 'admin')
                 && in_array($menuContext, ['administrador_sistema', 'admin'], true);
-            $showDirectorInv = $sidebarUser && $sidebarUser->hasRole('director_investigacion') && $menuContext === 'director_investigacion';
             $showDirectorSem = $sidebarUser && $sidebarUser->hasRole('director_semilleros') && $menuContext === 'director_semilleros';
             $showLiderSem = $sidebarUser && $sidebarUser->hasRole('lider_semillero') && $menuContext === 'lider_semillero';
-            $showInvestigador = $sidebarUser && $sidebarUser->hasRole('investigador_asociado') && $menuContext === 'investigador_asociado';
-            $showAsesor = $sidebarUser && $sidebarUser->hasRole('asesor_semillero') && $menuContext === 'asesor_semillero';
+            $showLiderProyecto = $sidebarUser && $sidebarUser->hasRole('lider_proyecto') && $menuContext === 'lider_proyecto';
+            $showCoinvestigador = $sidebarUser && $sidebarUser->hasRole('co_investigador') && $menuContext === 'co_investigador';
+
+            // Punto rojo del Dashboard genérico: el líder de proyecto tiene una
+            // revisión de formulación, ejecución o producto final sin ver
+            // (aprobación o rechazo del líder de semillero o del director).
+            $lpTieneNotificacion = $showLiderProyecto
+                && \App\Models\ProjectEvidence::whereIn('tipo', [
+                        \App\Enums\TipoEvidenciaEnum::Formulacion,
+                        \App\Enums\TipoEvidenciaEnum::Ejecucion,
+                        \App\Enums\TipoEvidenciaEnum::ProductoFinal,
+                    ])
+                    ->whereNull('visto_por_lider_proyecto_at')
+                    ->whereHas('project', fn ($q) => $q->where('lider_proyecto_user_id', $sidebarUser->id))
+                    ->exists();
 
             $currentContextLabel = $menuContext 
                 ? \App\Support\RoleModuleLinks::labelForRoleName($menuContext) 
@@ -146,6 +166,8 @@
                 || request()->routeIs('admin.dashboard')
                 || request()->routeIs('dir-sem.dashboard')
                 || request()->routeIs('lider-sem.dashboard')
+                || request()->routeIs('lider-proyecto.dashboard')
+                || request()->routeIs('co-investigador.dashboard')
                 || request()->routeIs('director.dashboard')
                 || request()->routeIs('investigador.dashboard')
                 || request()->routeIs('asesor.dashboard');
@@ -187,9 +209,12 @@
                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg
                       text-sm font-medium text-slate-600 transition-all cursor-pointer
                       {{ $isDashboardActive ? 'nav-item-active' : '' }}">
-                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3.75 6v2.25a2.25 2.25 0 002.25 2.25h2.25a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 008.25 3.75H6A2.25 2.25 0 003.75 6zM3.75 15.75v2.25A2.25 2.25 0 006 20.25h2.25a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25zM13.5 6v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6zM13.5 15.75v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25h-2.25a2.25 2.25 0 00-2.25 2.25z"/>
-                </svg>
+                <span class="relative shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3.75 6v2.25a2.25 2.25 0 002.25 2.25h2.25a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 008.25 3.75H6A2.25 2.25 0 003.75 6zM3.75 15.75v2.25A2.25 2.25 0 006 20.25h2.25a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25zM13.5 6v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6zM13.5 15.75v2.25a2.25 2.25 0 002.25 2.25H18a2.25 2.25 0 002.25-2.25v-2.25a2.25 2.25 0 00-2.25-2.25h-2.25a2.25 2.25 0 00-2.25 2.25z"/>
+                    </svg>
+                    @if($lpTieneNotificacion)<span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" title="Hay novedades en tu producto final"></span>@endif
+                </span>
                 Dashboard
             </a>
 
@@ -237,7 +262,7 @@
                     Gestión Usuarios
                 </p>
 
-                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.external-advisors.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.director-semilleros.*', 'admin.co-investigadores.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openAdminUsers = !openAdminUsers"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -254,34 +279,49 @@
                     </button>
                     <div x-show="openAdminUsers" x-collapse class="pl-11 pr-3 py-2 space-y-1">
                         <a href="{{ route('admin.usuarios.index') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.index', 'admin.usuarios.create', 'admin.usuarios.edit') ? 'bg-slate-50 text-slate-900' : '' }}">
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.index', 'admin.usuarios.edit') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
                             Usuarios
                         </a>
-                        <a href="{{ route('admin.usuarios.asignar_roles') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.asignar_roles') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 0121.75 12.75a3 3 0 01-3 3z"/></svg>
-                            Asignar Roles
+                        <a href="{{ route('admin.director-semilleros.create') }}"
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.director-semilleros.*') ? 'bg-slate-50 text-slate-900' : '' }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z"/></svg>
+                            Director de Semilleros
                         </a>
-                        <a href="{{ route('admin.usuarios.usuarios_con_rol') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.usuarios.usuarios_con_rol') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            Usuarios con rol
-                        </a>
-                        <a href="{{ route('admin.external-advisors.index') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.external-advisors.*') ? 'bg-slate-50 text-slate-900' : '' }}">
+                        <a href="{{ route('admin.co-investigadores.create') }}"
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.co-investigadores.*') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                            Asesores Externos
+                            Co-investigadores
                         </a>
                     </div>
                 </div>
+
+                <a href="{{ route('admin.semilleros.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.semilleros.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+                    Semilleros
+                </a>
+
+                @can('minciencias.listar')
+                @php
+                    $adminMincienciasPendientes = $sidebarUser
+                        ? \App\Models\MincienciasProduct::where('training_center_id', $sidebarUser->training_center_id)
+                            ->where('estado_revision', 'pendiente')
+                            ->count()
+                        : 0;
+                @endphp
+                <a href="{{ route('admin.minciencias.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.minciencias.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                    Productos Minciencias
+                    @if($adminMincienciasPendientes > 0)<span class="ml-auto bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $adminMincienciasPendientes }}</span>@endif
+                </a>
+                @endcan
 
                 {{-- CATÁLOGOS --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
                     Catálogos
                 </p>
 
-                <div x-data="{ openCatalogs: {{ request()->routeIs('admin.training-centers.*', 'admin.training-programs.*', 'admin.minciencias-typologies.*', 'admin.knowledge-areas.*', 'admin.research-groups.*', 'admin.catalogos.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openCatalogs: {{ request()->routeIs('admin.training-centers.*', 'admin.training-programs.*', 'admin.minciencias-typologies.*', 'admin.catalogos.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openCatalogs = !openCatalogs"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -307,18 +347,6 @@
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                             Tipologías Minciencias
                         </a>
-                        <a href="{{ route('admin.knowledge-areas.index') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-                            Áreas del Conocimiento
-                        </a>
-                        <a href="{{ route('admin.research-groups.index') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-groups.*') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3a2.25 2.25 0 012.25 2.25v1.5A2.25 2.25 0 019 9.75H6A2.25 2.25 0 013.75 7.5v-1.5zM3.75 15A2.25 2.25 0 016 12.75h3a2.25 2.25 0 012.25 2.25v1.5A2.25 2.25 0 019 18.75H6A2.25 2.25 0 013.75 16.5v-1.5zM13.5 9.75h3.75M13.5 18.75h3.75M13.5 6.75h3.75M13.5 15.75h3.75" />
-                            </svg>
-                            Grupos de Investigación
-                        </a>
                         <a href="{{ route('admin.catalogos.simples') }}"
                            class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.catalogos.simples') ? 'bg-slate-50 text-slate-900' : '' }}">
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
@@ -327,71 +355,44 @@
                     </div>
                 </div>
 
-            @elseif($showDirectorInv)
-                {{-- Menú Director de Investigación --}}
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">
-                    Mi Grupo de Investigación
-                </p>
-                <a href="{{ route('director.investigadores.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.investigadores.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
-                    </svg>
-                    Investigadores
-                </a>
-                <a href="{{ route('director.productos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.productos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
-                    </svg>
-                    Productos
-                </a>
-                <a href="{{ route('director.documentos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.documentos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-                    </svg>
-                    Documentos del Grupo
-                </a>
-                <a href="{{ route('director.reportes.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.reportes.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-                    </svg>
+                {{-- REPORTES --}}
+                @can('reportes.usuarios_por_rol')
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Reportes</p>
+                <a href="{{ route('admin.reportes.index') }}"
+                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('admin.reportes.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
                     Reportes
                 </a>
-                <a href="{{ route('director.macroproyectos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director.macroproyectos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5M3.75 9h16.5M3.75 13.5h16.5M3.75 18h16.5"/>
-                    </svg>
-                    Macroproyectos
-                </a>
+                @endcan
 
             @elseif($showDirectorSem)
                 {{-- Menú Director de Semilleros --}}
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN SEMILLEROS</p>
-                <div x-data="{ openSemilleros: {{ request()->routeIs('dir-sem.semilleros.*', 'dir-sem.documentos.*', 'dir-sem.reportes.*') ? 'true' : 'false' }} }" class="mb-1">
+                <a href="{{ route('dir-sem.semilleros.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('dir-sem.semilleros.index', 'dir-sem.semilleros.create', 'dir-sem.semilleros.edit') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    Administrar Semilleros
+                </a>
+                @php
+                    $sidebarTodosSemilleros = $sidebarUser
+                        ? \App\Models\Seedling::where('training_center_id', $sidebarUser->training_center_id)->orderBy('nombre')->get(['id', 'nombre', 'estado'])
+                        : collect();
+                @endphp
+                <div x-data="{ openSemilleros: {{ request()->routeIs('dir-sem.semilleros.show') ? 'true' : 'false' }} }" class="mb-1">
                     <button type="button" @click="openSemilleros = !openSemilleros" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
-                            <span>Mis Semilleros</span>
+                            <span>Semilleros</span>
                         </div>
                         <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openSemilleros ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                     </button>
-                    <div x-show="openSemilleros" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1">
-                        <a href="{{ route('dir-sem.semilleros.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.semilleros.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
-                            Semilleros
+                    <div x-show="openSemilleros" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1 max-h-64 overflow-y-auto">
+                        @forelse($sidebarTodosSemilleros as $sidebarSemillero)
+                        <a href="{{ route('dir-sem.semilleros.show', $sidebarSemillero) }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->route('semillero')?->id === $sidebarSemillero->id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $sidebarSemillero->estado?->value === 'activo' ? 'bg-green-500' : 'bg-slate-300' }}"></span>
+                            <span class="truncate">{{ $sidebarSemillero->nombre }}</span>
                         </a>
-                        <a href="{{ route('dir-sem.documentos.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.documentos.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                            Documentos
-                        </a>
-                        <a href="{{ route('dir-sem.reportes.index') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('dir-sem.reportes.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-                            Reportes
-                        </a>
+                        @empty
+                        <p class="text-xs text-slate-400 py-1">Sin semilleros creados.</p>
+                        @endforelse
                     </div>
                 </div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">USUARIOS</p>
@@ -415,45 +416,39 @@
                     </div>
                 </div>
 
-            @elseif($showAsesor)
-                {{-- Menú Asesor Semillero (Dashboard ya viene del genérico de arriba) --}}
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión</p>
-                @include('components.asesor-semillero-switcher')
-
-                <a href="{{ route('asesor.mis_semilleros.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.mis_semilleros.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.798-1.318 2.552l-13.98-2.796c-1.348-.245-1.745-1.9-.79-2.855L5 14.5"/></svg>
-                    Mis Semilleros
-                </a>
-                <a href="{{ route('asesor.aprendices.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.aprendices.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                    Aprendices
-                </a>
-
-                <a href="{{ route('asesor.proyectos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.proyectos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
-                    Proyectos
-                </a>
-
-                <a href="{{ route('asesor.productos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.productos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>
-                    Productos
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">PRODUCTOS</p>
+                <a href="{{ route('dir-sem.productos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('dir-sem.productos.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Aprobación definitiva
                 </a>
 
             @elseif($showLiderSem)
                 {{-- Menú Líder de Semillero --}}
                 @php
                     $lidSemillero = $sidebarUser->ledSeedlings()->first();
-                    // Contadores para badges del menú del líder
-                    $lidIntegrantesCount = 0;
+                    // Contador para badge del menú del líder
                     $lidPendingCount = 0;
+                    // Punto rojo: el director tomó una acción (aprobó/rechazó) sobre
+                    // un producto que este líder ya había revisado, y aún no la ha visto.
+                    $lidTieneNotificacionDirector = false;
                     if ($lidSemillero) {
-                        $pIds = \Illuminate\Support\Facades\DB::table('project_seedlings')
-                            ->where('seedling_id', $lidSemillero->id)
-                            ->pluck('project_id');
-                        // Productos ligados a esos proyectos (módulo semilleros)
-                        $lidPendingCount = \App\Models\Product::whereIn('project_id', $pIds)
-                            ->whereIn('estado_revision', ['pendiente', 'en_revision'])
+                        // Evidencias de formulación/ejecución/producto final pendientes de revisión del líder
+                        $lidPendingCount = \App\Models\ProjectEvidence::whereIn('tipo', [
+                                \App\Enums\TipoEvidenciaEnum::Formulacion,
+                                \App\Enums\TipoEvidenciaEnum::Ejecucion,
+                                \App\Enums\TipoEvidenciaEnum::ProductoFinal,
+                            ])
+                            ->where('estado_revision_lider', \App\Enums\EstadoRevisionEnum::Pendiente)
+                            ->whereHas('project', fn ($q) => $q->where('seedling_id', $lidSemillero->id))
                             ->count();
+                        $lidTieneNotificacionDirector = \App\Models\ProjectEvidence::where('tipo', \App\Enums\TipoEvidenciaEnum::ProductoFinal)
+                            ->whereNull('visto_por_lider_semillero_at')
+                            // Excluye evidencias nuevas que este líder aún no ha
+                            // revisado por primera vez (esas ya las cubre el badge
+                            // de $lidPendingCount, no son "acción del director").
+                            ->whereNotNull('revisado_lider_at')
+                            ->whereHas('project', fn ($q) => $q->where('seedling_id', $lidSemillero->id))
+                            ->exists();
                     }
                 @endphp
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MI SEMILLERO</p>
@@ -461,22 +456,43 @@
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
                     Info del Semillero
                 </a>
-                <a href="{{ route('lider-sem.integrantes') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.integrantes') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M12 4.5v15m7.5-7.5h-15"/></svg>
-                    Integrantes
-                    @if($lidIntegrantesCount > 0)<span class="ml-auto bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $lidIntegrantesCount }}</span>@endif
-                </a>
-                <a href="{{ route('lider-sem.asesores') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.asesores') ? 'nav-item-active' : '' }}">
+                <a href="{{ route('lider-sem.lider-proyecto.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.lider-proyecto.*') ? 'nav-item-active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                    Asesores
+                    Líderes de Proyecto
                 </a>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">GESTIÓN</p>
-                <a href="{{ route('lider-sem.proyectos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.proyectos') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
-                    Proyectos
-                </a>
-                <a href="{{ route('lider-sem.productos') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.productos') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                @php
+                    $sidebarProyectosSemillero = $lidSemillero
+                        ? \App\Models\Project::where('seedling_id', $lidSemillero->id)->orderBy('nombre')->get(['id', 'nombre', 'estado'])
+                        : collect();
+                @endphp
+                <div x-data="{ openProyectos: {{ request()->routeIs('lider-sem.proyectos.show') ? 'true' : 'false' }} }" class="mb-1">
+                    <button type="button" @click="openProyectos = !openProyectos" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+                            <span>Proyectos</span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openProyectos ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="openProyectos" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1 max-h-64 overflow-y-auto">
+                        <a href="{{ route('lider-sem.proyectos') }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->routeIs('lider-sem.proyectos') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            Ver todos
+                        </a>
+                        @forelse($sidebarProyectosSemillero as $sidebarProyecto)
+                        <a href="{{ route('lider-sem.proyectos.show', $sidebarProyecto) }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->route('proyecto')?->id === $sidebarProyecto->id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $sidebarProyecto->estado?->value === 'activo' ? 'bg-green-500' : 'bg-slate-300' }}"></span>
+                            <span class="truncate">{{ $sidebarProyecto->nombre }}</span>
+                        </a>
+                        @empty
+                        <p class="text-xs text-slate-400 py-1">Sin proyectos creados.</p>
+                        @endforelse
+                    </div>
+                </div>
+                <a href="{{ route('lider-sem.productos') }}" class="nav-item relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.productos') ? 'nav-item-active' : '' }}">
+                    <span class="relative shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+                        @if($lidTieneNotificacionDirector)<span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" title="El Director de Semilleros tomó una acción sobre un producto"></span>@endif
+                    </span>
                     Productos
                     @if($lidPendingCount > 0)<span class="ml-auto bg-red-100 text-red-800 text-xs font-semibold px-2 py-0.5 rounded-full">{{ $lidPendingCount }}</span>@endif
                 </a>
@@ -489,127 +505,109 @@
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                     Doc. Interna
                 </a>
-
-            @elseif($showInvestigador)
-                {{-- ══════════════════════════════════════════════════════════
-                     Menú Investigador Asociado
-                ══════════════════════════════════════════════════════════ --}}
-                @php
-                    $invPendingCount = 0;
-                    if ($sidebarUser) {
-                        $pIdsInv = \App\Models\ProjectAuthor::where('user_id', $sidebarUser->id)->pluck('project_id');
-                        $invPendingCount = \App\Models\Product::whereIn('project_id', $pIdsInv)
-                            ->where('estado_revision', \App\Enums\EstadoRevisionEnum::Aprobado->value)
-                            ->whereDoesntHave('groupProducts')
-                            ->count();
-                    }
-                @endphp
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">TRABAJO</p>
-                <a href="{{ route('investigador.proyectos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('investigador.proyectos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
-                    </svg>
-                    Mis Proyectos
-                </a>
-                <a href="{{ route('investigador.productos.bandeja') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('investigador.productos.bandeja') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.222a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 12.677a2.25 2.25 0 0 0-.1.661Z" />
-                    </svg>
-                    Bandeja Semilleros
-                    @if($invPendingCount > 0)<span class="ml-auto bg-[#39A900] text-white text-xs font-semibold px-2 py-0.5 rounded-full">{{ $invPendingCount }}</span>@endif
+                <a href="{{ route('lider-sem.reportes.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-sem.reportes.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+                    Reportes
                 </a>
 
-                <a href="{{ route('investigador.productos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('investigador.productos.index') || request()->routeIs('investigador.productos.create') || request()->routeIs('investigador.productos.show') || request()->routeIs('investigador.productos.edit') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
-                    </svg>
-                    Mis Productos
+            @elseif($showLiderProyecto)
+                {{-- Menú Líder de Proyecto --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MI PROYECTO</p>
+                <a href="{{ route('lider-proyecto.evidencias.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-proyecto.evidencias.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 20.552m5.108-11.479l-2.28-2.28"/></svg>
+                    Evidencias
                 </a>
-
-                <a href="{{ route('investigador.estados.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('investigador.estados.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
-                    </svg>
-                    Seguimiento
-                </a>
-
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">RESÚMENES</p>
-                <a href="{{ route('investigador.reportes.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('investigador.reportes.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-                    </svg>
-                    Mis Reportes
-                </a>
-
-            @elseif($showAsesor)
-                {{-- ══════════════════════════════════════════════════════════
-                     Menú Asesor de Semillero
-                ══════════════════════════════════════════════════════════ --}}
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Principal</p>
-                @include('components.asesor-semillero-switcher')
-
-                @can('aprendices.listar')
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión</p>
-                <a href="{{ route('asesor.mis_semilleros.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.mis_semilleros.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.798-1.318 2.552l-13.98-2.796c-1.348-.245-1.745-1.9-.79-2.855L5 14.5"/></svg>
-                    Mis Semilleros
-                </a>
-                <a href="{{ route('asesor.aprendices.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.aprendices.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                <a href="{{ route('lider-proyecto.aprendices.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-proyecto.aprendices.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443"/></svg>
                     Aprendices
                 </a>
-                @endcan
-
-                @can('proyectos.listar_semillero')
-                <a href="{{ route('asesor.proyectos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.proyectos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
-                    Proyectos
+                <a href="{{ route('lider-proyecto.coinvestigadores.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('lider-proyecto.coinvestigadores.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    Co-investigadores
                 </a>
-                @endcan
 
-                @can('productos.listar')
-                <a href="{{ route('asesor.productos.index') }}"
-                   class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('asesor.productos.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776"/></svg>
-                    Productos
+            @elseif($showCoinvestigador)
+                {{-- Menú Co-investigador --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MIS PROYECTOS</p>
+                @php
+                    $sidebarProyectosCoinvestigador = $sidebarUser
+                        ? \App\Models\Project::whereHas('projectAuthors', fn ($q) => $q->where('user_id', $sidebarUser->id)->where('activo', true))
+                            ->orderBy('nombre')
+                            ->get(['id', 'nombre', 'estado'])
+                        : collect();
+                @endphp
+                <div x-data="{ openProyectos: {{ request()->routeIs('co-investigador.proyectos.show') ? 'true' : 'false' }} }" class="mb-1">
+                    <button type="button" @click="openProyectos = !openProyectos" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+                            <span>Proyectos Vinculados</span>
+                        </div>
+                        <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="openProyectos ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="openProyectos" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1 max-h-64 overflow-y-auto">
+                        @forelse($sidebarProyectosCoinvestigador as $sidebarProyecto)
+                        <a href="{{ route('co-investigador.proyectos.show', $sidebarProyecto) }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->route('proyecto')?->id === $sidebarProyecto->id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $sidebarProyecto->estado?->value === 'activo' ? 'bg-green-500' : 'bg-slate-300' }}"></span>
+                            <span class="truncate">{{ $sidebarProyecto->nombre }}</span>
+                        </a>
+                        @empty
+                        <p class="text-xs text-slate-400 py-1">Sin proyectos vinculados.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <a href="{{ route('co-investigador.productos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('co-investigador.productos.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                    Producto Minciencias
                 </a>
-                @endcan
 
             @else
-                {{-- Otros roles (permisos por capacidad) — el super_administrador tiene su propio bloque arriba --}}
+                {{-- Otros roles (permisos por capacidad) — el super_administrador tiene su propio bloque arriba.
+                     BUG-20260813-056: estos 3 enlaces navegan a módulos con
+                     active_role: propio (dir-sem.dashboard, admin.usuarios.index,
+                     admin.catalogos.index). @can()/@hasrole() aquí miran los
+                     permisos de TODOS los roles asignados, no solo el activo —
+                     un usuario con, por ejemplo, director_semilleros como rol
+                     ADICIONAL (no activo) veía este enlace igual, y el clic
+                     daba 403. Se cambian a formularios roles.switch, igual
+                     que el selector "Mis roles". --}}
                 @if(!$showSuperAdmin)
                 @can('semilleros.listar')
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Gestión Semilleros</p>
-                <a href="{{ route('dir-sem.dashboard') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
-                    Director Semilleros
-                </a>
+                <form action="{{ route('roles.switch') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="role" value="director_semilleros">
+                    <button type="submit" class="nav-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('dir-sem.*') ? 'nav-item-active' : '' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+                        Director Semilleros
+                    </button>
+                </form>
                 @endcan
                 @can('usuarios.listar')
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">Administración</p>
-                <a href="{{ route('admin.usuarios.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.usuarios.*') ? 'nav-item-active' : '' }}">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                    Usuarios
-                </a>
+                <form action="{{ route('roles.switch') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="role" value="administrador_sistema">
+                    <button type="submit" class="nav-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.usuarios.*') ? 'nav-item-active' : '' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                        Usuarios
+                    </button>
+                </form>
                 @endcan
                 @hasrole('super_administrador|administrador_sistema|admin')
                     @can('catalogos.leer')
-                    <a href="{{ route('admin.catalogos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
-                        Catálogos
-                    </a>
+                    <form action="{{ route('roles.switch') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="role" value="administrador_sistema">
+                        <button type="submit" class="nav-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.catalogos.*') ? 'nav-item-active' : '' }}">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                            Catálogos
+                        </button>
+                    </form>
                     @endcan
                 @endhasrole
                 @hasrole('super_administrador|administrador_sistema|admin')
-                <div x-data="{ paramOpen: {{ request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-records.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*', 'admin.knowledge-grand-areas.*', 'admin.knowledge-areas.*') ? 'true' : 'false' }} }" class="mt-2">
+                <div x-data="{ paramOpen: {{ request()->routeIs('admin.departments.*', 'admin.cities.*', 'admin.training-centers.*', 'admin.entity-positions.*', 'admin.linkage-types.*', 'admin.training-program-types.*', 'admin.training-programs.*', 'admin.research-lines.*', 'admin.technological-lines.*', 'admin.thematic-areas.*', 'admin.project-modalities.*', 'admin.investigation-types.*', 'admin.minciencias-typologies.*') ? 'true' : 'false' }} }" class="mt-2">
                     <button @click="paramOpen = !paramOpen" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
@@ -623,9 +621,8 @@
                         @if($sidebarUser && $sidebarUser->hasRole('super_administrador'))
                             <a href="{{ route('admin.training-centers.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-centers.*') ? 'bg-slate-50 text-slate-900' : '' }}">Centros de Form.</a>
                         @endif
-                        <a href="{{ route('admin.entity-positions.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.entity-positions.*') ? 'bg-slate-50 text-slate-900' : '' }}">Cargos Entidades</a>
+                        <a href="{{ route('admin.entity-positions.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.entity-positions.*') ? 'bg-slate-50 text-slate-900' : '' }}">Cargo / Posición</a>
                         <a href="{{ route('admin.linkage-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.linkage-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos de Vinculación</a>
-                        <a href="{{ route('admin.training-records.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-records.*') ? 'bg-slate-50 text-slate-900' : '' }}">Fichas de Form.</a>
                         <a href="{{ route('admin.training-program-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-program-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos Programas</a>
                         <a href="{{ route('admin.training-programs.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.training-programs.*') ? 'bg-slate-50 text-slate-900' : '' }}">Programas Form.</a>
                         <a href="{{ route('admin.research-lines.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-lines.*') ? 'bg-slate-50 text-slate-900' : '' }}">Líneas de Invest.</a>
@@ -634,9 +631,6 @@
                         <a href="{{ route('admin.project-modalities.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.project-modalities.*') ? 'bg-slate-50 text-slate-900' : '' }}">Modalidades Proy.</a>
                         <a href="{{ route('admin.investigation-types.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.investigation-types.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipos Invest.</a>
                         <a href="{{ route('admin.minciencias-typologies.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.minciencias-typologies.*') ? 'bg-slate-50 text-slate-900' : '' }}">Tipologías Mincien.</a>
-                        <a href="{{ route('admin.knowledge-grand-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-grand-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">G. Áreas Conoc.</a>
-                        <a href="{{ route('admin.knowledge-areas.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.knowledge-areas.*') ? 'bg-slate-50 text-slate-900' : '' }}">Áreas Conoc.</a>
-                        <a href="{{ route('admin.research-groups.index') }}" class="block p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.research-groups.*') ? 'bg-slate-50 text-slate-900' : '' }}">Grupos Inv.</a>
                     </div>
                 </div>
                 @endhasrole
@@ -711,7 +705,10 @@
                 @if(!empty($sidebarRoleModuleLinks))
                 <div x-data="{ openRoles: false }" class="relative">
                     <button @click="openRoles = !openRoles" @click.away="openRoles = false"
-                            class="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#39A900]/50">
+                            class="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#39A900]/50"
+                            title="Mis roles — cambiar de panel">
+                        <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                        <span class="text-[10px] text-slate-400 shrink-0">Mis roles:</span>
                         <span class="truncate max-w-[150px]">{{ $currentContextLabel }}</span>
                         <svg class="w-3.5 h-3.5 text-slate-400 transition-transform" :class="openRoles ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -728,37 +725,49 @@
                          class="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] z-50 overflow-hidden">
                         
                         <div class="p-3 bg-slate-50 border-b border-slate-100">
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Roles y Módulos</p>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Mis roles</p>
                             <p class="text-[10px] text-slate-500 leading-snug">
                                 Rol principal: <span class="font-medium text-slate-700">{{ $roleLabel }}</span>.
                             </p>
                         </div>
-                        
+
                         <div class="py-1 max-h-64 overflow-y-auto">
                             <!-- ROL PRINCIPAL -->
                             <div class="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panel Principal</div>
                             @foreach($sidebarRoleModuleLinks as $rl)
                                 @if(!empty($rl['url']) && !empty($rl['is_primary']))
-                                    <a href="{{ $rl['url'] }}"
-                                       class="group flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#1f6b00] bg-[#39A900]/5 border border-[#39A900]/30 hover:bg-[#39A900]/10 mx-2 mb-2 transition-colors">
-                                        <span class="truncate">{{ $rl['label'] }}</span>
-                                        <span class="shrink-0 text-[9px] uppercase tracking-wide text-[#39A900]">Activo al inicio</span>
-                                    </a>
+                                    <form action="{{ route('roles.switch') }}" method="POST" class="mx-2 mb-2">
+                                        @csrf
+                                        <input type="hidden" name="role" value="{{ $rl['role'] }}">
+                                        <button type="submit"
+                                                class="group w-full flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-[#1f6b00] bg-[#39A900]/5 border border-[#39A900]/30 hover:bg-[#39A900]/10 transition-colors">
+                                            <span class="truncate">{{ $rl['label'] }}</span>
+                                            <span class="shrink-0 text-[9px] uppercase tracking-wide text-[#39A900]">{{ $rl['role'] === $activeRoleName ? 'Activo ahora' : 'Volver a este rol' }}</span>
+                                        </button>
+                                    </form>
                                 @endif
                             @endforeach
-                            
+
                             <!-- PANELES ALTERNOS (PERMISOS) -->
                             <div class="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100">Paneles / Permisos Alternos</div>
                             @foreach($sidebarRoleModuleLinks as $rl)
                                 @if(!empty($rl['url']) && empty($rl['is_primary']))
-                                    <a href="{{ $rl['url'] }}"
-                                       class="group flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-transparent hover:bg-slate-50 hover:border-slate-200 mx-2 mb-1 transition-colors">
-                                        <span class="truncate">{{ $rl['label'] }}</span>
-                                        <span class="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-500">
-                                            <span class="text-[10px]">Ir</span>
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-                                        </span>
-                                    </a>
+                                    <form action="{{ route('roles.switch') }}" method="POST" class="mx-2 mb-1">
+                                        @csrf
+                                        <input type="hidden" name="role" value="{{ $rl['role'] }}">
+                                        <button type="submit"
+                                                class="group w-full flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-600 border border-transparent hover:bg-slate-50 hover:border-slate-200 transition-colors">
+                                            <span class="truncate">{{ $rl['label'] }}</span>
+                                            @if($rl['role'] === $activeRoleName)
+                                            <span class="shrink-0 text-[9px] uppercase tracking-wide text-[#39A900]">Activo ahora</span>
+                                            @else
+                                            <span class="flex items-center gap-1 shrink-0 text-slate-400 group-hover:text-slate-500">
+                                                <span class="text-[10px]">Cambiar</span>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                                            </span>
+                                            @endif
+                                        </button>
+                                    </form>
                                 @endif
                             @endforeach
                         </div>

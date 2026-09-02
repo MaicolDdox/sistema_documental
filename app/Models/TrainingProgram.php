@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\EstadoEnum;
-use App\Enums\JornadaEnum;
 use App\Enums\ModalidadEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,17 +16,14 @@ class TrainingProgram extends Model
     protected $table = 'training_programs';
 
     protected $fillable = [
-        'training_record_id',
         'training_program_type_id',
         'nombre',
         'descripcion',
-        'jornada',
         'modalidad',
         'estado',
     ];
 
     protected $casts = [
-        'jornada' => JornadaEnum::class,
         'modalidad' => ModalidadEnum::class,
         'estado' => EstadoEnum::class,
     ];
@@ -35,11 +31,6 @@ class TrainingProgram extends Model
     // ─────────────────────────────────────────────
     // RELACIONES
     // ─────────────────────────────────────────────
-
-    public function trainingRecord(): BelongsTo
-    {
-        return $this->belongsTo(TrainingRecord::class, 'training_record_id');
-    }
 
     public function trainingProgramType(): BelongsTo
     {

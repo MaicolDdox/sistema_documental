@@ -9,11 +9,12 @@ class LineasInvestigacionesSeeder extends Seeder
     public function run(): void
     {
         $lineas = [
-            'Producción Agropecuaria sostenible',
-            'Desarrollo Agroindustrial de base tecnológica',
-            'Empresarismo e inteligencia de mercados de base',
-            'Gestión ambiental y aprovechamiento sostenible de los recursos naturales',
-            'TIC aplicado al desarrollo sostenible',
+            'Producción Agropecuaria',
+            'Desarrollo Agroindustrial de Base Tecnológica',
+            'Empresarismo e Inteligencia de Mercados de Base Tecnológica',
+            'Gestión Ambiental y Aprovechamiento Sostenible de los Recursos Naturales',
+            'TIC Aplicadas al Desarrollo Sostenible',
+            'Innovación y Transformación Educativa',
         ];
 
         foreach ($lineas as $nombre) {

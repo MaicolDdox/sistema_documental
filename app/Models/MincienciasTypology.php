@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MincienciasTypology extends Model
@@ -25,10 +25,5 @@ class MincienciasTypology extends Model
     public function subcategories(): HasMany
     {
         return $this->hasMany(MincienciasSubcategory::class, 'minciencias_typology_id');
-    }
-
-    public function groupProducts(): HasMany
-    {
-        return $this->hasMany(GroupProduct::class, 'minciencias_typology_id');
     }
 }

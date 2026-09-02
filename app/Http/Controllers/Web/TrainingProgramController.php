@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Enums\EstadoEnum;
 use App\Models\TrainingProgram;
 use App\Models\TrainingProgramType;
-use App\Models\TrainingRecord;
 use App\Http\Requests\StoreTrainingProgramRequest;
 use App\Http\Requests\UpdateTrainingProgramRequest;
 use Illuminate\Http\Request;
@@ -17,46 +16,36 @@ class TrainingProgramController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = TrainingProgram::with(['trainingRecord', 'trainingProgramType'])->orderBy('nombre');
+        $query = TrainingProgram::with(['trainingProgramType'])->orderBy('nombre');
 
         if ($request->filled('search')) {
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('nombre', 'like', "%{$term}%")
                   ->orWhereHas('trainingProgramType', fn($q) => $q->where('nombre', 'like', "%{$term}%"));
-                if (is_numeric($term)) {
-                    $q->orWhereHas('trainingRecord', fn($q) => $q->where('codigo', (int) $term));
-                }
             });
         }
 
         $programs = $query->paginate(15)->withQueryString();
-        $records = TrainingRecord::orderBy('codigo')->get();
         $types = TrainingProgramType::orderBy('nombre')->get();
 
-        return view('admin.training_programs.index', compact('programs', 'records', 'types'));
+        return view('admin.training_programs.index', compact('programs', 'types'));
     }
 
     public function create(): View
     {
-        $records = TrainingRecord::orderBy('codigo')->get();
         $types = TrainingProgramType::orderBy('nombre')->get();
-        return view('admin.training_programs.create', compact('records', 'types'));
+        return view('admin.training_programs.create', compact('types'));
     }
 
     public function store(StoreTrainingProgramRequest $request): RedirectResponse
     {
-        $record = TrainingRecord::firstOrCreate(
-            ['codigo' => trim($request->input('ficha'))],
-            ['descripcion' => '']
-        );
         $type = TrainingProgramType::firstOrCreate(
             ['nombre' => trim($request->input('tipo'))],
             ['descripcion' => '']
         );
         $data = $request->validated();
-        unset($data['ficha'], $data['tipo']);
-        $data['training_record_id'] = $record->id;
+        unset($data['tipo']);
         $data['training_program_type_id'] = $type->id;
         TrainingProgram::create($data);
         return redirect()->route('admin.training-programs.index')
@@ -65,24 +54,18 @@ class TrainingProgramController extends Controller
 
     public function edit(TrainingProgram $training_program): View
     {
-        $records = TrainingRecord::orderBy('codigo')->get();
         $types = TrainingProgramType::orderBy('nombre')->get();
-        return view('admin.training_programs.edit', compact('training_program', 'records', 'types'));
+        return view('admin.training_programs.edit', compact('training_program', 'types'));
     }
 
     public function update(UpdateTrainingProgramRequest $request, TrainingProgram $training_program): RedirectResponse
     {
-        $record = TrainingRecord::firstOrCreate(
-            ['codigo' => trim($request->input('ficha'))],
-            ['descripcion' => '']
-        );
         $type = TrainingProgramType::firstOrCreate(
             ['nombre' => trim($request->input('tipo'))],
             ['descripcion' => '']
         );
         $data = $request->validated();
-        unset($data['ficha'], $data['tipo']);
-        $data['training_record_id'] = $record->id;
+        unset($data['tipo']);
         $data['training_program_type_id'] = $type->id;
         $training_program->update($data);
         return redirect()->route('admin.training-programs.index')

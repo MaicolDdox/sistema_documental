@@ -42,16 +42,6 @@
         </div>
 
         <div class="p-6 space-y-6">
-            <div class="flex flex-col sm:flex-row items-start gap-4">
-                <label class="block text-sm font-medium text-slate-700">Logo</label>
-                <div class="w-24 h-24 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
-                    @if(!empty($semillero->logo))
-                        <img src="{{ asset('storage/' . $semillero->logo) }}" alt="Logo" class="w-full h-full object-cover">
-                    @else
-                        <svg class="w-10 h-10 text-[#39A900]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-                    @endif
-                </div>
-            </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">Nombre del semillero</label>
@@ -68,13 +58,7 @@
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
                 <textarea rows="4" readonly
-                          class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 bg-slate-50 cursor-not-allowed">{{ $semillero->descripccion ?? '—' }}</textarea>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Grupo de investigación</label>
-                <input type="text" value="{{ $semillero->researchGroup?->nombre ?? '—' }}" readonly
-                       class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 bg-slate-50 cursor-not-allowed">
+                          class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 bg-slate-50 cursor-not-allowed">{{ $semillero->descripcion ?? '—' }}</textarea>
             </div>
 
             <div>

@@ -100,16 +100,6 @@
                                  x-cloak
                                  @click.away="open = false"
                                  class="absolute left-0 mt-2 w-44 rounded-xl bg-white shadow-lg border border-slate-100 py-1 z-20">
-                                <a href="{{ route('lider-sem.doc-interna.ver', $doc) }}"
-                                   target="_blank"
-                                   rel="noopener"
-                                   @click="open = false"
-                                   class="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h9.75A2.25 2.25 0 0019.5 18.75V12M12 9l3-3m0 0l3 3m-3-3v12" />
-                                    </svg>
-                                    <span>Ver documento</span>
-                                </a>
                                 <a href="{{ route('lider-sem.doc-interna.descargar', $doc) }}"
                                    @click="open = false"
                                    class="w-full flex items-center gap-2 px-3 py-2 text-xs text-emerald-700 hover:bg-emerald-50">

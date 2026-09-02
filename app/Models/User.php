@@ -4,14 +4,14 @@ namespace App\Models;
 
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -21,7 +21,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
+    use HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
 
     protected $table = 'users';
 
@@ -30,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'training_center_id',
+        'created_by_user_id',
         'primary_role_name',
         'email',
         'tipo_documento',
@@ -71,6 +72,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(TrainingCenter::class, 'training_center_id');
     }
 
+    /** Usuario que creó esta cuenta (regla de edición uno-a-uno). */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
     // HasOne
     public function person(): HasOne
     {
@@ -103,22 +110,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ProjectAuthor::class, 'user_id');
     }
 
-    public function groupProducts(): HasMany
-    {
-        return $this->hasMany(GroupProduct::class, 'author_id');
-    }
-
     // BelongsToMany
-    public function researchGroups(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            ResearchGroup::class,
-            'research_group_users',
-            'user_id',
-            'research_group_id'
-        )->withPivot('rol')->withTimestamps();
-    }
-
     public function seedlings(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -161,8 +153,8 @@ class User extends Authenticatable implements MustVerifyEmail
         } catch (\Throwable $e) {
             Log::error('User: fallo al enviar email de verificación', [
                 'user_id' => $this->id,
-                'email'   => $this->email,
-                'error'   => $e->getMessage(),
+                'email' => $this->email,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -173,11 +165,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getNameAttribute(): string
     {
         if ($this->person) {
-            $nombre = trim(($this->person->primer_nombre ?? '') . ' ' . ($this->person->primer_apellido ?? ''));
+            $nombre = trim(($this->person->primer_nombre ?? '').' '.($this->person->primer_apellido ?? ''));
             if ($nombre !== '') {
                 return $nombre;
             }
         }
+
         return $this->email ?? 'Usuario';
     }
 
@@ -188,7 +181,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         if ($this->person) {
             return Str::upper(
-                Str::substr($this->person->primer_nombre, 0, 1) .
+                Str::substr($this->person->primer_nombre, 0, 1).
                 Str::substr($this->person->primer_apellido, 0, 1)
             );
         }

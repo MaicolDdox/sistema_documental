@@ -4,6 +4,9 @@ namespace Tests\Feature\Regression;
 
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
+use App\Models\City;
+use App\Models\Department;
+use App\Models\TrainingCenter;
 use App\Services\Admin\UserCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +29,13 @@ class BUG20260609002Test extends TestCase
     {
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
 
+        $depto = Department::firstOrCreate(['nombre' => 'Depto Test BUG-609-002']);
+        $ciudad = City::firstOrCreate(['nombre' => 'Ciudad Test BUG-609-002', 'department_id' => $depto->id]);
+        $centro = TrainingCenter::create([
+            'nombre' => 'Centro Test BUG-609-002', 'codigo' => 'BUG609002', 'activo' => true,
+            'department_id' => $depto->id, 'city_id' => $ciudad->id,
+        ]);
+
         $service = app(UserCreationService::class);
 
         $usuario = $service->crearUsuario([
@@ -38,7 +48,7 @@ class BUG20260609002Test extends TestCase
             'primer_apellido'  => 'Torres',
             'segundo_apellido' => null,
             'rol'              => 'lider_semillero',
-        ], trainingCenterId: null);
+        ], trainingCenterId: $centro->id);
 
         $this->assertDatabaseHas('users', [
             'email'          => 'test@regresion.com',

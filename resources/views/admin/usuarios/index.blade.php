@@ -18,7 +18,7 @@
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-semibold text-slate-900">Gestión de Usuarios</h2>
-                <p class="text-sm text-slate-500 mt-1">Tabla: users ‣ personas — CRUD completo</p>
+                <p class="text-sm text-slate-500 mt-1">Listado de usuarios del centro, filtrable por rol. La creación se hace desde los ítems "Director de Semilleros" y "Co-investigadores".</p>
                 <p class="text-xs text-slate-500 mt-2">
                     @if(\App\Support\TrainingCenterAccess::isSuperAdmin(auth()->user()))
                         <span class="text-emerald-700 font-medium">{{ $usuarios->total() }}</span> usuario(s) en total en la instancia.
@@ -29,12 +29,14 @@
                     @endif
                 </p>
             </div>
-            @can('usuarios.crear')
-            <button type="button" @click="modalNuevo = true; mostrarPasswordCrear = false" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                + Crear Usuario
-            </button>
-            @endcan
+            <div class="flex items-center gap-2">
+                <a href="{{ route('admin.director-semilleros.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-all">
+                    + Director de Semilleros
+                </a>
+                <a href="{{ route('admin.co-investigadores.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-all">
+                    + Co-investigador
+                </a>
+            </div>
         </div>
 
         <div class="flex gap-1 mb-4 border-b border-slate-200">
@@ -78,7 +80,7 @@
                 $cargoLabel = $user->person?->entityPosition?->nombre ?? ($user->roles->first() ? ucfirst(str_replace('_', ' ', $user->roles->first()->name)) : '—');
                 $estadoActivo = $user->estado?->value === 'activo';
             @endphp
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 transition-colors" x-data="{ roleModal: false }">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 transition-colors">
                 <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
                     <div class="flex items-center gap-4 min-w-0 flex-1">
                         <div class="w-12 h-12 rounded-xl bg-[#0a1628] text-white flex items-center justify-center font-bold text-sm shrink-0">{{ $user->initials() }}</div>
@@ -129,19 +131,21 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </button>
                         @can('usuarios.editar')
+                        @php
+                            $namesRolFila = $user->roles->pluck('name')->all();
+                            $rolPrincipalFila = ($user->primary_role_name && in_array($user->primary_role_name, $namesRolFila, true))
+                                ? $user->primary_role_name
+                                : (\App\Support\RoleModuleLinks::pickPrimaryRoleNameFromNames($namesRolFila) ?? $namesRolFila[0] ?? '');
+                        @endphp
                         <button type="button" @click="openEditar({{ $user->id }}, {{ json_encode([
                             'nombre' => $user->person?->primer_nombre ?? '',
                             'apellido' => $user->person?->primer_apellido ?? '',
                             'numero_documento' => $user->numero_documento,
                             'email' => $user->email,
-                            'rol' => $user->roles->first()?->name ?? '',
+                            'rol' => $rolPrincipalFila,
+                            'additionalRoles' => array_values(array_diff($namesRolFila, [$rolPrincipalFila])),
                         ]) }})" class="p-2.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Editar">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
-                        </button>
-                        @endcan
-                        @can('usuarios.asignar_rol')
-                        <button type="button" @click="roleModal = true" class="p-2.5 rounded-lg text-slate-400 hover:text-[#39A900] hover:bg-green-50 transition-colors" title="Gestionar roles">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
                         </button>
                         @endcan
                         @can('usuarios.activar_desactivar')
@@ -165,51 +169,6 @@
                     </div>
                 </div>
 
-                {{-- Modal Gestionar roles (por usuario) --}}
-                <div x-show="roleModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
-                    <div class="flex min-h-full items-center justify-center p-4">
-                        <div x-show="roleModal" @click.self="roleModal = false" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" x-transition></div>
-                        <div x-show="roleModal" x-transition class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200">
-                            <h3 class="text-lg font-semibold text-slate-900 mb-2">Gestionar roles — {{ $user->person ? $user->person->primer_nombre : $user->email }}</h3>
-                            <div class="mb-4">
-                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Roles actuales</p>
-                                <div class="flex flex-wrap gap-2">
-                                    @forelse($user->roles as $role)
-                                    <form method="POST" action="{{ route('admin.usuarios.revocar_rol', $user->id) }}" class="inline">
-                                        @csrf
-                                        <input type="hidden" name="rol" value="{{ $role->name }}">
-                                        <button type="submit" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-green-50 text-[#39A900] hover:bg-red-50 hover:text-red-700 border border-green-200 transition-colors">
-                                            {{ ucfirst(str_replace('_', ' ', $role->name)) }}
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        </button>
-                                    </form>
-                                    @empty
-                                    <p class="text-sm text-slate-500 italic">Sin roles</p>
-                                    @endforelse
-                                </div>
-                            </div>
-                            <hr class="border-slate-100 my-4">
-                            <form method="POST" action="{{ route('admin.usuarios.asignar_rol', $user->id) }}">
-                                @csrf
-                                <label class="block text-sm font-medium text-slate-700 mb-1.5">Asignar rol</label>
-                                <div class="flex gap-2">
-                                    <select name="rol" required class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                                        <option value="">Seleccione...</option>
-                                        @foreach($roles as $role)
-                                        @if(!$user->hasRole($role->name))
-                                        <option value="{{ $role->name }}">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
-                                        @endif
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="px-4 py-2 rounded-lg bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold">Asignar</button>
-                                </div>
-                            </form>
-                            <div class="mt-4 pt-4 border-t border-slate-100">
-                                <button type="button" @click="roleModal = false" class="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             @empty
             <div class="bg-white rounded-xl border border-slate-200 p-12 text-center">
@@ -284,13 +243,44 @@
                             </div>
                             <div>
                                 <label for="edit_rol" class="block text-sm font-medium text-slate-700 mb-1">Rol principal <span class="text-red-500">*</span></label>
-                                <select name="rol" id="edit_rol" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
+                                <select name="rol" id="edit_rol" x-model="editRol" required class="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
                                     <option value="">Selecciona un rol...</option>
-                                    @foreach($roles as $role)
+                                    @foreach($rolesAsignables as $role)
                                     <option value="{{ $role->name }}">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
                                     @endforeach
                                 </select>
                             </div>
+
+                            {{-- FEAT-20260830-001: roles adicionales (multi-rol). BUG-20260813-061:
+                                 este es el modal REAL que abre el lápiz de "Usuarios y Roles" — el
+                                 checkbox agregado antes vivía en admin/usuarios/edit.blade.php, una
+                                 página de página completa que nada enlaza en la interfaz. --}}
+                            @if($canManageAdditionalRolesModal)
+                            <div class="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                                <div class="flex items-start gap-3">
+                                    <input type="checkbox" name="tiene_mas_roles" id="edit_tiene_mas_roles" value="1"
+                                           x-model="tieneMasRoles"
+                                           class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                                    <div>
+                                        <label for="edit_tiene_mas_roles" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
+                                            ¿Este usuario tiene más roles?
+                                        </label>
+                                        <p class="text-xs text-slate-500 mt-0.5">Además del rol principal, podrá tener funciones activas de otros roles y cambiar entre ellos desde "Mis roles".</p>
+                                    </div>
+                                </div>
+                                <div x-show="tieneMasRoles" x-cloak class="mt-3.5 pt-3.5 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <template x-for="opt in rolesAdicionalesOpciones.filter(o => o.value !== editRol)" :key="opt.value">
+                                        <label class="flex items-center gap-2 text-sm text-slate-700 border border-slate-200 rounded-lg px-3 py-2 bg-white hover:bg-slate-50 cursor-pointer">
+                                            <input type="checkbox" name="additional_roles[]" :value="opt.value"
+                                                   :checked="additionalRoles.includes(opt.value)"
+                                                   @change="$event.target.checked ? additionalRoles.push(opt.value) : additionalRoles = additionalRoles.filter(v => v !== opt.value)"
+                                                   class="rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
+                                            <span x-text="opt.label"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                         <div class="mt-6 flex justify-end gap-2">
                             <button type="button" @click="modalEditar = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -325,96 +315,6 @@
                 </div>
             </div>
         </div>
-
-        {{-- Modal Crear usuario --}}
-        @can('usuarios.crear')
-        <div x-show="modalNuevo" x-cloak class="fixed inset-0 z-[60] overflow-y-auto" aria-modal="true">
-            <div class="flex min-h-full items-center justify-center p-4">
-                <div x-show="modalNuevo" @click.self="modalNuevo = false; mostrarPasswordCrear = false" class="fixed inset-0 bg-black/50" x-transition></div>
-                <div x-show="modalNuevo" x-transition class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto border border-slate-100">
-                    <h3 class="text-lg font-semibold text-slate-900 mb-1">Nuevo usuario</h3>
-                    <p class="text-sm text-slate-500 mb-4">Ingresa los datos para registrar un nuevo usuario en el sistema.</p>
-                    <form method="POST" action="{{ route('admin.usuarios.store') }}" class="space-y-4">
-                        @csrf
-                        <input type="hidden" name="_form_type" value="create">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="crear_nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombres <span class="text-red-500">*</span></label>
-                                <input type="text" name="nombre" id="crear_nombre" value="{{ old('nombre') }}" required class="w-full border @error('nombre') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                                @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                            </div>
-                            <div>
-                                <label for="crear_apellido" class="block text-sm font-medium text-slate-700 mb-1">Apellidos <span class="text-red-500">*</span></label>
-                                <input type="text" name="apellido" id="crear_apellido" value="{{ old('apellido') }}" required class="w-full border @error('apellido') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                                @error('apellido')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                            </div>
-                        </div>
-                        <div>
-                            <label for="crear_tipo_documento" class="block text-sm font-medium text-slate-700 mb-1">Tipo de documento <span class="text-red-500">*</span></label>
-                            <select name="tipo_documento" id="crear_tipo_documento" required class="w-full border @error('tipo_documento') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                                <option value="">Selecciona un tipo...</option>
-                                @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
-                                    <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
-                                        {{ ucfirst($tipo->value) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('tipo_documento')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div>
-                            <label for="crear_numero_documento" class="block text-sm font-medium text-slate-700 mb-1">Número de documento <span class="text-red-500">*</span></label>
-                            <input type="text" name="numero_documento" id="crear_numero_documento" value="{{ old('numero_documento') }}" required class="w-full border @error('numero_documento') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                            @error('numero_documento')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div>
-                            <label for="crear_email" class="block text-sm font-medium text-slate-700 mb-1">Correo electrónico <span class="text-red-500">*</span></label>
-                            <input type="email" name="email" id="crear_email" value="{{ old('email') }}" required class="w-full border @error('email') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                            @error('email')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div>
-                            <label for="crear_password" class="block text-sm font-medium text-slate-700 mb-1">Contraseña temporal <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <input :type="mostrarPasswordCrear ? 'text' : 'password'" name="password" id="crear_password" required autocomplete="new-password" class="w-full border @error('password') border-red-500 @else border-slate-200 @enderror rounded-xl pl-3.5 pr-11 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                                <button type="button" tabindex="-1" @click="mostrarPasswordCrear = !mostrarPasswordCrear" class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:text-[#39A900]" :title="mostrarPasswordCrear ? 'Ocultar contraseña' : 'Ver contraseña'" :aria-label="mostrarPasswordCrear ? 'Ocultar contraseña' : 'Ver contraseña'">
-                                    <svg x-show="!mostrarPasswordCrear" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    <svg x-show="mostrarPasswordCrear" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/></svg>
-                                </button>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-1">Mínimo 8 caracteres. Puedes usar el ícono del ojo para ver lo que escribes.</p>
-                            @error('password')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div>
-                            <label for="crear_rol" class="block text-sm font-medium text-slate-700 mb-1">Rol inicial</label>
-                            <select name="rol" id="crear_rol" class="w-full border @error('rol') border-red-500 @else border-slate-200 @enderror rounded-xl px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/20">
-                                <option value="">Sin rol (asignar después)</option>
-                                @foreach($roles as $role)
-                                    <option value="{{ $role->name }}" {{ old('rol') === $role->name ? 'selected' : '' }}>
-                                        {{ ucfirst(str_replace('_', ' ', $role->name)) }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('rol')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        </div>
-                        <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3 flex items-start gap-3">
-                            <input type="checkbox" name="enviar_credenciales" id="crear_enviar_credenciales" value="1"
-                                   {{ old('enviar_credenciales') ? 'checked' : '' }}
-                                   class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
-                            <div>
-                                <label for="crear_enviar_credenciales" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
-                                    Enviar credenciales por correo
-                                </label>
-                                <p class="text-xs text-slate-500 mt-0.5">Se enviará al usuario su email y contraseña temporal.</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-3 justify-end pt-2">
-                            <button type="button" @click="modalNuevo = false; mostrarPasswordCrear = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-[#39A900] hover:bg-[#2d8500] text-white text-sm font-semibold">Guardar usuario</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        @endcan
 
         {{-- Modal Confirmar activar/desactivar --}}
         <div x-show="modalToggle" x-cloak class="fixed inset-0 z-[60] overflow-y-auto" aria-modal="true">
@@ -454,11 +354,19 @@
                 modalEditar: false,
                 modalEliminar: false,
                 modalToggle: false,
-                modalNuevo: @json(old('_form_type') === 'create'),
-                mostrarPasswordCrear: false,
                 detalle: null,
                 editFormAction: '',
                 editData: {},
+                editRol: '',
+                tieneMasRoles: false,
+                additionalRoles: [],
+                rolesAdicionalesOpciones: [
+                    { value: 'administrador_sistema', label: 'Administrador sistema' },
+                    { value: 'director_semilleros', label: 'Director semilleros' },
+                    { value: 'lider_semillero', label: 'Lider semillero' },
+                    { value: 'lider_proyecto', label: 'Lider proyecto' },
+                    { value: 'co_investigador', label: 'Co investigador' },
+                ],
                 eliminarFormAction: '',
                 eliminarNombre: '',
                 toggleFormAction: '',
@@ -471,18 +379,19 @@
                 openEditar(id, data) {
                     this.editFormAction = baseUrl + '/' + id;
                     this.editData = data || {};
+                    this.editRol = this.editData.rol || '';
+                    this.additionalRoles = this.editData.additionalRoles || [];
+                    this.tieneMasRoles = this.additionalRoles.length > 0;
                     this.modalEditar = true;
                     this.$nextTick(() => {
                         const n = document.getElementById('edit_nombre');
                         const a = document.getElementById('edit_apellido');
                         const d = document.getElementById('edit_numero_documento');
                         const e = document.getElementById('edit_email');
-                        const r = document.getElementById('edit_rol');
                         if (n) n.value = this.editData.nombre || '';
                         if (a) a.value = this.editData.apellido || '';
                         if (d) d.value = this.editData.numero_documento || '';
                         if (e) e.value = this.editData.email || '';
-                        if (r) r.value = this.editData.rol || '';
                     });
                 },
                 openEliminar(id, nombre) {

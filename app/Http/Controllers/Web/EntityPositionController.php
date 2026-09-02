@@ -25,7 +25,7 @@ class EntityPositionController extends Controller
         $items = EntityPosition::paginate(10);
         return view('admin.parametric.index', [
             'items' => $items,
-            'title' => 'Cargos de Entidades',
+            'title' => 'Cargo / Posición',
             'routePrefix' => 'admin.entity-positions',
             'fields' => $this->getFields()
         ]);
@@ -34,7 +34,7 @@ class EntityPositionController extends Controller
     public function create(): View
     {
         return view('admin.parametric.create', [
-            'title' => 'Crear Cargos de Entidades',
+            'title' => 'Crear Cargo / Posición',
             'routePrefix' => 'admin.entity-positions',
             'fields' => $this->getFields()
         ]);
@@ -51,7 +51,7 @@ class EntityPositionController extends Controller
         EntityPosition::create($validated);
 
         if ($request->input('_from_simples')) {
-            return redirect()->route('admin.catalogos.simples')->with('success', 'Cargo en entidad creado correctamente.');
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Cargo / Posición creado correctamente.');
         }
         return redirect()->route('admin.entity-positions.index')
             ->with('success', 'Registro creado exitosamente.');
@@ -61,7 +61,7 @@ class EntityPositionController extends Controller
     {
         return view('admin.parametric.edit', [
             'item' => $entityposition,
-            'title' => 'Editar Cargos de Entidades',
+            'title' => 'Editar Cargo / Posición',
             'routePrefix' => 'admin.entity-positions',
             'routeParam' => 'entity_position',
             'fields' => $this->getFields()

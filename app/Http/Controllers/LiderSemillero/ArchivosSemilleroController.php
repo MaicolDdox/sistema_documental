@@ -53,27 +53,8 @@ class ArchivosSemilleroController extends Controller
     }
 
     /**
-     * Visualiza el archivo (inline) desde backend para evitar fallos por URL pública.
-     */
-    public function ver(SeedlingFile $archivo): StreamedResponse
-    {
-        $semillero = Auth::user()->ledSeedlings()->first();
-        if (! $semillero || $archivo->seedling_id !== $semillero->id) {
-            abort(403, 'No puedes ver este archivo.');
-        }
-
-        if (!Storage::disk('public')->exists($archivo->url_archivo)) {
-            abort(404, 'El archivo no existe.');
-        }
-
-        return Storage::disk('public')->response(
-            $archivo->url_archivo,
-            $archivo->archivo ?? basename($archivo->url_archivo)
-        );
-    }
-
-    /**
-     * Descarga el archivo.
+     * Descarga el archivo. La opción de "ver en el navegador" (inline) se
+     * eliminó del sistema completo (BUG-20260813-030): solo queda descarga.
      */
     public function descargar(SeedlingFile $archivo): StreamedResponse
     {

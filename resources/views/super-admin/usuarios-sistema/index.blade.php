@@ -118,16 +118,33 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">
-                            <form method="POST" action="{{ route('super-admin.usuarios-sistema.toggle_estado', $usuario->id) }}">
-                                @csrf
-                                <button type="submit"
-                                        class="text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
-                                               {{ $usuario->estado?->value === 'activo'
-                                                  ? 'border-red-200 text-red-700 hover:bg-red-50'
-                                                  : 'border-green-200 text-green-700 hover:bg-green-50' }}">
-                                    {{ $usuario->estado?->value === 'activo' ? 'Desactivar' : 'Activar' }}
-                                </button>
-                            </form>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('super-admin.usuarios-sistema.edit', $usuario->id) }}"
+                                   class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+                                    Editar
+                                </a>
+                                <form method="POST" action="{{ route('super-admin.usuarios-sistema.toggle_estado', $usuario->id) }}">
+                                    @csrf
+                                    <button type="submit"
+                                            class="text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
+                                                   {{ $usuario->estado?->value === 'activo'
+                                                      ? 'border-red-200 text-red-700 hover:bg-red-50'
+                                                      : 'border-green-200 text-green-700 hover:bg-green-50' }}">
+                                        {{ $usuario->estado?->value === 'activo' ? 'Desactivar' : 'Activar' }}
+                                    </button>
+                                </form>
+                                @if(auth()->id() !== $usuario->id)
+                                <form method="POST" action="{{ route('super-admin.usuarios-sistema.destroy', $usuario->id) }}"
+                                      onsubmit="return confirm('¿Eliminar a {{ addslashes($usuario->person?->nombre_completo ?? $usuario->email) }}? Esta acción no se puede deshacer.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-all">
+                                        Eliminar
+                                    </button>
+                                </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty

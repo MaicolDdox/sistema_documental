@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\LiderSemillero;
 
 use App\Enums\EstadoRevisionEnum;
+use App\Enums\TipoEvidenciaEnum;
 use App\Http\Controllers\Controller;
-use App\Models\GroupProduct;
 use App\Models\Project;
 use App\Models\ProjectAuthor;
+use App\Models\ProjectEvidence;
 use App\Models\Seedling;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         /** @var Seedling|null $miSemillero */
         $miSemillero = $user->ledSeedlings()
-            ->with(['researchGroup', 'members.person', 'advisors'])
+            ->with(['members.person', 'advisors'])
             ->first();
 
         $metricas = $this->calcularMetricas($user, $miSemillero);
@@ -29,11 +30,11 @@ class DashboardController extends Controller
         $proyectosDelSemillero = $this->proyectosDelSemillero($miSemillero);
 
         return view('lider_semillero.dashboard', [
-            'miSemillero'             => $miSemillero,
-            'metricas'                => $metricas,
-            'productosPendientes'     => $productosPendientes,
-            'integrantesSinProyecto'  => $integrantesSinProyecto,
-            'proyectosDelSemillero'   => $proyectosDelSemillero,
+            'miSemillero' => $miSemillero,
+            'metricas' => $metricas,
+            'productosPendientes' => $productosPendientes,
+            'integrantesSinProyecto' => $integrantesSinProyecto,
+            'proyectosDelSemillero' => $proyectosDelSemillero,
         ]);
     }
 
@@ -48,13 +49,10 @@ class DashboardController extends Controller
         $productosPendientesCount = 0;
         $proyectosActivosCount = 0;
         $sinProyectoActivoCount = 0;
-        $projectIds = [];
 
         if ($miSemillero) {
             $integrantes = $miSemillero->members()->count();
-            $projectIds = DB::table('project_seedlings')
-                ->where('seedling_id', $miSemillero->id)
-                ->pluck('project_id');
+            $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
 
             $haceSeisMeses = now()->subMonths(6);
             $integrantesNuevosSemestre = DB::table('seedling_members')
@@ -62,9 +60,9 @@ class DashboardController extends Controller
                 ->where('created_at', '>=', $haceSeisMeses)
                 ->count();
 
-            $productIds = DB::table('products')->whereIn('project_id', $projectIds)->pluck('id');
-            $productosPendientesCount = GroupProduct::whereIn('product_id', $productIds)
-                ->whereIn('estado_revision', [EstadoRevisionEnum::Pendiente, EstadoRevisionEnum::EnRevision])
+            $productosPendientesCount = ProjectEvidence::whereIn('project_id', $projectIds)
+                ->where('tipo', TipoEvidenciaEnum::ProductoFinal)
+                ->where('estado_revision_lider', EstadoRevisionEnum::Pendiente)
                 ->count();
 
             // Activo para tablero: estado activo y no finalizado por fecha.
@@ -86,31 +84,32 @@ class DashboardController extends Controller
         }
 
         return [
-            'semilleros_a_cargo'       => $semillerosACargo,
-            'nombre_semillero'          => $nombreSemillero,
-            'estado_semillero'         => $estadoSemillero,
-            'integrantes'               => $integrantes,
-            'integrantes_nuevos_texto'  => $integrantesNuevosSemestre > 0 ? "+{$integrantesNuevosSemestre} este semestre" : null,
-            'productos_pendientes'     => $productosPendientesCount,
+            'semilleros_a_cargo' => $semillerosACargo,
+            'nombre_semillero' => $nombreSemillero,
+            'estado_semillero' => $estadoSemillero,
+            'integrantes' => $integrantes,
+            'integrantes_nuevos_texto' => $integrantesNuevosSemestre > 0 ? "+{$integrantesNuevosSemestre} este semestre" : null,
+            'productos_pendientes' => $productosPendientesCount,
             'productos_pendientes_texto' => $productosPendientesCount > 0 ? "+{$productosPendientesCount} requieren revisión" : null,
-            'proyectos_activos'         => $proyectosActivosCount,
-            'proyectos_activos_texto'   => $proyectosActivosCount > 0 ? "{$proyectosActivosCount} en ejecución" : 'Sin proyectos en ejecución',
-            'sin_proyecto_activo'        => $sinProyectoActivoCount,
-            'sin_proyecto_texto'        => $sinProyectoActivoCount > 0 ? "+{$sinProyectoActivoCount} aprendices sin vincular" : null,
+            'proyectos_activos' => $proyectosActivosCount,
+            'proyectos_activos_texto' => $proyectosActivosCount > 0 ? "{$proyectosActivosCount} en ejecución" : 'Sin proyectos en ejecución',
+            'sin_proyecto_activo' => $sinProyectoActivoCount,
+            'sin_proyecto_texto' => $sinProyectoActivoCount > 0 ? "+{$sinProyectoActivoCount} aprendices sin vincular" : null,
         ];
     }
 
     private function productosPendientesRevision(?Seedling $miSemillero)
     {
-        if (!$miSemillero) {
+        if (! $miSemillero) {
             return collect();
         }
-        $projectIds = DB::table('project_seedlings')->where('seedling_id', $miSemillero->id)->pluck('project_id');
-        $productIds = DB::table('products')->whereIn('project_id', $projectIds)->pluck('id');
 
-        return GroupProduct::with(['author.person', 'product', 'mincienciasTypology'])
-            ->whereIn('product_id', $productIds)
-            ->whereIn('estado_revision', [EstadoRevisionEnum::Pendiente, EstadoRevisionEnum::EnRevision])
+        $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
+
+        return ProjectEvidence::with(['project.liderProyecto.person'])
+            ->whereIn('project_id', $projectIds)
+            ->where('tipo', TipoEvidenciaEnum::ProductoFinal)
+            ->where('estado_revision_lider', EstadoRevisionEnum::Pendiente)
             ->orderBy('updated_at', 'desc')
             ->take(10)
             ->get();
@@ -118,10 +117,10 @@ class DashboardController extends Controller
 
     private function integrantesSinProyectoActivo(?Seedling $miSemillero)
     {
-        if (!$miSemillero) {
+        if (! $miSemillero) {
             return collect();
         }
-        $projectIds = DB::table('project_seedlings')->where('seedling_id', $miSemillero->id)->pluck('project_id');
+        $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
         $userIdsConProyectoActivo = ProjectAuthor::whereIn('project_id', $projectIds)
             ->where('activo', true)
             ->pluck('user_id')
@@ -133,9 +132,10 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($u) use ($userIdsConProyectoActivo) {
                 $u->tiene_proyecto_activo = $userIdsConProyectoActivo->contains($u->id);
+
                 return $u;
             })
-            ->filter(fn ($u) => !($u->tiene_proyecto_activo ?? false))
+            ->filter(fn ($u) => ! ($u->tiene_proyecto_activo ?? false))
             ->take(10)
             ->values();
     }
@@ -146,17 +146,14 @@ class DashboardController extends Controller
             return collect();
         }
 
-        $projectIds = DB::table('project_seedlings')
-            ->where('seedling_id', $miSemillero->id)
-            ->pluck('project_id');
-
         return Project::query()
-            ->whereIn('id', $projectIds)
+            ->where('seedling_id', $miSemillero->id)
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'estado', 'fecha_inicio', 'fecha_fin'])
             ->map(function ($p) {
                 $finalizadoPorFecha = $p->fecha_fin && $p->fecha_fin->isBefore(now()->startOfDay());
                 $p->estado_tablero = $finalizadoPorFecha ? 'finalizado' : ($p->estado?->value ?? (string) $p->estado);
+
                 return $p;
             });
     }

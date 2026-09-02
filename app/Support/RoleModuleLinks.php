@@ -18,13 +18,10 @@ final class RoleModuleLinks
     private const LOGIN_ROLE_PRIORITY = [
         'super_administrador',
         'administrador_sistema',
-        'admin',
         'director_semilleros',
         'lider_semillero',
-        'director_investigacion',
-        'investigador_asociado',
-        'asesor_semillero',
-        'asesor',
+        'lider_proyecto',
+        'co_investigador',
     ];
 
     /**
@@ -48,13 +45,11 @@ final class RoleModuleLinks
     {
         return match ($name) {
             'super_administrador' => 'Super administrador',
-            'administrador_sistema', 'admin' => 'Administración',
+            'administrador_sistema' => 'Administración',
             'director_semilleros' => 'Director de Semilleros',
             'lider_semillero' => 'Líder de Semillero',
-            'director_investigacion' => 'Director de Investigación',
-            'investigador_asociado' => 'Investigador asociado',
-            'asesor_semillero' => 'Asesor de Semillero',
-            'asesor' => 'Asesor',
+            'lider_proyecto' => 'Líder de Proyecto',
+            'co_investigador' => 'Co-investigador',
             default => ucfirst(str_replace('_', ' ', $name)),
         };
     }
@@ -62,31 +57,31 @@ final class RoleModuleLinks
     /**
      * URL del módulo principal asociado al rol (para abrir en nueva pestaña o navegar).
      */
-    public static function urlForRoleName(string $name): ?string
+    public static function urlForRoleName(?string $name): ?string
     {
+        if ($name === null) {
+            return null;
+        }
+
         return match ($name) {
             'super_administrador' => Route::has('super-admin.dashboard')
                 ? route('super-admin.dashboard')
                 : url('/super-admin/dashboard'),
-            'administrador_sistema', 'admin' => Route::has('admin.dashboard')
+            'administrador_sistema' => Route::has('admin.dashboard')
                 ? route('admin.dashboard')
                 : url('/admin/dashboard'),
-            'director_investigacion' => Route::has('director.dashboard')
-                ? route('director.dashboard')
-                : url('/director'),
-            'investigador_asociado' => Route::has('investigador.dashboard')
-                ? route('investigador.dashboard')
-                : url('/investigador'),
             'director_semilleros' => Route::has('dir-sem.dashboard')
                 ? route('dir-sem.dashboard')
                 : url('/director-semilleros'),
             'lider_semillero' => Route::has('lider-sem.dashboard')
                 ? route('lider-sem.dashboard')
                 : url('/lider-semillero'),
-            'asesor_semillero' => Route::has('asesor.dashboard')
-                ? route('asesor.dashboard')
-                : url('/asesor-semillero/dashboard'),
-            'asesor' => url('/seedlings'),
+            'lider_proyecto' => Route::has('lider-proyecto.dashboard')
+                ? route('lider-proyecto.dashboard')
+                : url('/lider-proyecto'),
+            'co_investigador' => Route::has('co-investigador.dashboard')
+                ? route('co-investigador.dashboard')
+                : url('/co-investigador'),
             default => null,
         };
     }

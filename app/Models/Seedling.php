@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Enums\EstadoEnum;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,7 +18,7 @@ class Seedling extends Model
     protected $fillable = [
         'creator_id',
         'leader_id',
-        'research_group_id',
+        'training_center_id',
         'nombre',
         'codigo',
         'logo',
@@ -45,9 +45,9 @@ class Seedling extends Model
         return $this->belongsTo(User::class, 'leader_id');
     }
 
-    public function researchGroup(): BelongsTo
+    public function trainingCenter(): BelongsTo
     {
-        return $this->belongsTo(ResearchGroup::class, 'research_group_id');
+        return $this->belongsTo(TrainingCenter::class, 'training_center_id');
     }
 
     // HasMany
@@ -64,6 +64,11 @@ class Seedling extends Model
     public function seedlingAdvisors(): HasMany
     {
         return $this->hasMany(SeedlingAdvisor::class, 'seedling_id');
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'seedling_id');
     }
 
     // BelongsToMany
@@ -87,16 +92,6 @@ class Seedling extends Model
         )->withTimestamps();
     }
 
-    public function projects(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Project::class,
-            'project_seedlings',
-            'seedling_id',
-            'project_id'
-        )->withTimestamps();
-    }
-
     // ─────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────
@@ -104,7 +99,7 @@ class Seedling extends Model
     /** IDs de los proyectos vinculados a este semillero. */
     public function projectIds(): \Illuminate\Support\Collection
     {
-        return $this->projects()->pluck('projects.id');
+        return $this->projects()->pluck('id');
     }
 
     // ─────────────────────────────────────────────

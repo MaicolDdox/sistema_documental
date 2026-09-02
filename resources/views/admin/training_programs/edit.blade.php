@@ -36,30 +36,10 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="ficha" class="block text-sm font-medium text-slate-700 mb-1.5">Ficha <span class="text-red-500">*</span></label>
-                    <input type="text" name="ficha" id="ficha" value="{{ old('ficha', $training_program->trainingRecord?->codigo) }}" required placeholder="Ej: 262100"
-                           class="w-full border @error('ficha') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                    @error('ficha')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
                     <label for="tipo" class="block text-sm font-medium text-slate-700 mb-1.5">Tipo <span class="text-red-500">*</span></label>
                     <input type="text" name="tipo" id="tipo" value="{{ old('tipo', $training_program->trainingProgramType?->nombre) }}" required placeholder="Ej: Técnico"
                            class="w-full border @error('tipo') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     @error('tipo')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="jornada" class="block text-sm font-medium text-slate-700 mb-1.5">Jornada <span class="text-red-500">*</span></label>
-                    <select name="jornada" id="jornada" required
-                            class="w-full border @error('jornada') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        <option value="diurna" {{ old('jornada', $training_program->jornada?->value) == 'diurna' ? 'selected' : '' }}>Diurna</option>
-                        <option value="nocturna" {{ old('jornada', $training_program->jornada?->value) == 'nocturna' ? 'selected' : '' }}>Nocturna</option>
-                        <option value="presencial" {{ old('jornada', $training_program->jornada?->value) == 'presencial' ? 'selected' : '' }}>Presencial</option>
-                    </select>
-                    @error('jornada')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>

@@ -11,7 +11,7 @@
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-xl font-semibold text-slate-900">Programas de Formación</h2>
-            <p class="text-sm text-slate-500 mt-1">Tabla: programas_formaciones → fichas_formaciones, tipos_programas_formaciones</p>
+            <p class="text-sm text-slate-500 mt-1">Tabla: programas_formaciones → tipos_programas_formaciones</p>
         </div>
         <button type="button" @click="modalNuevoPrograma = true"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-[#39A900] hover:bg-[#2d8500] transition-all shadow-sm">
@@ -43,9 +43,7 @@
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50">
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Nombre</th>
-                        <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ficha</th>
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo</th>
-                        <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Jornada</th>
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Modalidad</th>
                         <th class="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</th>
                         <th class="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Acciones</th>
@@ -55,9 +53,7 @@
                     @forelse($programs as $program)
                     <tr class="hover:bg-slate-50/50 transition-colors">
                         <td class="px-4 py-3 font-medium text-slate-900">{{ $program->nombre }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ $program->trainingRecord?->codigo ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $program->trainingProgramType?->nombre ?? '—' }}</td>
-                        <td class="px-4 py-3 text-slate-600">{{ $program->jornada ? ucfirst($program->jornada->value) : '—' }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ $program->modalidad ? ucfirst($program->modalidad->value) : '—' }}</td>
                         <td class="px-4 py-3">
                             @if($program->estado?->value === 'activo')
@@ -74,18 +70,14 @@
                             @php
                                 $detallePrograma = [
                                     'nombre' => $program->nombre,
-                                    'ficha' => $program->trainingRecord?->codigo ?? '—',
                                     'tipo' => $program->trainingProgramType?->nombre ?? '—',
-                                    'jornada' => $program->jornada ? ucfirst($program->jornada->value) : '—',
                                     'modalidad' => $program->modalidad ? ucfirst($program->modalidad->value) : '—',
                                     'estado' => $program->estado ? ucfirst($program->estado->value) : '—',
                                     'descripccion' => $program->descripccion ?? '',
                                 ];
                                 $editPrograma = [
                                     'nombre' => $program->nombre,
-                                    'ficha' => $program->trainingRecord?->codigo ?? '',
                                     'tipo' => $program->trainingProgramType?->nombre ?? '',
-                                    'jornada' => $program->jornada?->value ?? 'diurna',
                                     'modalidad' => $program->modalidad?->value ?? 'presencial',
                                     'estado' => $program->estado?->value ?? 'activo',
                                     'descripccion' => $program->descripccion ?? '',
@@ -169,7 +161,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-12 text-center text-slate-500">
+                        <td colspan="5" class="px-4 py-12 text-center text-slate-500">
                             No hay programas de formación registrados.
                         </td>
                     </tr>
@@ -194,9 +186,7 @@
                 <template x-if="detalle">
                     <dl class="space-y-3 text-sm">
                         <div><dt class="text-slate-500 font-medium">Nombre</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.nombre"></dd></div>
-                        <div><dt class="text-slate-500 font-medium">Ficha</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.ficha || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Tipo</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.tipo || '—'"></dd></div>
-                        <div><dt class="text-slate-500 font-medium">Jornada</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.jornada || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Modalidad</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.modalidad || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Estado</dt><dd class="mt-0.5"><span :class="(detalle?.estado || '').toLowerCase() === 'activo' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" x-text="detalle?.estado || '—'"></span></dd></div>
                         <div x-show="detalle?.descripccion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalle?.descripccion"></dd></div>
@@ -226,22 +216,9 @@
                                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                         </div>
                         <div>
-                            <label for="edit_ficha" class="block text-sm font-medium text-slate-700 mb-1">Ficha <span class="text-red-500">*</span></label>
-                            <input type="text" name="ficha" id="edit_ficha" :value="editData.ficha" required placeholder="Ej: 262100"
-                                   class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        </div>
-                        <div>
                             <label for="edit_tipo" class="block text-sm font-medium text-slate-700 mb-1">Tipo <span class="text-red-500">*</span></label>
                             <input type="text" name="tipo" id="edit_tipo" :value="editData.tipo" required placeholder="Ej: Técnico"
                                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        </div>
-                        <div>
-                            <label for="edit_jornada" class="block text-sm font-medium text-slate-700 mb-1">Jornada <span class="text-red-500">*</span></label>
-                            <select name="jornada" id="edit_jornada" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                                <option value="diurna">Diurna</option>
-                                <option value="nocturna">Nocturna</option>
-                                <option value="presencial">Presencial</option>
-                            </select>
                         </div>
                         <div>
                             <label for="edit_modalidad" class="block text-sm font-medium text-slate-700 mb-1">Modalidad <span class="text-red-500">*</span></label>
@@ -328,7 +305,7 @@
             <div x-show="modalNuevoPrograma" x-transition:enter="ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
                  class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto">
                 <h3 class="text-lg font-semibold text-slate-900 mb-1">Nuevo programa de formación</h3>
-                <p class="text-sm text-slate-500 mb-4">Vincule ficha y tipo de programa.</p>
+                <p class="text-sm text-slate-500 mb-4">Registre el tipo de programa.</p>
                 <form method="POST" action="{{ route('admin.training-programs.store') }}" class="space-y-4">
                     @csrf
                     <div>
@@ -338,25 +315,10 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modal_ficha" class="block text-sm font-medium text-slate-700 mb-1">Ficha <span class="text-red-500">*</span></label>
-                        <input type="text" name="ficha" id="modal_ficha" value="{{ old('ficha') }}" required placeholder="Ej: 262100"
-                               class="w-full border @error('ficha') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('ficha')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
                         <label for="modal_tipo" class="block text-sm font-medium text-slate-700 mb-1">Tipo <span class="text-red-500">*</span></label>
                         <input type="text" name="tipo" id="modal_tipo" value="{{ old('tipo') }}" required placeholder="Ej: Técnico"
                                class="w-full border @error('tipo') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                         @error('tipo')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="modal_jornada" class="block text-sm font-medium text-slate-700 mb-1">Jornada <span class="text-red-500">*</span></label>
-                        <select name="jornada" id="modal_jornada" required class="w-full border @error('jornada') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                            <option value="diurna" {{ old('jornada') == 'diurna' ? 'selected' : '' }}>Diurna</option>
-                            <option value="nocturna" {{ old('jornada') == 'nocturna' ? 'selected' : '' }}>Nocturna</option>
-                            <option value="presencial" {{ old('jornada') == 'presencial' ? 'selected' : '' }}>Presencial</option>
-                        </select>
-                        @error('jornada')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label for="modal_modalidad" class="block text-sm font-medium text-slate-700 mb-1">Modalidad <span class="text-red-500">*</span></label>
@@ -400,7 +362,7 @@
                 confirmEliminarNombre: '',
                 pendingDeleteFormId: null,
                 detalle: null,
-                editData: { nombre: '', ficha: '', tipo: '', jornada: 'diurna', modalidad: 'presencial', estado: 'activo', descripccion: '' },
+                editData: { nombre: '', tipo: '', modalidad: 'presencial', estado: 'activo', descripccion: '' },
                 editFormAction: '',
                 openDetalle(data) {
                     this.detalle = data;
@@ -410,9 +372,7 @@
                     this.editFormAction = baseUrl + '/' + id;
                     this.editData = {
                         nombre: data.nombre || '',
-                        training_record_id: String(data.training_record_id || ''),
                         training_program_type_id: String(data.training_program_type_id || ''),
-                        jornada: data.jornada || 'diurna',
                         modalidad: data.modalidad || 'presencial',
                         estado: data.estado || 'activo',
                         descripccion: data.descripccion || ''
@@ -420,9 +380,7 @@
                     this.modalEditar = true;
                     this.$nextTick(() => {
                         document.getElementById('edit_nombre').value = this.editData.nombre;
-                        document.getElementById('edit_ficha').value = this.editData.ficha || '';
                         document.getElementById('edit_tipo').value = this.editData.tipo || '';
-                        document.getElementById('edit_jornada').value = this.editData.jornada;
                         document.getElementById('edit_modalidad').value = this.editData.modalidad;
                         document.getElementById('edit_estado').value = this.editData.estado;
                         const desc = document.getElementById('edit_descripccion');

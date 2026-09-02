@@ -23,7 +23,7 @@
             <p class="text-xs text-slate-500 mt-1">Los campos marcados con <span class="text-red-500">*</span> son obligatorios.</p>
         </div>
 
-        <form action="{{ route('dir-sem.semilleros.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
+        <form action="{{ route('dir-sem.semilleros.store') }}" method="POST" class="p-6">
             @csrf
 
             <div class="space-y-5">
@@ -42,42 +42,14 @@
                     {{-- Código (opcional, se autocompleta si se deja vacío) --}}
                     <div>
                         <label for="codigo" class="block text-sm font-medium text-slate-700 mb-1.5">Código</label>
-                        <input type="number" name="codigo" id="codigo" value="{{ old('codigo', $siguienteCodigo ?? '') }}" min="1" step="1"
+                        <input type="text" name="codigo" id="codigo" value="{{ old('codigo', $siguienteCodigo ?? '') }}" maxlength="50"
                                placeholder="{{ $siguienteCodigo ?? 'Auto' }}"
                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('codigo') border-red-300 @enderror">
-                        <p class="text-xs text-slate-500 mt-1">Si se deja vacío se asignará el siguiente número disponible.</p>
+                        <p class="text-xs text-slate-500 mt-1">Alfanumérico (letras y números, sin espacios). Si se deja vacío se asignará el siguiente número disponible.</p>
                         @error('codigo')
                             <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
-
-                    {{-- Grupo de investigación --}}
-                    <div>
-                        <label for="research_group_id" class="block text-sm font-medium text-slate-700 mb-1.5">Grupo de Investigación</label>
-                        <select name="research_group_id" id="research_group_id"
-                                class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all appearance-none pr-10 @error('research_group_id') border-red-300 @enderror">
-                            <option value="">Ninguno</option>
-                            @foreach($gruposInvestigacion ?? [] as $grupo)
-                                <option value="{{ $grupo->id }}" {{ old('research_group_id') == $grupo->id ? 'selected' : '' }}>
-                                    {{ $grupo->nombre }} @if($grupo->codigo)({{ $grupo->codigo }})@endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('research_group_id')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                {{-- Logo --}}
-                <div>
-                    <label for="logo" class="block text-sm font-medium text-slate-700 mb-1.5">Logo del semillero (opcional)</label>
-                    <input type="file" name="logo" id="logo" accept="image/jpeg,image/png,image/gif,image/webp"
-                           class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-700 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all @error('logo') border-red-300 @enderror">
-                    <p class="text-xs text-slate-500 mt-1">Formatos: JPG, PNG, GIF o WebP. Tamaño máximo: 2 MB.</p>
-                    @error('logo')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
                 </div>
 
                 {{-- Líder --}}

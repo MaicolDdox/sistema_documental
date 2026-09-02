@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
-use App\Models\ResearchGroup;
+use App\Models\Project;
 use App\Models\Seedling;
 use App\Models\TrainingCenter;
 use App\Models\User;
@@ -17,20 +17,16 @@ use Illuminate\View\View;
 class DashboardController extends Controller
 {
     /**
-     * Panel de administración: métricas, usuarios recientes, grupos de investigación.
+     * Panel de administración: métricas, usuarios recientes, proyectos.
      */
     public function index(Request $request): View
     {
         /** @var \App\Models\User $auth */
         $auth = Auth::user();
         $primaryRoleLabel = null;
-        $roleModuleNav = null;
         if ($auth->roles->isNotEmpty()) {
             $pr = RoleModuleLinks::primaryRole($auth);
             $primaryRoleLabel = $pr ? RoleModuleLinks::labelForRoleName($pr->name) : null;
-            if ($auth->roles->count() > 1) {
-                $roleModuleNav = RoleModuleLinks::moduleLinksWithPrimary($auth);
-            }
         }
         $centerId = $auth->training_center_id;
         $super = TrainingCenterAccess::isSuperAdmin($auth);
@@ -39,24 +35,29 @@ class DashboardController extends Controller
 
         // Usuarios: siempre vía TrainingCenterAccess para excluir super_administrador
         // de las métricas/listados cuando quien consulta no es super admin.
-        $userQuery = TrainingCenterAccess::scopeUserQueryForList(User::query(), $auth);
+        // scopeUserQueryForMetrics() (no scopeUserQueryForList): estos son
+        // conteos/listados donde el propio admin sí debe contar como un
+        // usuario más de su centro (BUG-20260813-035).
+        $userQuery = TrainingCenterAccess::scopeUserQueryForMetrics(User::query(), $auth);
 
         if ($super) {
-            $groupQuery = ResearchGroup::query();
+            $projectQuery = Project::query();
             $seedlingQuery = Seedling::query();
             $totalCentros = TrainingCenter::activos()->count();
         } elseif ($scoped) {
-            $groupQuery = ResearchGroup::query()->where('training_center_id', $centerId);
-            $seedlingQuery = Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId));
+            $projectQuery = Project::whereHas('seedling', fn ($q) => $q->where('training_center_id', $centerId));
+            $seedlingQuery = Seedling::where('training_center_id', $centerId);
             $totalCentros = TrainingCenter::activos()->where('id', $centerId)->count();
         } elseif ($centroAdmin) {
-            $groupQuery = ResearchGroup::query()->where('id', 0);
+            $projectQuery = Project::query()->where('id', 0);
             $seedlingQuery = Seedling::query()->where('id', 0);
             $totalCentros = 0;
         } else {
-            $groupQuery = $centerId ? ResearchGroup::where('training_center_id', $centerId) : ResearchGroup::query();
+            $projectQuery = $centerId
+                ? Project::whereHas('seedling', fn ($q) => $q->where('training_center_id', $centerId))
+                : Project::query();
             $seedlingQuery = $centerId
-                ? Seedling::whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $centerId))
+                ? Seedling::where('training_center_id', $centerId)
                 : Seedling::query();
             $totalCentros = TrainingCenter::activos()->count();
         }
@@ -68,9 +69,9 @@ class DashboardController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Métricas: grupos de investigación
-        $totalGrupos = (clone $groupQuery)->count();
-        $gruposActivos = (clone $groupQuery)->where('estado', EstadoEnum::Activo)->count();
+        // Métricas: proyectos
+        $totalProyectos = (clone $projectQuery)->count();
+        $proyectosActivos = (clone $projectQuery)->where('estado', EstadoEnum::Activo)->count();
 
         // Métricas: semilleros (seedlings de grupos del centro)
         $totalSemilleros = (clone $seedlingQuery)->count();
@@ -88,12 +89,12 @@ class DashboardController extends Controller
             ->take(4)
             ->get();
 
-        // Grupos de investigación recientes
-        $recentResearchGroups = ResearchGroup::with('trainingCenter')
+        // Proyectos recientes
+        $recentProjects = Project::with('seedling')
             ->when($super, fn ($q) => $q)
-            ->when(! $super && $scoped, fn ($q) => $q->where('training_center_id', $centerId))
+            ->when(! $super && $scoped, fn ($q) => $q->whereHas('seedling', fn ($s) => $s->where('training_center_id', $centerId)))
             ->when(! $super && ! $scoped && $centroAdmin, fn ($q) => $q->where('id', 0))
-            ->when(! $super && ! $scoped && ! $centroAdmin && $centerId, fn ($q) => $q->where('training_center_id', $centerId))
+            ->when(! $super && ! $scoped && ! $centroAdmin && $centerId, fn ($q) => $q->whereHas('seedling', fn ($s) => $s->where('training_center_id', $centerId)))
             ->latest()
             ->take(4)
             ->get();
@@ -101,15 +102,14 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'totalUsuarios',
             'usuariosEsteMes',
-            'totalGrupos',
-            'gruposActivos',
+            'totalProyectos',
+            'proyectosActivos',
             'totalSemilleros',
             'semillerosEsteSemestre',
             'totalCentros',
             'recentUsers',
-            'recentResearchGroups',
+            'recentProjects',
             'primaryRoleLabel',
-            'roleModuleNav'
         ));
     }
 }

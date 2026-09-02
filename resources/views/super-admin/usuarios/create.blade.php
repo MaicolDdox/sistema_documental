@@ -31,7 +31,7 @@
         </div>
 
         <div class="p-5">
-            <form method="POST" action="{{ route('super-admin.administradores.store') }}" class="space-y-5">
+            <form method="POST" action="{{ route('super-admin.administradores.store') }}" class="space-y-5" x-data="{ tieneMasRoles: {{ old('tiene_mas_roles') ? 'true' : 'false' }} }">
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -138,6 +138,31 @@
                         </p>
                     </div>
 
+                </div>
+
+                {{-- FEAT-20260830-001: roles adicionales (multi-rol), solo en creación --}}
+                <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" name="tiene_mas_roles" id="tiene_mas_roles" value="1"
+                               x-model="tieneMasRoles"
+                               class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                        <div>
+                            <label for="tiene_mas_roles" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
+                                ¿Este usuario tiene más roles?
+                            </label>
+                            <p class="text-xs text-slate-500 mt-0.5">Además de administrador_sistema, podrá tener funciones activas de otros roles y cambiar entre ellos desde "Mis roles".</p>
+                        </div>
+                    </div>
+                    <div x-show="tieneMasRoles" x-cloak class="mt-3.5 pt-3.5 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        @foreach($rolesAdicionales as $r)
+                            <label class="flex items-center gap-2 text-sm text-slate-700 border border-slate-200 rounded-lg px-3 py-2 bg-white hover:bg-slate-50 cursor-pointer">
+                                <input type="checkbox" name="additional_roles[]" value="{{ $r->name }}"
+                                       {{ in_array($r->name, old('additional_roles', []), true) ? 'checked' : '' }}
+                                       class="rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
+                                {{ ucfirst(str_replace('_', ' ', $r->name)) }}
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
 
                 <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3.5 flex items-start gap-3">

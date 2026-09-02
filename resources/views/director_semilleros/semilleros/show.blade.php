@@ -53,94 +53,59 @@
     </div>
     
     <div class="bg-white rounded-xl border border-slate-200 p-4 flex flex-col justify-center">
-        <p class="text-xs text-slate-500 uppercase font-semibold tracking-wider">Grupo de Investigación</p>
-        <p class="text-sm font-medium text-slate-900 mt-1 line-clamp-2" title="{{ $semillero->researchGroup->nombre ?? 'N/A' }}">
-            {{ $semillero->researchGroup->nombre ?? 'Sin grupo asociado' }}
-        </p>
+        <p class="text-xs text-slate-500 uppercase font-semibold tracking-wider">Código</p>
+        <p class="text-3xl font-bold text-[#39A900] mt-1">{{ $semillero->codigo ?? '—' }}</p>
     </div>
 </div>
 
-<!-- Tabs Component -->
-<div x-data="{ activeTab: 'integrantes' }" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-    <!-- Tab Navigation -->
-    <div class="flex overflow-x-auto border-b border-slate-200 bg-slate-50 px-2 scrollbar-none">
-        
-        @can('semilleros.ver_integrantes')
-        <button @click="activeTab = 'integrantes'" 
-                class="px-5 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2"
-                :class="activeTab === 'integrantes' ? 'border-[#39A900] text-[#39A900]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
-            Integrantes
-        </button>
-        @endcan
-        
-        @can('semilleros.ver_asesores')
-        <button @click="activeTab = 'asesores'" 
-                class="px-5 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2"
-                :class="activeTab === 'asesores' ? 'border-[#39A900] text-[#39A900]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
-            Asesores
-        </button>
-        @endcan
-        
-        @can('semilleros.ver_proyectos')
-        <button @click="activeTab = 'proyectos'" 
-                class="px-5 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2"
-                :class="activeTab === 'proyectos' ? 'border-[#39A900] text-[#39A900]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
-            Proyectos
-        </button>
-        @endcan
-        
-        @can('semilleros.ver_productos')
-        <button @click="activeTab = 'productos'" 
-                class="px-5 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2"
-                :class="activeTab === 'productos' ? 'border-[#39A900] text-[#39A900]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
-            Productos
-        </button>
-        @endcan
-        
-        @can('semilleros.ver_evidencias')
-        <button @click="activeTab = 'evidencias'" 
-                class="px-5 py-4 text-sm font-medium transition-colors whitespace-nowrap border-b-2"
-                :class="activeTab === 'evidencias' ? 'border-[#39A900] text-[#39A900]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'">
-            Evidencias
-        </button>
-        @endcan
-        
-    </div>
+<!-- Secciones apiladas (página con scroll, sin tabs) -->
+<div class="space-y-6">
 
-    <!-- Tab Content -->
-    <div class="p-6">
-        @can('semilleros.ver_integrantes')
-        <div x-show="activeTab === 'integrantes'">
+    @can('semilleros.ver_integrantes')
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-sm font-semibold text-slate-900">Integrantes</h3>
+        </div>
+        <div class="p-6">
             @include('director_semilleros.semilleros.integrantes', ['semillero' => $semillero])
         </div>
-        @endcan
-        
-        @can('semilleros.ver_asesores')
-        <div x-show="activeTab === 'asesores'" x-cloak>
-            <div class="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-slate-100 border-dashed">
-                <p>Módulo de asesores en desarrollo.</p>
-            </div>
+    </div>
+    @endcan
+
+    @can('semilleros.ver_proyectos')
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-sm font-semibold text-slate-900">Proyectos</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Busca un proyecto para ver sus integrantes, co-investigadores, evidencias y producto final.</p>
         </div>
-        @endcan
-        
-        @can('semilleros.ver_proyectos')
-        <div x-show="activeTab === 'proyectos'" x-cloak>
+        <div class="p-6">
             @include('director_semilleros.semilleros.proyectos', ['semillero' => $semillero])
         </div>
-        @endcan
-        
-        @can('semilleros.ver_productos')
-        <div x-show="activeTab === 'productos'" x-cloak>
-            @include('director_semilleros.semilleros.productos', ['semillero' => $semillero])
-        </div>
-        @endcan
-        
-        @can('semilleros.ver_evidencias')
-        <div x-show="activeTab === 'evidencias'" x-cloak>
-            @include('director_semilleros.semilleros.evidencias', ['semillero' => $semillero])
-        </div>
-        @endcan
     </div>
+    @endcan
+
+    @can('documentos.listar')
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-sm font-semibold text-slate-900">Documentos del Semillero</h3>
+        </div>
+        <div class="p-6">
+            @include('director_semilleros.semilleros.documentos', ['semillero' => $semillero, 'documentos' => $documentos])
+        </div>
+    </div>
+    @endcan
+
+    @canany(['reportes.semilleros_con_metricas', 'reportes.aprendices_por_semillero', 'reportes.proyectos_por_estado'])
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-sm font-semibold text-slate-900">Reportes</h3>
+        </div>
+        <div class="p-6">
+            @include('director_semilleros.semilleros.reportes', ['semillero' => $semillero])
+        </div>
+    </div>
+    @endcanany
+
 </div>
 
 <!-- Modal Reasignar Líder -->

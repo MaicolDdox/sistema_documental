@@ -3,52 +3,33 @@
 namespace App\Http\Controllers\DirectorSemilleros;
 
 use App\Http\Controllers\Controller;
-use App\Models\SeedlingFile;
 use App\Models\Seedling;
+use App\Models\SeedlingFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Documentos por semillero. Se gestionan desde el tab "Documentos" dentro
+ * del detalle de cada semillero (director_semilleros.semilleros.show) — no
+ * hay listado/formulario propios, siempre van ligados a un semillero.
+ */
 class DocumentoSemilleroController extends Controller
 {
-    public function index()
-    {
-        $this->authorize('documentos.listar');
-
-        $user = Auth::user();
-
-        $documentos = SeedlingFile::with(['seedling', 'user.person'])
-            ->whereHas('seedling.leader', fn ($q) => $q->where('training_center_id', $user->training_center_id))
-            ->paginate(10);
-
-        $semilleros = Seedling::whereHas('leader', fn ($q) => $q->where('training_center_id', $user->training_center_id))
-            ->orderBy('nombre')
-            ->get(['id', 'nombre']);
-
-        return view('director_semilleros.documentos.index', compact('documentos', 'semilleros'));
-    }
-
-    public function create()
-    {
-        $this->authorize('documentos.subir');
-
-        $user = Auth::user();
-        $semilleros = Seedling::whereHas('leader', function($q) use ($user) {
-            $q->where('training_center_id', $user->training_center_id);
-        })->get();
-
-        return view('director_semilleros.documentos.create', compact('semilleros'));
-    }
-
     public function store(Request $request)
     {
         $this->authorize('documentos.subir');
 
         $validated = $request->validate([
-            'archivo'      => 'required|file|mimes:pdf,docx,xlsx|max:10240',
-            'nombre'       => 'required|string|max:200',
-            'semillero_id' => 'nullable|exists:seedlings,id',
+            'archivo' => 'required|file|mimes:pdf,docx,xlsx|max:10240',
+            'nombre' => 'required|string|max:200',
+            'semillero_id' => 'required|exists:seedlings,id',
         ]);
+
+        // BUG-20260813-032 — sin esto, un director podía subir un documento
+        // a un semillero de OTRO centro de formación con solo conocer su id.
+        $semillero = Seedling::findOrFail($validated['semillero_id']);
+        $this->ensureDelCentro($semillero);
 
         $path = $request->file('archivo')->store('documentos', 'public');
         if ($path === false) {
@@ -56,13 +37,13 @@ class DocumentoSemilleroController extends Controller
         }
 
         SeedlingFile::create([
-            'seedling_id' => $validated['semillero_id'] ?? null,
-            'user_id'     => Auth::id(),
-            'archivo'     => $validated['nombre'],
+            'seedling_id' => $validated['semillero_id'],
+            'user_id' => Auth::id(),
+            'archivo' => $validated['nombre'],
             'url_archivo' => $path,
         ]);
 
-        return redirect()->route('dir-sem.documentos.index')
+        return redirect()->route('dir-sem.semilleros.show', $validated['semillero_id'])
             ->with('success', 'Documento subido correctamente.');
     }
 
@@ -83,5 +64,20 @@ class DocumentoSemilleroController extends Controller
         $documento->delete();
 
         return redirect()->back()->with('success', 'Documento eliminado correctamente.');
+    }
+
+    /**
+     * Mismo criterio que DirectorSemilleros\SemilleroController::checkCentroFormacion:
+     * scope principal seedlings.training_center_id, fallback al centro de
+     * quien creó el semillero (semilleros legacy sin training_center_id propio).
+     */
+    private function ensureDelCentro(Seedling $semillero): void
+    {
+        $centerId = Auth::user()->training_center_id;
+        $centerOfRecord = $semillero->training_center_id ?? $semillero->creator?->training_center_id;
+
+        if ($centerOfRecord !== null && (int) $centerOfRecord !== (int) $centerId) {
+            abort(403, 'No puedes subir documentos a un semillero de otro centro de formación.');
+        }
     }
 }

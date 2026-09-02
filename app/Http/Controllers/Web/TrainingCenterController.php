@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Support\TrainingCenterAccess;
+use App\Http\Requests\StoreTrainingCenterRequest;
+use App\Http\Requests\UpdateTrainingCenterRequest;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\TrainingCenter;
-use App\Http\Requests\StoreTrainingCenterRequest;
-use App\Http\Requests\UpdateTrainingCenterRequest;
-use Illuminate\Http\Request;
+use App\Support\TrainingCenterAccess;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -32,8 +32,8 @@ class TrainingCenterController extends Controller
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('nombre', 'like', "%{$term}%")
-                  ->orWhereHas('department', fn($q) => $q->where('nombre', 'like', "%{$term}%"))
-                  ->orWhereHas('city', fn($q) => $q->where('nombre', 'like', "%{$term}%"));
+                    ->orWhereHas('department', fn ($q) => $q->where('nombre', 'like', "%{$term}%"))
+                    ->orWhereHas('city', fn ($q) => $q->where('nombre', 'like', "%{$term}%"));
                 if (is_numeric($term)) {
                     $q->orWhere('codigo', (int) $term);
                 }
@@ -52,6 +52,7 @@ class TrainingCenterController extends Controller
         abort_unless($this->isSuperAdmin(), 403);
 
         $training_center->load(['department', 'city']);
+
         return response()->json($training_center);
     }
 
@@ -59,8 +60,9 @@ class TrainingCenterController extends Controller
     {
         abort_unless($this->isSuperAdmin(), 403);
 
-        $training_center->update(['activo' => !$training_center->activo]);
+        $training_center->update(['activo' => ! $training_center->activo]);
         $estado = $training_center->activo ? 'activado' : 'desactivado';
+
         return redirect()->route('admin.training-centers.index')
             ->with('success', "Centro de formación {$estado} correctamente.");
     }
@@ -71,6 +73,7 @@ class TrainingCenterController extends Controller
 
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
+
         return view('admin.training_centers.create', compact('departments', 'cities'));
     }
 
@@ -79,6 +82,7 @@ class TrainingCenterController extends Controller
         abort_unless($this->isSuperAdmin(), 403);
 
         TrainingCenter::create($request->validated());
+
         return redirect()->route('admin.training-centers.index')
             ->with('success', 'Centro de formación creado correctamente.');
     }
@@ -89,6 +93,7 @@ class TrainingCenterController extends Controller
 
         $departments = Department::orderBy('nombre')->get();
         $cities = City::with('department')->orderBy('nombre')->get();
+
         return view('admin.training_centers.edit', compact('training_center', 'departments', 'cities'));
     }
 
@@ -97,6 +102,7 @@ class TrainingCenterController extends Controller
         abort_unless($this->isSuperAdmin(), 403);
 
         $training_center->update($request->validated());
+
         return redirect()->route('admin.training-centers.index')
             ->with('success', 'Centro de formación actualizado correctamente.');
     }
@@ -113,21 +119,23 @@ class TrainingCenterController extends Controller
         if ($training_center->users()->exists()) {
             $razones[] = 'tiene usuarios asignados — reasigne o elimine esas vinculaciones';
         }
-        if ($training_center->researchGroups()->exists()) {
-            $razones[] = 'tiene grupos de investigación vinculados — desvincule los grupos primero';
+        if (\App\Models\Seedling::where('training_center_id', $training_center->id)->exists()) {
+            $razones[] = 'tiene semilleros vinculados — desvincule los semilleros primero';
         }
 
-        if (!empty($razones)) {
-            $mensaje = 'No se puede eliminar este centro de formación porque ' . implode('; ', $razones) . '.';
+        if (! empty($razones)) {
+            $mensaje = 'No se puede eliminar este centro de formación porque '.implode('; ', $razones).'.';
             if ($request->wantsJson()) {
                 return response()->json(['message' => $mensaje], 422);
             }
+
             return redirect()->route('admin.training-centers.index')
                 ->with('delete_error', $mensaje);
         }
 
         try {
             $training_center->delete();
+
             return redirect()->route('admin.training-centers.index')
                 ->with('success', 'Centro de formación eliminado correctamente.');
         } catch (\Illuminate\Database\QueryException $e) {
@@ -135,6 +143,7 @@ class TrainingCenterController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['message' => $mensaje], 422);
             }
+
             return redirect()->route('admin.training-centers.index')
                 ->with('delete_error', $mensaje);
         }
@@ -144,7 +153,7 @@ class TrainingCenterController extends Controller
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
+
         return (bool) $user?->hasRole('super_administrador');
     }
-
 }

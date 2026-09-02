@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
-use App\Services\Admin\ResearchGroupService;
 use App\Services\Admin\UserCreationService;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +27,6 @@ class UsuarioSistemaController extends Controller
     public function __construct(
         private readonly UserCreationService $userCreation,
         private readonly NotificacionService $notificacion,
-        private readonly ResearchGroupService $researchGroup,
     ) {}
 
     // ─────────────────────────────────────────────────
@@ -44,10 +42,10 @@ class UsuarioSistemaController extends Controller
             $term = $request->search;
             $query->where(function ($q) use ($term) {
                 $q->where('email', 'like', "%{$term}%")
-                  ->orWhere('numero_documento', 'like', "%{$term}%")
-                  ->orWhereHas('person', fn ($q2) => $q2
-                      ->where('primer_nombre', 'like', "%{$term}%")
-                      ->orWhere('primer_apellido', 'like', "%{$term}%"));
+                    ->orWhere('numero_documento', 'like', "%{$term}%")
+                    ->orWhereHas('person', fn ($q2) => $q2
+                        ->where('primer_nombre', 'like', "%{$term}%")
+                        ->orWhere('primer_apellido', 'like', "%{$term}%"));
             });
         }
 
@@ -60,8 +58,8 @@ class UsuarioSistemaController extends Controller
         }
 
         $usuarios = $query->latest()->paginate(15)->withQueryString();
-        $roles    = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
-        $estados  = EstadoEnum::cases();
+        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $estados = EstadoEnum::cases();
 
         return view('super-admin.usuarios-sistema.index', compact('usuarios', 'roles', 'estados'));
     }
@@ -72,7 +70,7 @@ class UsuarioSistemaController extends Controller
 
     public function create(): View
     {
-        $roles   = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
         $centros = TrainingCenter::activos()->orderBy('nombre')->get();
 
         return view('super-admin.usuarios-sistema.create', compact('roles', 'centros'));
@@ -81,18 +79,18 @@ class UsuarioSistemaController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nombre'              => 'required|string|max:100',
-            'apellido'            => 'required|string|max:100',
-            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
-            'numero_documento'    => 'required|string|max:20|unique:users,numero_documento',
-            'email'               => 'required|email|unique:users,email',
-            'password'            => 'required|string|min:8|confirmed',
-            'rol'                 => ['nullable', 'exists:roles,name', Rule::notIn(self::ROLES_EXCLUIDOS)],
-            'training_center_id'  => 'nullable|exists:training_centers,id',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
+            'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento' => 'required|string|max:20|unique:users,numero_documento',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'rol' => ['nullable', 'exists:roles,name', Rule::notIn(self::ROLES_EXCLUIDOS)],
+            'training_center_id' => 'nullable|exists:training_centers,id',
             'enviar_credenciales' => 'nullable|boolean',
         ]);
 
-        $rol  = $validated['rol'] ?? null;
+        $rol = $validated['rol'] ?? null;
         $tcId = ($validated['training_center_id'] ?? null) ?: null;
 
         if (TrainingCenterAccess::roleRequiresTrainingCenter($rol) && $tcId === null) {
@@ -101,37 +99,126 @@ class UsuarioSistemaController extends Controller
                 ->withInput();
         }
 
-        [$primerNombre, $segundoNombre]     = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
         [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
 
         $plainPassword = $validated['password'];
 
         $user = $this->userCreation->crearUsuario([
-            'email'            => $validated['email'],
+            'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-            'tipo_documento'   => $validated['tipo_documento'],
-            'password'         => $plainPassword,
-            'primer_nombre'    => $primerNombre,
-            'segundo_nombre'   => $segundoNombre,
-            'primer_apellido'  => $primerApellido,
+            'tipo_documento' => $validated['tipo_documento'],
+            'password' => $plainPassword,
+            'primer_nombre' => $primerNombre,
+            'segundo_nombre' => $segundoNombre,
+            'primer_apellido' => $primerApellido,
             'segundo_apellido' => $segundoApellido,
-            'rol'              => $rol,
+            'rol' => $rol,
+            'created_by_user_id' => auth()->id(),
         ], $tcId);
-
-        if ($rol) {
-            $this->researchGroup->autoVincularUsuario($user, $rol);
-        }
 
         if ($request->boolean('enviar_credenciales')) {
             $this->notificacion->enviarCredenciales($user, $plainPassword);
         }
 
-        $nombre  = trim("{$primerNombre} {$primerApellido}");
+        $nombre = trim("{$primerNombre} {$primerApellido}");
         $mensaje = $request->boolean('enviar_credenciales')
             ? "Usuario {$nombre} creado. Se enviaron las credenciales por correo."
             : "Usuario {$nombre} creado correctamente.";
 
         return redirect()->route('super-admin.usuarios-sistema.index')->with('success', $mensaje);
+    }
+
+    // ─────────────────────────────────────────────────
+    // Editar
+    // ─────────────────────────────────────────────────
+
+    public function edit(int $id): View
+    {
+        $usuario = User::whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::ROLES_EXCLUIDOS))
+            ->with('roles')
+            ->findOrFail($id);
+
+        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $centros = TrainingCenter::activos()->orderBy('nombre')->get();
+
+        $namesRol = $usuario->roles->pluck('name')->all();
+        $rolPrincipalActual = ($usuario->primary_role_name && in_array($usuario->primary_role_name, $namesRol, true))
+            ? $usuario->primary_role_name
+            : (\App\Support\RoleModuleLinks::pickPrimaryRoleNameFromNames($namesRol) ?? $usuario->roles->first()?->name ?? '');
+        $currentAdditionalRoles = array_values(array_diff($namesRol, [$rolPrincipalActual]));
+        $rolesAdicionales = $rolPrincipalActual !== ''
+            ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual))->orderBy('name')->get()
+            : collect();
+
+        return view('super-admin.usuarios-sistema.edit', compact(
+            'usuario', 'roles', 'centros', 'rolesAdicionales', 'currentAdditionalRoles', 'rolPrincipalActual',
+        ));
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $usuario = User::whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::ROLES_EXCLUIDOS))
+            ->findOrFail($id);
+
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
+            'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento' => ['required', 'string', 'max:20', Rule::unique('users', 'numero_documento')->ignore($usuario->id)],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
+            'rol' => ['nullable', 'exists:roles,name', Rule::notIn(self::ROLES_EXCLUIDOS)],
+            'training_center_id' => 'nullable|exists:training_centers,id',
+            'tiene_mas_roles' => 'nullable|boolean',
+            'additional_roles' => 'nullable|array',
+            'additional_roles.*' => 'string|exists:roles,name',
+        ]);
+
+        $rol = $validated['rol'] ?? null;
+        $tcId = ($validated['training_center_id'] ?? null) ?: null;
+
+        if (TrainingCenterAccess::roleRequiresTrainingCenter($rol) && $tcId === null) {
+            return redirect()->back()
+                ->withErrors(['training_center_id' => 'Este rol exige un centro de formación.'])
+                ->withInput();
+        }
+
+        [$primerNombre, $segundoNombre] = $this->userCreation->splitNombre($validated['nombre']);
+        [$primerApellido, $segundoApellido] = $this->userCreation->splitNombre($validated['apellido']);
+
+        $usuario->update([
+            'email' => $validated['email'],
+            'tipo_documento' => $validated['tipo_documento'],
+            'numero_documento' => $validated['numero_documento'],
+            'training_center_id' => $tcId,
+        ]);
+
+        if ($usuario->person) {
+            $usuario->person->update([
+                'primer_nombre' => $primerNombre,
+                'segundo_nombre' => $segundoNombre,
+                'primer_apellido' => $primerApellido,
+                'segundo_apellido' => $segundoApellido,
+                'email_institucional' => $validated['email'],
+            ]);
+        }
+
+        if ($rol !== null) {
+            if (! $usuario->hasRole($rol)) {
+                $usuario->assignRole($rol);
+            }
+            $usuario->primary_role_name = $rol;
+            $usuario->save();
+
+            \App\Support\RoleAssignmentMatrix::syncAdditionalRoles(
+                $usuario,
+                $rol,
+                $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
+                true, // super_administrador siempre puede gestionar roles adicionales
+            );
+        }
+
+        return redirect()->route('super-admin.usuarios-sistema.index')->with('success', 'Usuario actualizado correctamente.');
     }
 
     // ─────────────────────────────────────────────────
@@ -154,5 +241,25 @@ class UsuarioSistemaController extends Controller
         $usuario->save();
 
         return back()->with('success', 'Estado del usuario actualizado.');
+    }
+
+    // ─────────────────────────────────────────────────
+    // Eliminar
+    // ─────────────────────────────────────────────────
+
+    public function destroy(int $id): RedirectResponse
+    {
+        $usuario = User::whereDoesntHave('roles', fn ($q) => $q->whereIn('name', self::ROLES_EXCLUIDOS))
+            ->findOrFail($id);
+
+        if ($usuario->id === auth()->id()) {
+            return back()->with('error', 'No puedes eliminar tu propio usuario.');
+        }
+
+        $usuario->syncRoles([]);
+        $usuario->person?->delete();
+        $usuario->delete();
+
+        return redirect()->route('super-admin.usuarios-sistema.index')->with('success', 'Usuario eliminado correctamente.');
     }
 }

@@ -3,13 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\TrainingProgramType;
-use App\Models\TrainingRecord;
 use App\Models\TrainingProgram;
 use App\Enums\EstadoEnum;
-use App\Enums\JornadaEnum;
 use App\Enums\ModalidadEnum;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class TrainingProgramsSeeder extends Seeder
 {
@@ -26,35 +23,21 @@ class TrainingProgramsSeeder extends Seeder
             TrainingProgramType::updateOrCreate(['id' => $tipo['id']], $tipo);
         }
 
-        // 2. Crear Fichas de Formación (TrainingRecord) dummy
-        $fichas = [
-            ['id' => 1, 'codigo' => '2502601', 'descripccion' => 'Ficha ADSO Diurna'],
-            ['id' => 2, 'codigo' => '2603450', 'descripccion' => 'Ficha Gestión Virtual'],
-        ];
-
-        foreach ($fichas as $ficha) {
-            TrainingRecord::updateOrCreate(['id' => $ficha['id']], $ficha);
-        }
-
-        // 3. Crear Programas de Formación
+        // 2. Crear Programas de Formación
         $programas = [
             [
                 'id' => 1,
-                'training_record_id' => 1,
                 'training_program_type_id' => 1,
                 'nombre' => 'Análisis y Desarrollo de Software',
-                'descripccion' => 'ADSO',
-                'jornada' => JornadaEnum::Diurna->value,
+                'descripcion' => 'ADSO',
                 'modalidad' => ModalidadEnum::Presencial->value,
                 'estado' => EstadoEnum::Activo->value,
             ],
             [
                 'id' => 2,
-                'training_record_id' => 2,
                 'training_program_type_id' => 1,
                 'nombre' => 'Gestión Administrativa',
-                'descripccion' => 'Gestión Administrativa',
-                'jornada' => JornadaEnum::Nocturna->value,
+                'descripcion' => 'Gestión Administrativa',
                 'modalidad' => ModalidadEnum::Virtual->value,
                 'estado' => EstadoEnum::Activo->value,
             ]

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Enums\EstadoEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\ResearchGroup;
 use App\Models\Seedling;
 use App\Models\TrainingCenter;
 use App\Models\User;
@@ -25,8 +24,8 @@ class DashboardController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        $totalGrupos = ResearchGroup::query()->count();
-        $gruposActivos = ResearchGroup::query()->where('estado', EstadoEnum::Activo)->count();
+        $totalLideresProyecto = User::role('lider_proyecto')->count();
+        $proyectosActivos = Project::query()->where('estado', EstadoEnum::Activo)->count();
 
         $totalSemilleros = Seedling::query()->count();
         $semestreInicio = now()->month <= 6 ? 1 : 7;
@@ -47,7 +46,7 @@ class DashboardController extends Controller
             ->take(6)
             ->get();
 
-        $recentResearchGroups = ResearchGroup::with('trainingCenter')
+        $recentProjects = Project::with('seedling.trainingCenter')
             ->latest()
             ->take(5)
             ->get();
@@ -55,15 +54,15 @@ class DashboardController extends Controller
         return view('super-admin.dashboard', compact(
             'totalUsuarios',
             'usuariosEsteMes',
-            'totalGrupos',
-            'gruposActivos',
+            'totalLideresProyecto',
+            'proyectosActivos',
             'totalSemilleros',
             'semillerosEsteSemestre',
             'totalCentrosActivos',
             'totalCentros',
             'totalProyectos',
             'recentUsers',
-            'recentResearchGroups'
+            'recentProjects'
         ));
     }
 }

@@ -10,15 +10,9 @@ class LinkageTypesSeeder extends Seeder
     public function run(): void
     {
         $tipos = [
-            ['nombre' => 'Aprendiz SENA',          'descripccion' => 'Aprendiz vinculado mediante contrato de aprendizaje con el SENA.'],
-            ['nombre' => 'Practicante universitario','descripccion' => 'Estudiante universitario en práctica profesional.'],
-            ['nombre' => 'Voluntario',               'descripccion' => 'Participante voluntario sin contrato formal.'],
-            ['nombre' => 'Investigador externo',     'descripccion' => 'Investigador vinculado mediante convenio interinstitucional.'],
-            ['nombre' => 'Instructor SENA',          'descripccion' => 'Instructor del SENA que participa como integrante.'],
-            ['nombre' => 'Contrato de prestación de servicios', 'descripccion' => 'Vinculado mediante contrato de prestación de servicios.'],
-            ['nombre' => 'Tecnólogo',                'descripccion' => 'Aprendiz en programa de nivel Tecnólogo.'],
-            ['nombre' => 'Técnico',                  'descripccion' => 'Aprendiz en programa de nivel Técnico.'],
-            ['nombre' => 'Cursos cortos',            'descripccion' => 'Participante en cursos cortos complementarios.'],
+            ['nombre' => 'Planta',      'descripcion' => 'Personal vinculado a la planta del centro de formación.'],
+            ['nombre' => 'Contratista', 'descripcion' => 'Vinculado mediante contrato de prestación de servicios.'],
+            ['nombre' => 'Otros',       'descripcion' => 'Otro tipo de vinculación no contemplado en las anteriores.'],
         ];
 
         foreach ($tipos as $tipo) {
