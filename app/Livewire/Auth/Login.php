@@ -24,7 +24,13 @@ class Login extends Component
         if (Auth::check()) {
             $user = Auth::user();
             $user->load('roles');
-            $this->redirect(RoleModuleLinks::dashboardUrlForUser($user));
+            // BUG-20260813-056: redirigía siempre al rol principal, sin
+            // pasar por roles.switch — si el rol activo de sesión era otro,
+            // el destino terminaba en 403. Se manda al rol activo actual
+            // (nunca puede dar 403 porque no cambia el contexto).
+            $url = \App\Support\RoleModuleLinks::urlForRoleName(\App\Support\ActiveRoleContext::current())
+                ?? RoleModuleLinks::dashboardUrlForUser($user);
+            $this->redirect($url);
 
             return;
         }
@@ -77,6 +83,8 @@ class Login extends Component
         session()->regenerate();
 
         $user->load('roles');
+
+        \App\Support\ActiveRoleContext::initializeForUser($user);
 
         return redirect()->intended(RoleModuleLinks::dashboardUrlForUser($user));
     }

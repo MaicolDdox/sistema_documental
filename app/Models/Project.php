@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use App\Enums\EstadoEnum;
-use Illuminate\Database\Eloquent\Model;
+use App\Enums\TipoProyectoOrigenEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,6 +18,8 @@ class Project extends Model
 
     protected $fillable = [
         'project_creator_id',
+        'seedling_id',
+        'lider_proyecto_user_id',
         'research_line_id',
         'technological_line_id',
         'thematic_area_id',
@@ -30,10 +33,12 @@ class Project extends Model
         'vinculacion_macro_proyecto',
         'macro_project_id',
         'tipo_financiacion',
+        'tipo_proyecto_origen',
     ];
 
     protected $casts = [
         'estado' => EstadoEnum::class,
+        'tipo_proyecto_origen' => TipoProyectoOrigenEnum::class,
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
         'vinculacion_macro_proyecto' => 'boolean',
@@ -99,32 +104,48 @@ class Project extends Model
         return $this->hasMany(ProjectEvidence::class, 'project_id');
     }
 
-    public function products(): HasMany
+    /** Evidencias de trabajo en curso — sin aprobación. */
+    public function evidenciasDesarrollo(): HasMany
     {
-        return $this->hasMany(Product::class, 'project_id');
+        return $this->projectEvidences()->where('tipo', \App\Enums\TipoEvidenciaEnum::Desarrollo);
+    }
+
+    /** Evidencias de producto final — flujo de aprobación de 2 etapas. */
+    public function evidenciasProductoFinal(): HasMany
+    {
+        return $this->projectEvidences()->where('tipo', \App\Enums\TipoEvidenciaEnum::ProductoFinal);
+    }
+
+    /** Evidencias de formulación (30% del avance) — aprobación de 1 sola etapa (líder de semillero). */
+    public function evidenciasFormulacion(): HasMany
+    {
+        return $this->projectEvidences()->where('tipo', \App\Enums\TipoEvidenciaEnum::Formulacion);
+    }
+
+    /** Evidencias de ejecución (50% del avance) — aprobación de 1 sola etapa (líder de semillero). */
+    public function evidenciasEjecucion(): HasMany
+    {
+        return $this->projectEvidences()->where('tipo', \App\Enums\TipoEvidenciaEnum::Ejecucion);
+    }
+
+    public function learners(): HasMany
+    {
+        return $this->hasMany(ProjectLearner::class, 'project_id');
+    }
+
+    // BelongsTo
+    public function seedling(): BelongsTo
+    {
+        return $this->belongsTo(Seedling::class, 'seedling_id');
+    }
+
+    public function liderProyecto(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'lider_proyecto_user_id');
     }
 
     // BelongsToMany
-    public function seedlings(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            Seedling::class,
-            'project_seedlings',
-            'project_id',
-            'seedling_id'
-        )->withTimestamps();
-    }
-
-    public function researchGroups(): BelongsToMany
-    {
-        return $this->belongsToMany(
-            ResearchGroup::class,
-            'project_groups',
-            'project_id',
-            'research_group_id'
-        )->withPivot('tipo_participacion')->withTimestamps();
-    }
-
+    /** Co-investigadores vinculados al proyecto (reutiliza project_authors). */
     public function authors(): BelongsToMany
     {
         return $this->belongsToMany(

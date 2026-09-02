@@ -80,22 +80,10 @@ class DocInternaController extends Controller
         return redirect()->route('lider-sem.doc-interna')->with('success', 'Documento subido correctamente.');
     }
 
-    public function ver(SeedlingInternalDocument $documento): StreamedResponse
-    {
-        $semillero = Auth::user()->ledSeedlings()->first();
-        if (! $semillero || $documento->seedling_id !== $semillero->id) {
-            abort(403, 'No puedes ver este documento.');
-        }
-        if (!Storage::disk('public')->exists($documento->url_archivo)) {
-            abort(404, 'El archivo no existe.');
-        }
-
-        return Storage::disk('public')->response(
-            $documento->url_archivo,
-            basename((string) $documento->url_archivo)
-        );
-    }
-
+    /**
+     * La opción de "ver en el navegador" (inline) se eliminó del sistema
+     * completo (BUG-20260813-030): solo queda descarga.
+     */
     public function descargar(SeedlingInternalDocument $documento): StreamedResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();

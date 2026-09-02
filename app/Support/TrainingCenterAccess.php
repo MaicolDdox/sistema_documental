@@ -19,13 +19,22 @@ final class TrainingCenterAccess
     /**
      * Roles que representan cargos propios de cada centro (no globales).
      * Deben ir siempre con training_center_id y no mezclarse entre sedes.
+     *
+     * co_investigador queda deliberadamente FUERA de esta lista: no está atado
+     * a ningún centro de formación (puede participar en proyectos de cualquier
+     * centro una vez creado por un administrador_sistema).
+     *
+     * administrador_sistema SÍ está dentro (BUG-20260813-031/038): gestiona
+     * "el centro de formación" por diseño (ver RolesAndPermissionsSeeder), y
+     * dejarlo crear sin centro producía un estado degenerado — ese admin veía
+     * solo co_investigador en cualquier listado (scopeUserQueryForList) y, si
+     * creaba un director_semilleros, ese director quedaba también sin centro.
      */
     public const CENTRO_BOUND_ROLE_NAMES = [
+        'administrador_sistema',
         'director_semilleros',
         'lider_semillero',
-        'asesor_semillero',
-        'director_investigacion',
-        'investigador_asociado',
+        'lider_proyecto',
     ];
 
     public static function isSuperAdmin(?User $user): bool
@@ -99,8 +108,43 @@ final class TrainingCenterAccess
         return true;
     }
 
-    /** Restringe una consulta de usuarios al centro del usuario autenticado (salvo super). */
+    /**
+     * Restringe una consulta de usuarios al centro del usuario autenticado
+     * (salvo super), para listados de "OTROS usuarios a gestionar" —
+     * excluye siempre al propio usuario que consulta (BUG-20260813-003).
+     * Para conteos/reportes donde el propio usuario SÍ debe contar, usar
+     * scopeUserQueryForMetrics() en su lugar (BUG-20260813-035).
+     *
+     * BUG-20260813-059: también excluye cualquier cuenta administrador_sistema
+     * (no solo la propia) — antes de multi-rol nunca se notaba porque solo
+     * hay un admin por centro (el único que existía en tu centro eras tú
+     * mismo, ya excluido). Con multi-rol, un administrador_sistema de OTRO
+     * centro puede "colarse" en tu listado si tiene además un rol global
+     * (ej. co_investigador) — se ve por ese rol global sin importar el
+     * centro, sin que el sistema sepa que también administra otro centro.
+     * Solo aplica aquí (el listado visible), no en scopeUserQueryForMetrics()
+     * — los conteos de dashboard/reportes deben seguir siendo exactos.
+     */
     public static function scopeUserQueryForList(Builder $query, ?User $user): Builder
+    {
+        if ($user) {
+            $query = $query->where('id', '!=', $user->id);
+        }
+
+        $query = $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'administrador_sistema'));
+
+        return self::scopeUserQueryForMetrics($query, $user);
+    }
+
+    /**
+     * Mismo alcance por centro que scopeUserQueryForList() pero SIN excluir
+     * al usuario que consulta — para conteos y reportes (dashboard,
+     * "Usuarios por Rol") donde ese usuario es un usuario real de su centro
+     * y debe contar. BUG-20260813-035: usar scopeUserQueryForList() ahí
+     * subcontaba en 1 (dashboard mostraba un usuario menos de los reales, y
+     * el propio admin no aparecía en su reporte "Usuarios por Rol").
+     */
+    public static function scopeUserQueryForMetrics(Builder $query, ?User $user): Builder
     {
         if (! self::restrictUsersToTrainingCenter($user)) {
             return $query;
@@ -109,11 +153,36 @@ final class TrainingCenterAccess
         // Los super administradores nunca son visibles fuera de su propio dashboard.
         $query = $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super_administrador'));
 
+        // Roles globales (hoy: co_investigador) deben verse siempre, sin
+        // importar el centro del actor, además de los usuarios propios de
+        // su centro.
+        $globalRoleNames = self::globalRoleNames();
         if ($user->training_center_id) {
-            return $query->where('training_center_id', $user->training_center_id);
+            return $query->where(function (Builder $q) use ($user, $globalRoleNames) {
+                $q->where('training_center_id', $user->training_center_id)
+                    ->orWhereHas('roles', fn (Builder $r) => $r->whereIn('name', $globalRoleNames));
+            });
         }
 
-        return $query->whereRaw('0 = 1');
+        return $query->whereHas('roles', fn (Builder $r) => $r->whereIn('name', $globalRoleNames));
+    }
+
+    /**
+     * Roles "globales" (sin training_center_id, fuera de la jerarquía por
+     * centro): cualquier rol que no esté en CENTRO_BOUND_ROLE_NAMES ni sea
+     * super_administrador (ese se excluye aparte). Se deriva en vivo de la
+     * tabla roles en vez de nombrar 'co_investigador' a mano —
+     * BUG-20260813-039: antes, un rol global nuevo quedaba invisible en
+     * todos los listados por centro hasta que alguien viniera a agregarlo
+     * aquí, sin ningún error que lo avisara.
+     *
+     * @return list<string>
+     */
+    private static function globalRoleNames(): array
+    {
+        return Role::whereNotIn('name', [...self::CENTRO_BOUND_ROLE_NAMES, 'super_administrador'])
+            ->pluck('name')
+            ->all();
     }
 
     /** Admin de un solo centro (no super). */

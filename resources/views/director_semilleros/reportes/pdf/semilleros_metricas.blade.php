@@ -60,7 +60,6 @@
             <tr>
                 <th>Semillero</th>
                 <th>Código</th>
-                <th>Grupo</th>
                 <th>Líder</th>
                 <th>Asesores</th>
                 <th>Integrantes</th>
@@ -73,7 +72,6 @@
             <tr>
                 <td>{{ $f['nombre'] }}</td>
                 <td>{{ $f['codigo'] }}</td>
-                <td>{{ $f['grupo'] ?? '—' }}</td>
                 <td>{{ $f['lider'] ?? '—' }}</td>
                 <td>{{ $f['asesores'] ?? 0 }}</td>
                 <td>{{ $f['integrantes'] }}</td>
@@ -81,7 +79,7 @@
                 <td>{{ $f['productos'] }}</td>
             </tr>
             @empty
-            <tr><td colspan="8">Sin datos</td></tr>
+            <tr><td colspan="7">Sin datos</td></tr>
             @endforelse
         </tbody>
     </table>

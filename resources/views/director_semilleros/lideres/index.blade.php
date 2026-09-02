@@ -264,15 +264,27 @@
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
+                            <label for="modal_tipo_documento" class="block text-sm font-medium text-slate-700 mb-1">Tipo de Documento <span class="text-red-500">*</span></label>
+                            <select name="tipo_documento" id="modal_tipo_documento" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('tipo_documento') border-red-300 @enderror">
+                                <option value="">Selecciona un tipo...</option>
+                                @foreach(\App\Enums\TipoDocumentoEnum::cases() as $tipo)
+                                    <option value="{{ $tipo->value }}" {{ old('tipo_documento') === $tipo->value ? 'selected' : '' }}>
+                                        {{ ucfirst($tipo->value) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('tipo_documento') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+                        <div>
                             <label for="modal_numero_documento" class="block text-sm font-medium text-slate-700 mb-1">No. de Documento <span class="text-red-500">*</span></label>
                             <input type="text" name="numero_documento" id="modal_numero_documento" value="{{ old('numero_documento') }}" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('numero_documento') border-red-300 @enderror">
                             @error('numero_documento') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>
-                        <div>
-                            <label for="modal_email" class="block text-sm font-medium text-slate-700 mb-1">Correo <span class="text-red-500">*</span></label>
-                            <input type="email" name="email" id="modal_email" value="{{ old('email') }}" required placeholder="email@sena.edu.co" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('email') border-red-300 @enderror">
-                            @error('email') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
-                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="modal_email" class="block text-sm font-medium text-slate-700 mb-1">Correo <span class="text-red-500">*</span></label>
+                        <input type="email" name="email" id="modal_email" value="{{ old('email') }}" required placeholder="email@sena.edu.co" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 @error('email') border-red-300 @enderror">
+                        @error('email') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div class="mb-4">
                         <label for="modal_semillero_id" class="block text-sm font-medium text-slate-700 mb-1">Asignar a Semillero (opcional)</label>

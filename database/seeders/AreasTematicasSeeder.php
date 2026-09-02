@@ -9,13 +9,13 @@ class AreasTematicasSeeder extends Seeder
     public function run(): void
     {
         $areas = [
-            'Ambiental',
             'Agrícola',
             'Agroindustrial',
+            'Desarrollo de Software',
             'Pecuaria',
-            'Pedagógico',
-            'TIC',
-            'Emprendimiento',
+            'Administrativo',
+            'Ambiental',
+            'Pedagogía',
         ];
 
         foreach ($areas as $nombre) {

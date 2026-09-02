@@ -7,38 +7,30 @@ use Illuminate\Database\Seeder;
 class CargosEntidadesSeeder extends Seeder
 {
     /**
-     * Siembra la tabla entity_positions con los cargos institucionales del SENA.
-     * Usa firstOrCreate para ser idempotente.
+     * Siembra la tabla entity_positions con los cargos institucionales del
+     * SENA usados en el campo "Cargo / Posición" del perfil de usuario
+     * (BUG-20260813-044). Usa firstOrCreate para ser idempotente.
      */
     public function run(): void
     {
         $cargos = [
-            // Roles SENNOVA / institucionales
-            ['nombre' => 'Articulador Tecnoparque',        'descripccion' => 'Roles institucionales SENNA'],
-            ['nombre' => 'Dinamizador Sennova',             'descripccion' => 'Roles institucionales SENNA'],
-            ['nombre' => 'Facilitador Tecnoacademia',       'descripccion' => 'Roles institucionales SENNA'],
-            ['nombre' => 'Investigador experto',            'descripccion' => 'Roles institucionales SENNA'],
-            ['nombre' => 'Líder de grupo de investigación', 'descripccion' => 'Roles institucionales SENNA'],
-            ['nombre' => 'Líder de semillero',              'descripccion' => 'Roles institucionales SENNA'],
-            // Roles de apoyo
-            ['nombre' => 'Auxiliar editorial',                   'descripccion' => 'Roles de apoyo'],
-            ['nombre' => 'Personal técnico de laboratorio',      'descripccion' => 'Roles de apoyo'],
-            ['nombre' => 'Responsable de propiedad intelectual', 'descripccion' => 'Roles de apoyo'],
-            // Roles académicos
-            ['nombre' => 'Instructor investigador', 'descripccion' => 'Roles académicos'],
-            ['nombre' => 'Aprendiz semillero',      'descripccion' => 'Roles académicos'],
-            // Roles de aprendices (formulario asesor)
-            ['nombre' => 'Titulada',                  'descripccion' => 'Formación titulada del SENA.'],
-            ['nombre' => 'Externos',                  'descripccion' => 'Participantes externos a la institución.'],
-            ['nombre' => 'Tecno academia',            'descripccion' => 'Participantes de la Tecno academia SENA.'],
-            ['nombre' => 'Articulación con la media', 'descripccion' => 'Estudiantes en articulación con la educación media.'],
+            'Investigador(a) SENNOVA',
+            'Instructor(a)',
+            'Experto(a) Tecnoparque',
+            'Facilitador(a) Tecnoacademia',
+            'Administrativo',
+            'Apoyo Técnico Tecnoparque',
+            'Dinamizador Extensionismo Tecnológico',
+            'Dinamizador SENNOVA',
+            'Dinamizador Tecnoacademia',
+            'Líder Grupo de investigación',
+            'Líder Semillero de Investigación',
+            'Servicios Tecnológicos',
+            'Otro:',
         ];
 
-        foreach ($cargos as $cargo) {
-            \App\Models\EntityPosition::firstOrCreate(
-                ['nombre' => $cargo['nombre']],
-                ['descripccion' => $cargo['descripccion']]
-            );
+        foreach ($cargos as $nombre) {
+            \App\Models\EntityPosition::firstOrCreate(['nombre' => $nombre]);
         }
     }
 }

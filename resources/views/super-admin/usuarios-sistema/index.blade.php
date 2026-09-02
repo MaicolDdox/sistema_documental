@@ -119,6 +119,10 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
+                                <a href="{{ route('super-admin.usuarios-sistema.edit', $usuario->id) }}"
+                                   class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
+                                    Editar
+                                </a>
                                 <form method="POST" action="{{ route('super-admin.usuarios-sistema.toggle_estado', $usuario->id) }}">
                                     @csrf
                                     <button type="submit"

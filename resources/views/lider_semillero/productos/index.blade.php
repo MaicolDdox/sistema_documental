@@ -1,565 +1,124 @@
 @extends('layouts.sgd')
 
-@section('title', 'Productos del Semillero')
+@section('title', 'Productos')
 @section('header', '')
 
 @section('content')
-@if(!$semillero)
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
-    <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
+    <h1 class="text-2xl font-bold text-slate-900">Productos — {{ $semillero->nombre ?? 'Semillero' }}</h1>
+    <p class="text-sm text-slate-500 mt-0.5">Evidencias de Formulación, Ejecución y Producto Final subidas por los Líderes de Proyecto, agrupadas por proyecto. Formulación y Ejecución quedan resueltas con tu aprobación; Producto Final pasa al Director de Semilleros para el visto bueno definitivo.</p>
 </div>
-<div class="sgd-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    <div class="p-8 text-center">
-        <div class="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        </div>
-        <h2 class="text-lg font-semibold text-slate-800 mb-2">Sin semillero asignado</h2>
-        <p class="text-sm text-slate-600 max-w-md mx-auto">No tienes un semillero asignado como líder. No hay productos que mostrar.</p>
-        <a href="{{ route('lider-sem.dashboard') }}" class="sgd-btn-primary inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium mt-4">Volver al Dashboard</a>
-    </div>
-</div>
-@else
-<div x-data="{
-    modalDetalle: false,
-    modalAprobar: false,
-    modalRechazar: false,
-    modalRegistrar: false,
-    modalAsignarInv: false,
-    selectedId: null,
-    selectedTitulo: '',
-    detalleId: null,
-    baseUrl: '{{ url('lider-semillero/productos') }}',
-    openDetalle(id) { this.detalleId = id; this.modalDetalle = true; },
-    openAprobar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAprobar = true; },
-    openRechazar(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalRechazar = true; },
-    openAsignarInv(id, titulo) { this.selectedId = id; this.selectedTitulo = titulo || ''; this.modalAsignarInv = true; }
-}" x-init="@if(session('rechazar_id')) $nextTick(() => { selectedId = {{ session('rechazar_id') }}; modalRechazar = true; }); @endif @if($errors->any() && old('titulo') !== null) $nextTick(() => { modalRegistrar = true; }); @endif @if(session('open_asignar_product_id')) $nextTick(() => { selectedId = {{ session('open_asignar_product_id') }}; modalAsignarInv = true; }); @endif">
-<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900">Productos</h1>
-        <p class="text-sm text-slate-500 mt-0.5">Aprobar · Rechazar · Registrar productos</p>
-    </div>
-</div>
+
 @if(session('success'))
-<div class="mb-4 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
+<div class="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">{{ session('success') }}</div>
 @endif
-@if(session('error'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
-@endif
-@if($errors->has('observaciones'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('observaciones') }}</div>
-@endif
-@if($errors->has('assigned_investigator_user_id'))
-<div class="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">{{ $errors->first('assigned_investigator_user_id') }}</div>
-@endif
-
-<div class="mb-4">
-    <h2 class="text-base font-semibold text-slate-900">Productos del semillero</h2>
-    <p class="text-xs text-slate-500 mt-0.5">Aprobar / Rechazar — Solo productos de TU semillero (no puedes aprobar los tuyos propios). Los aprobados los envías a un <strong>investigador asociado</strong> de tu grupo para que los formalice y suban al grupo.</p>
+@if($errors->any())
+<div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+    <ul class="list-disc list-inside">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
 </div>
+@endif
 
-<div class="sgd-table-card bg-white overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="sgd-table text-sm">
-            <thead>
-                <tr>
-                    <th class="text-left">Producto</th>
-                    <th class="text-left">Autor / Remitente</th>
-                    <th class="text-left">Estado revisión</th>
-                    <th class="text-left">Repositorio</th>
-                    <th class="text-left">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($productos as $prod)
-                @php
-                    $estadoRev = $prod->estado_revision instanceof \App\Enums\EstadoRevisionEnum
-                        ? $prod->estado_revision->value
-                        : (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
-                    $autorUser = $prod->productAuthors->first()?->projectAuthor?->user;
-                    $autorPerson = $autorUser?->person;
-                    $autorNombre = $autorPerson
-                        ? trim(($autorPerson->primer_nombre ?? '') . ' ' . ($autorPerson->primer_apellido ?? ''))
-                        : ($autorUser?->email ?? '—');
-                    if (!$autorNombre) $autorNombre = $autorUser?->email ?? '—';
-                    $iniciales = $autorPerson
-                        ? strtoupper(mb_substr($autorPerson->primer_nombre ?? '', 0, 1) . mb_substr($autorPerson->primer_apellido ?? '', 0, 1))
-                        : strtoupper(mb_substr($autorUser?->email ?? '?', 0, 2));
-                    // Compatibilidad con $prod->es_mio que usa el primer autor
-                    $prod->autor = $autorUser;
-                    $proyectoNombre = $prod->project?->nombre ?? '—';
-                    $repositorio = $prod->url_repositorio ? '✓ URL' : ($prod->archivo ? 'Archivo' : '—');
-                @endphp
-                <tr class="{{ $prod->es_mio ? 'bg-slate-50/80' : '' }}">
-                    <td class="px-5 py-3">
-                        <div class="font-medium text-slate-800">{{ $prod->nombre ?? '—' }}</div>
-                        <div class="text-xs text-slate-500 mt-0.5">Proyecto: {{ $proyectoNombre }}</div>
-                    </td>
-                    <td class="px-5 py-3">
-                        <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-full bg-[#39A900]/20 text-[#39A900] flex items-center justify-center text-xs font-semibold shrink-0">{{ $iniciales ?: '?' }}</span>
-                            <span class="text-slate-700">{{ $autorNombre }}{{ $prod->es_mio ? ' (tú)' : '' }}</span>
-                        </div>
-                    </td>
-                    <td class="px-5 py-3">
-                        @if($estadoRev === 'pendiente')
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pendiente</span>
-                        @elseif($estadoRev === 'en_revision')
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">En revisión</span>
-                        @elseif($estadoRev === 'aprobado')
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Aprobado</span>
-                        @else
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rechazado</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-slate-600">{{ $repositorio }}</td>
-                    <td class="px-5 py-3">
+@php
+    $tipoLabels = [
+        'formulacion' => 'Formulación',
+        'ejecucion' => 'Ejecución',
+        'producto_final' => 'Producto final',
+    ];
+@endphp
+
+<div class="space-y-4">
+    @forelse($proyectosConEvidencias as $grupo)
+    @php
+        $proyecto = $grupo->proyecto;
+        $lider = $proyecto?->liderProyecto;
+    @endphp
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden" x-data="{ open: {{ $grupo->pendientes_count > 0 ? 'true' : 'false' }} }">
+        <button type="button" @click="open = !open" class="w-full flex items-center justify-between px-5 py-3.5 bg-slate-50 border-b border-slate-100 text-left">
+            <div class="flex items-center gap-3">
+                <svg class="w-4 h-4 text-slate-400 transition-transform" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900">{{ $proyecto?->nombre ?? 'Proyecto sin nombre' }}</p>
+                    <p class="text-xs text-slate-500">Líder de Proyecto: {{ $lider?->person?->nombre_completo ?? $lider?->email ?? '—' }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                @if($grupo->pendientes_count > 0)
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">{{ $grupo->pendientes_count }} pendiente{{ $grupo->pendientes_count > 1 ? 's' : '' }}</span>
+                @endif
+                <span class="text-xs text-slate-400">{{ $grupo->evidencias->count() }} producto{{ $grupo->evidencias->count() > 1 ? 's' : '' }}</span>
+            </div>
+        </button>
+
+        <div x-show="open" x-transition>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 bg-slate-50">
+                            <th class="text-left px-4 py-3 font-medium text-slate-500">Producto</th>
+                            <th class="text-left px-4 py-3 font-medium text-slate-500">Tipo</th>
+                            <th class="text-left px-4 py-3 font-medium text-slate-500">Estado</th>
+                            <th class="text-right px-4 py-3 font-medium text-slate-500">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($grupo->evidencias as $ev)
                         @php
-                            // Usamos el estado del registro de la fila actual ($prod)
-                            $estadoRev = $prod->estado_revision->value ?? (is_string($prod->estado_revision) ? $prod->estado_revision : 'pendiente');
-                            $accionesBloqueadas = $prod->es_mio || !in_array($estadoRev, ['pendiente', 'en_revision'], true);
+                            $estado = $ev->estado_revision_lider?->value ?? $ev->estado_revision_lider;
+                            $tipoValue = $ev->tipo?->value ?? $ev->tipo;
                         @endphp
-                        <div class="flex items-center gap-1.5 whitespace-nowrap">
-                            {{-- Ver detalle (modal) --}}
-                            <button type="button"
-                               @click="openDetalle({{ $prod->id }})"
-                               class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition"
-                               title="Ver detalle">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
-                                    <circle cx="12" cy="12" r="3.25" />
-                                </svg>
-                            </button>
-
-                            @if($accionesBloqueadas)
-                                <span class="ml-1 text-[11px] text-slate-400 italic">Sin acciones</span>
-                            @else
-                                {{-- Aprobar --}}
-                                <button type="button"
-                                    data-id="{{ $prod->id }}"
-                                    data-titulo="{{ e($prod->nombre ?? '') }}"
-                                    @click="openAprobar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-500 hover:text-white transition"
-                                    title="Aprobar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                    </svg>
-                                </button>
-                                {{-- Rechazar --}}
-                                <button type="button"
-                                    data-id="{{ $prod->id }}"
-                                    data-titulo="{{ e($prod->nombre ?? '') }}"
-                                    @click="openRechazar($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                    class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white transition"
-                                    title="Rechazar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            @endif
-
-                            {{-- Enviar a investigador asociado → formaliza en grupo (solo aprobados) --}}
-                            @if($estadoRev === 'aprobado')
-                                @if(!$prod->ya_en_grupo)
-                                    @if($semillero->research_group_id)
-                                        @if($prod->assigned_investigator_user_id)
-                                            <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-100 max-w-[10rem] truncate inline-block align-middle" title="Esperando formalización por el investigador">
-                                                → {{ $prod->assignedInvestigator?->person?->nombre_completo ?? $prod->assignedInvestigator?->email ?? 'Investigador' }}
-                                            </span>
-                                        @else
-                                            <button type="button"
-                                                data-id="{{ $prod->id }}"
-                                                data-titulo="{{ e($prod->nombre ?? '') }}"
-                                                @click="openAsignarInv($event.currentTarget.dataset.id, $event.currentTarget.dataset.titulo)"
-                                                @disabled($investigadoresGrupo->isEmpty())
-                                                class="inline-flex items-center gap-1 ml-1 text-[11px] px-2 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-500 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
-                                                title="{{ $investigadoresGrupo->isEmpty() ? 'No hay investigadores asociados en tu grupo' : 'Elegir investigador que formalizará en el grupo' }}">
-                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                                                </svg>
-                                                Enviar a investigador
-                                            </button>
-                                        @endif
-                                    @else
-                                        <span class="ml-1 text-[11px] text-slate-400 italic">Sin grupo vinculado</span>
-                                    @endif
-                                @else
-                                    <span class="ml-1 text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-100">
-                                        En grupo
-                                    </span>
+                        <tr class="border-b border-slate-50 last:border-0">
+                            <td class="px-4 py-3">
+                                <p class="font-medium text-slate-800">{{ $ev->nombre }}</p>
+                                <p class="text-xs text-slate-500">{{ $ev->created_at->format('d/m/Y H:i') }}</p>
+                                @if($ev->archivo)
+                                <a href="{{ route('lider-sem.productos.descargar', $ev) }}" class="text-[#39A900] hover:underline text-xs font-medium mt-1 inline-block">Descargar</a>
                                 @endif
-                            @endif
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="6" class="px-5 py-10 text-center text-slate-500">No hay productos en este semillero.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
-{{-- Modal Aprobar producto --}}
-<template x-teleport="body">
-    <div x-show="modalAprobar" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0">
-        <div class="absolute inset-0 bg-slate-900/50" @click="modalAprobar = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
-            @click.stop
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">Aprobar producto</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Solo productos del semillero que lideras</p>
-                </div>
-                <button type="button" @click="modalAprobar = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="rounded-xl bg-green-50 border border-green-200 px-4 py-3 mb-4 text-sm text-green-800" x-show="selectedTitulo">
-                <span class="font-medium">✓ Aprobando:</span> <span x-text="selectedTitulo"></span>
-            </div>
-            <form :action="baseUrl + '/' + selectedId + '/aprobar'" method="post" class="space-y-4">
-                @csrf
-                @method('PATCH')
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Observaciones (opcional)</label>
-                    <textarea name="observaciones" rows="3" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]" placeholder="Puedes dejar un comentario de aprobación..."></textarea>
-                </div>
-                <p class="text-xs text-slate-500">Estado pasará a aprobado. Se registra en productos_grupo_estado_revision.</p>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" @click="modalAprobar = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                    <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">✓ Confirmar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</template>
-
-{{-- Modal Detalle producto --}}
-<template x-teleport="body">
-    <div x-show="modalDetalle" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0">
-        <div class="absolute inset-0 bg-slate-900/50" @click="modalDetalle = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-            @click.stop
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">Detalle del producto</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Información del producto registrado en tu semillero</p>
-                </div>
-                <button type="button" @click="modalDetalle = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <div class="px-6 py-5 space-y-5">
-                @foreach($productos as $gp)
-                @php
-                    $estadoRev = $gp->estado_revision->value ?? (is_string($gp->estado_revision) ? $gp->estado_revision : 'pendiente');
-                    $proyectoNombre = $gp->project?->nombre ?? '—';
-                    $autores = $gp->productAuthors
-                        ->map(fn($pa) => $pa->projectAuthor?->user?->person?->nombre_completo ?? $pa->projectAuthor?->user?->email)
-                        ->filter()
-                        ->values();
-                    $autorNombre = $autores->first() ?? '—';
-                    $evidencias = $gp->productEvidences ?? collect();
-                @endphp
-                <div x-show="detalleId === {{ $gp->id }}" x-cloak class="space-y-4">
-                    <div>
-                        <h4 class="text-xl font-bold text-slate-900 mb-1">{{ $gp->nombre ?? 'Sin título' }}</h4>
-                        <p class="text-xs text-slate-500">Proyecto: {{ $proyectoNombre }}</p>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Nombre del producto</p>
-                            <p class="text-sm font-medium text-slate-800">{{ $gp->nombre ?? '—' }}</p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Autor principal</p>
-                            <p class="text-sm font-medium text-slate-800">{{ $autorNombre }}</p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Estado de revisión</p>
-                            <p class="text-sm font-medium text-slate-800 capitalize">
-                                {{ str_replace('_', ' ', $estadoRev) }}
-                            </p>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-3">
-                            <p class="text-xs text-slate-400 mb-0.5">Repositorio / archivo principal</p>
-                            @if($gp->url_repositorio)
-                                <a href="{{ $gp->url_repositorio }}" target="_blank" class="text-sm text-sky-600 hover:underline break-all">
-                                    {{ $gp->url_repositorio }}
-                                </a>
-                            @elseif($gp->archivo)
-                                <p class="text-sm text-slate-700">{{ $gp->archivo_nombre ?: basename($gp->archivo) }}</p>
-                            @else
-                                <p class="text-sm text-slate-400">No se registró archivo ni URL.</p>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-3">
-                        <p class="text-xs text-slate-400 mb-1">Autores enviados por el asesor</p>
-                        @if($autores->isNotEmpty())
-                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
-                                @foreach($autores as $autor)
-                                    <li>{{ $autor }}</li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <p class="text-sm text-slate-500">Sin autores registrados.</p>
-                        @endif
-                    </div>
-                    <div class="bg-slate-50 rounded-lg p-3">
-                        <p class="text-xs text-slate-400 mb-1">Evidencias subidas</p>
-                        @if($evidencias->isNotEmpty())
-                            <ul class="list-disc ml-5 text-sm text-slate-700 space-y-0.5">
-                                @foreach($evidencias as $ev)
-                                    <li>
-                                        {{ $ev->nombre ?: 'Evidencia' }}
-                                        @if($ev->url_archivo)
-                                            — <a href="{{ $ev->url_archivo }}" target="_blank" class="text-sky-600 hover:underline">ver enlace</a>
-                                        @elseif($ev->archivo)
-                                            — archivo cargado
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @else
-                            <p class="text-sm text-slate-500">Sin evidencias adicionales.</p>
-                        @endif
-                    </div>
-                    @if(!empty($gp->observacion_revision))
-                    <div class="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                        <p class="text-xs text-amber-700 mb-0.5">Observación de revisión</p>
-                        <p class="text-sm text-amber-900">{{ $gp->observacion_revision }}</p>
-                    </div>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </div>
-</template>
-
-{{-- Modal Rechazar producto --}}
-<template x-teleport="body">
-    <div x-show="modalRechazar" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0">
-        <div class="absolute inset-0 bg-slate-900/50" @click="modalRechazar = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
-            @click.stop
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">Rechazar producto</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Campo observaciones obligatorio</p>
-                </div>
-                <button type="button" @click="modalRechazar = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="rounded-xl bg-red-50 border border-red-200 px-4 py-3 mb-4 text-sm text-red-800" x-show="selectedTitulo">
-                <span class="font-medium">▲ Rechazando:</span> <span x-text="selectedTitulo"></span>
-            </div>
-            <form :action="baseUrl + '/' + selectedId + '/rechazar'" method="post" class="space-y-4">
-                @csrf
-                @method('PATCH')
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Observaciones * obligatorio</label>
-                    <textarea name="observaciones" rows="4" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-red-300 focus:border-red-400" placeholder="Describe el motivo del rechazo para que el autor corrija y reenvíe...">{{ old('observaciones') }}</textarea>
-                </div>
-                <p class="text-xs text-slate-500">Estado pasará a rechazado. El autor puede editar y reenviar cuando vuelva a pendiente.</p>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" @click="modalRechazar = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                    <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700">✗ Confirmar rechazo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</template>
-
-{{-- Modal Registrar nuevo producto --}}
-<template x-teleport="body">
-    <div x-show="modalRegistrar" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0">
-        <div class="absolute inset-0 bg-slate-900/50" @click="modalRegistrar = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto"
-            @click.stop
-            x-data="{ tieneRepositorio: {{ old('tiene_repositorio', 0) ? 'true' : 'false' }} }"
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">Registrar nuevo producto</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">estado_revision inicial = pendiente</p>
-                </div>
-                <button type="button" @click="modalRegistrar = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <form action="{{ route('lider-sem.productos.store') }}" method="post" enctype="multipart/form-data" class="space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Título del producto *</label>
-                    <input type="text" name="titulo" value="{{ old('titulo') }}" required maxlength="500"
-                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
-                        placeholder="Ej: Análisis de calidad del agua en zonas rurales">
-                    @error('titulo')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Proyecto origen *</label>
-                    <select name="project_id" id="registro-project-id" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
-                        <option value="">Seleccione...</option>
-                        @foreach($proyectosParaRegistro ?? [] as $p)
-                        <option value="{{ $p->id }}" {{ old('project_id') == $p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">{{ $tipoLabels[$tipoValue] ?? $tipoValue }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                @if($estado === 'aprobado')
+                                    @if($tipoValue === 'producto_final')
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Aprobado — enviado al Director</span>
+                                    @else
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Aprobado</span>
+                                    @endif
+                                @elseif($estado === 'rechazado')
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rechazado</span>
+                                @else
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Pendiente</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                @if($estado === 'pendiente' || $estado === null)
+                                <div class="flex items-center justify-end gap-3">
+                                    <form action="{{ route('lider-sem.productos.aprobar', $ev) }}" method="POST" class="inline">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="text-xs font-medium text-[#39A900] hover:text-[#2d8500]">Aprobar</button>
+                                    </form>
+                                    <button type="button" onclick="document.getElementById('rechazo-{{ $ev->id }}').classList.toggle('hidden')"
+                                            class="text-xs font-medium text-red-600 hover:text-red-800">Rechazar</button>
+                                </div>
+                                <form id="rechazo-{{ $ev->id }}" action="{{ route('lider-sem.productos.rechazar', $ev) }}" method="POST" class="hidden mt-2 text-left">
+                                    @csrf @method('PATCH')
+                                    <textarea name="observaciones" rows="2" required placeholder="Motivo del rechazo (obligatorio)"
+                                              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs mb-2"></textarea>
+                                    <button type="submit" class="text-xs font-medium bg-red-600 text-white px-3 py-1.5 rounded-lg">Confirmar rechazo</button>
+                                </form>
+                                @else
+                                <span class="text-xs text-slate-400">Sin acciones</span>
+                                @endif
+                            </td>
+                        </tr>
                         @endforeach
-                    </select>
-                    @error('project_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">¿Tiene repositorio en línea?</label>
-                    <div class="flex gap-6">
-                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="tiene_repositorio" value="1" @click="tieneRepositorio = true" {{ old('tiene_repositorio') === '1' || old('tiene_repositorio') === 1 ? 'checked' : '' }} class="text-[#39A900] focus:ring-[#39A900]">
-                            <span class="text-sm text-slate-700">Sí — URL requerida</span>
-                        </label>
-                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="tiene_repositorio" value="0" @click="tieneRepositorio = false" {{ old('tiene_repositorio', '0') !== '1' && old('tiene_repositorio', 0) !== 1 ? 'checked' : '' }} class="text-[#39A900] focus:ring-[#39A900]">
-                            <span class="text-sm text-slate-700">No — archivo requerido</span>
-                        </label>
-                    </div>
-                </div>
-                <div x-show="tieneRepositorio">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">URL del repositorio *</label>
-                    <input type="url" name="url_repositorio" value="{{ old('url_repositorio') }}" maxlength="500"
-                        :required="tieneRepositorio"
-                        class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]"
-                        placeholder="https://...">
-                    @error('url_repositorio')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div x-show="!tieneRepositorio">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Archivo del producto *</label>
-                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-[#39A900]/50 transition-colors">
-                        <input type="file" name="evidencia" class="hidden" id="evidencia-registro" accept=".pdf,.doc,.docx,.zip" :required="!tieneRepositorio">
-                        <label for="evidencia-registro" class="cursor-pointer flex flex-col items-center gap-2 text-slate-500">
-                            <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                            <span class="text-sm font-medium">Subir archivo</span>
-                        </label>
-                    </div>
-                    @error('evidencia')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-800">
-                    El producto se crea con estado <strong>pendiente de revisión</strong>. Una vez que lo apruebes, podrás enviarlo al investigador asociado desde esta misma lista.
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" @click="modalRegistrar = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                    <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">Registrar producto</button>
-                </div>
-            </form>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</template>
-
-{{-- Modal: enviar producto a investigador asociado del grupo --}}
-<template x-teleport="body">
-    <div x-show="modalAsignarInv" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        x-transition:leave="transition ease-in duration-150"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0">
-        <div class="absolute inset-0 bg-slate-900/50" @click="modalAsignarInv = false"></div>
-        <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6"
-            @click.stop
-            x-transition:enter="transition ease-out duration-200"
-            x-transition:enter-start="opacity-0 scale-95"
-            x-transition:enter-end="opacity-100 scale-100">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">Enviar a investigador asociado</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Debe pertenecer a tu grupo de investigación y al mismo centro</p>
-                </div>
-                <button type="button" @click="modalAsignarInv = false" class="p-1 rounded-lg hover:bg-slate-100 text-slate-500">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 mb-4 text-sm text-sky-900" x-show="selectedTitulo">
-                <span class="font-medium">Producto:</span> <span x-text="selectedTitulo"></span>
-            </div>
-            @if($investigadoresGrupo->isEmpty())
-                <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">No hay investigadores asociados vinculados a tu grupo. Verifica el grupo del semillero y que existan usuarios con rol <strong>investigador asociado</strong>.</p>
-                <div class="flex justify-end pt-4">
-                    <button type="button" @click="modalAsignarInv = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cerrar</button>
-                </div>
-            @else
-                <form action="{{ route('lider-sem.productos.asignar-investigador-form') }}" method="post" class="space-y-4">
-                    @csrf
-                    <input type="hidden" name="product_id" :value="selectedId">
-                    <div>
-                        <label for="assigned_investigator_user_id" class="block text-sm font-medium text-slate-700 mb-1">Investigador asociado *</label>
-                        <select name="assigned_investigator_user_id" id="assigned_investigator_user_id" required
-                            class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#39A900]/30 focus:border-[#39A900]">
-                            <option value="">Seleccionar…</option>
-                            @foreach($investigadoresGrupo as $inv)
-                                @php $label = $inv->person?->nombre_completo ?? $inv->email; @endphp
-                                <option value="{{ $inv->id }}" @selected((string) old('assigned_investigator_user_id') === (string) $inv->id)>{{ $label }} — {{ $inv->email }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <p class="text-xs text-slate-500">El investigador verá el producto en <strong>Productos → Bandeja de Semilleros</strong> y completará la formalización para el Director del grupo.</p>
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" @click="modalAsignarInv = false" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
-                        <button type="submit" class="flex-1 px-4 py-2.5 rounded-xl bg-[#39A900] text-white text-sm font-medium hover:opacity-90">Enviar</button>
-                    </div>
-                </form>
-            @endif
-        </div>
-    </div>
-</template>
+    @empty
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-10 text-center text-slate-500 text-sm">No hay proyectos con evidencias pendientes de revisión todavía.</div>
+    @endforelse
 </div>
-@endif
 @endsection
-
-@push('scripts')
-@endpush

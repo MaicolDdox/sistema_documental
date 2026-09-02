@@ -7,6 +7,7 @@ use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\Person;
 use App\Models\User;
+use App\Support\RoleAssignmentMatrix;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,7 @@ class CreateNewUser implements CreatesNewUsers
     public function create(array $input): User
     {
         $auth = Auth::user();
+        $assignableRoles = RoleAssignmentMatrix::assignableRolesFor($auth);
 
         $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
         $roleName = $input['role'] ?? '';
@@ -53,15 +55,8 @@ class CreateNewUser implements CreatesNewUsers
             'eps' => ['nullable', 'string', 'max:255'],
             'email_institucional' => ['nullable', 'email', 'max:255', Rule::unique(Person::class)],
 
-            // Rol (Spatie)
-            'role' => array_values(array_filter([
-                'required',
-                'string',
-                'exists:roles,name',
-                ($auth && ! TrainingCenterAccess::isSuperAdmin($auth))
-                    ? Rule::notIn(['super_administrador', 'administrador_sistema'])
-                    : null,
-            ])),
+            // Rol (Spatie) — restringido a la matriz de creación exclusiva del actor
+            'role' => ['required', 'string', 'exists:roles,name', Rule::in($assignableRoles)],
 
             // Relaciones opcionales
             'entity_position_id' => ['nullable', 'exists:entity_positions,id'],
@@ -69,7 +64,10 @@ class CreateNewUser implements CreatesNewUsers
             'training_program_id' => ['nullable', 'exists:training_programs,id'],
         ])->validate();
 
-        if ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
+        if ($input['role'] === 'co_investigador') {
+            // co_investigador no tiene centro de formación propio (ver TrainingCenterAccess).
+            $input['training_center_id'] = null;
+        } elseif ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
             $allowed = TrainingCenterAccess::allowedCenterIdsForSave($auth);
             if ($allowed !== null) {
                 $input['training_center_id'] = $allowed[0];
@@ -80,6 +78,7 @@ class CreateNewUser implements CreatesNewUsers
             // Crear usuario con estado inactivo por defecto
             $user = User::create([
                 'training_center_id' => $input['training_center_id'] ?? null,
+                'created_by_user_id' => $auth?->id(),
                 'email' => $input['email'] ?? null,
                 'tipo_documento' => $input['tipo_documento'],
                 'numero_documento' => $input['numero_documento'],

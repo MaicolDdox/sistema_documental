@@ -16,7 +16,7 @@
     </div>
     
     <div class="p-5">
-        <form method="POST" action="{{ route('admin.usuarios.update', $usuario->id) }}" class="space-y-5">
+        <form method="POST" action="{{ route('admin.usuarios.update', $usuario->id) }}" class="space-y-5" x-data="{ tieneMasRoles: {{ old('tiene_mas_roles', count($currentAdditionalRoles) > 0) ? 'true' : 'false' }} }">
             @csrf
             @method('PUT')
 
@@ -105,6 +105,38 @@
                 </div>
                 @endif
             </div>
+
+            {{-- FEAT-20260830-001: roles adicionales (multi-rol), en edición --}}
+            @if($canManageAdditionalRoles)
+            <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" name="tiene_mas_roles" id="tiene_mas_roles" value="1"
+                           x-model="tieneMasRoles"
+                           class="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]/30 cursor-pointer">
+                    <div>
+                        <label for="tiene_mas_roles" class="text-sm font-medium text-slate-800 cursor-pointer select-none">
+                            ¿Este usuario tiene más roles?
+                        </label>
+                        <p class="text-xs text-slate-500 mt-0.5">Además del rol principal, podrá tener funciones activas de otros roles y cambiar entre ellos desde "Mis roles".</p>
+                    </div>
+                </div>
+                <div x-show="tieneMasRoles" x-cloak class="mt-3.5 pt-3.5 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @foreach($additionalRoleOptions as $r)
+                        <label class="flex items-center gap-2 text-sm text-slate-700 border border-slate-200 rounded-lg px-3 py-2 bg-white hover:bg-slate-50 cursor-pointer">
+                            <input type="checkbox" name="additional_roles[]" value="{{ $r->name }}"
+                                   {{ in_array($r->name, old('additional_roles', $currentAdditionalRoles), true) ? 'checked' : '' }}
+                                   class="rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
+                            {{ ucfirst(str_replace('_', ' ', $r->name)) }}
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+            @elseif(count($currentAdditionalRoles) > 0)
+            <div class="rounded-lg border border-slate-200 bg-slate-50/60 px-4 py-3.5">
+                <p class="text-sm font-medium text-slate-800">Roles adicionales</p>
+                <p class="text-xs text-slate-500 mt-0.5">Este usuario ya tiene roles adicionales asignados, pero no tienes permiso para modificarlos aquí (no puedes editar los tuyos propios).</p>
+            </div>
+            @endif
 
             <div class="pt-5 border-t border-slate-100 flex items-center justify-end gap-3">
                 <a href="{{ route('admin.usuarios.index') }}" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">

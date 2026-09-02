@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\GeneroEnum;
+use App\Enums\NivelFormacionEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,11 +29,15 @@ class Person extends Model
         'celular',
         'eps',
         'cvlac_link',
+        'nivel_formacion',
+        'fecha_vinculacion',
         'email_institucional',
     ];
 
     protected $casts = [
         'genero' => GeneroEnum::class,
+        'nivel_formacion' => NivelFormacionEnum::class,
+        'fecha_vinculacion' => 'date',
     ];
 
     // ─────────────────────────────────────────────

@@ -57,22 +57,22 @@
         <thead>
             <tr>
                 <th>Semillero</th>
-                <th>Código</th>
+                <th>Proyecto</th>
                 <th>Documento</th>
                 <th>Nombre</th>
-                <th>Email</th>
-                <th>Estado</th>
+                <th>Ficha</th>
+                <th>Tecnólogo</th>
             </tr>
         </thead>
         <tbody>
             @forelse($filas ?? [] as $f)
             <tr>
                 <td>{{ $f['semillero'] }}</td>
-                <td>{{ $f['codigo'] ?? '—' }}</td>
+                <td>{{ $f['proyecto'] ?? '—' }}</td>
                 <td>{{ $f['documento'] }}</td>
                 <td>{{ $f['nombre'] }}</td>
-                <td>{{ $f['email'] }}</td>
-                <td>{{ $f['estado'] ?? '—' }}</td>
+                <td>{{ $f['ficha'] ?? '—' }}</td>
+                <td>{{ $f['tecnologo'] ?? '—' }}</td>
             </tr>
             @empty
             <tr><td colspan="6">Sin datos</td></tr>

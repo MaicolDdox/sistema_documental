@@ -23,10 +23,8 @@ class UpdateTrainingProgramRequest extends FormRequest
     {
         return [
             'nombre' => ['required', 'string', 'max:255'],
-            'ficha' => ['required', 'string', 'max:100'],
             'tipo' => ['required', 'string', 'max:255'],
             'descripcion' => ['nullable', 'string', 'max:500'],
-            'jornada' => ['required', 'in:diurna,nocturna,presencial'],
             'modalidad' => ['required', 'in:presencial,virtual'],
             'estado' => ['required', 'in:activo,inactivo'],
         ];

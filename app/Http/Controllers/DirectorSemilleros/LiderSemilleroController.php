@@ -65,34 +65,35 @@ class LiderSemilleroController extends Controller
         $this->authorize('usuarios.crear_lider_semillero');
 
         $validated = $request->validate([
-            'nombre'              => 'required|string|max:100',
-            'apellido'            => 'required|string|max:100',
-            'tipo_documento'      => ['required', Rule::enum(TipoDocumentoEnum::class)],
-            'numero_documento'    => 'required|unique:users,numero_documento',
-            'email'               => 'required|email|unique:users,email',
-            'semillero_id'        => 'nullable|exists:seedlings,id',
+            'nombre' => 'required|string|max:100',
+            'apellido' => 'required|string|max:100',
+            'tipo_documento' => ['required', Rule::enum(TipoDocumentoEnum::class)],
+            'numero_documento' => 'required|unique:users,numero_documento',
+            'email' => 'required|email|unique:users,email',
+            'semillero_id' => 'nullable|exists:seedlings,id',
             'enviar_credenciales' => 'nullable|boolean',
         ]);
 
         $password = \Illuminate\Support\Str::random(10);
 
         $newUser = $this->userCreation->crearUsuario([
-            'email'            => $validated['email'],
+            'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-            'tipo_documento'   => $validated['tipo_documento'],
-            'password'         => $password,
-            'primer_nombre'    => $validated['nombre'],
-            'primer_apellido'  => $validated['apellido'],
-            'rol'              => 'lider_semillero',
+            'tipo_documento' => $validated['tipo_documento'],
+            'password' => $password,
+            'primer_nombre' => $validated['nombre'],
+            'primer_apellido' => $validated['apellido'],
+            'rol' => 'lider_semillero',
+            'created_by_user_id' => Auth::id(),
         ], Auth::user()->training_center_id);
 
         // Asignar a semillero si se seleccionó (solo sin líder previo y del mismo centro)
-        if (!empty($validated['semillero_id'])) {
+        if (! empty($validated['semillero_id'])) {
             $semillero = $this->semilleroDisponibleParaAsignar(
                 (int) $validated['semillero_id'],
                 Auth::user()
             );
-            if (!$semillero) {
+            if (! $semillero) {
                 return redirect()->back()
                     ->withInput()
                     ->withErrors([
@@ -149,22 +150,22 @@ class LiderSemilleroController extends Controller
         $this->ensureLeaderOfCenter($lider);
 
         $validated = $request->validate([
-            'primer_nombre'     => 'required|string|max:100',
-            'primer_apellido'   => 'required|string|max:100',
-            'email'             => 'required|email|unique:users,email,' . $lider->id,
-            'numero_documento'  => 'required|unique:users,numero_documento,' . $lider->id,
-            'estado'            => 'required|in:activo,inactivo',
+            'primer_nombre' => 'required|string|max:100',
+            'primer_apellido' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email,'.$lider->id,
+            'numero_documento' => 'required|unique:users,numero_documento,'.$lider->id,
+            'estado' => 'required|in:activo,inactivo',
         ]);
 
         $lider->update([
-            'email'           => $validated['email'],
+            'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
-            'estado'           => EstadoEnum::from($validated['estado']),
+            'estado' => EstadoEnum::from($validated['estado']),
         ]);
 
         if ($lider->person) {
             $lider->person->update([
-                'primer_nombre'   => $validated['primer_nombre'],
+                'primer_nombre' => $validated['primer_nombre'],
                 'primer_apellido' => $validated['primer_apellido'],
             ]);
         }
@@ -192,13 +193,18 @@ class LiderSemilleroController extends Controller
         ]);
 
         $msg = $lider->estado === EstadoEnum::Activo ? 'Líder activado.' : 'Líder desactivado.';
+
         return redirect()->route('dir-sem.lideres.index')->with('success', $msg);
     }
 
     private function ensureLeaderOfCenter(User $lider): void
     {
-        if (!$lider->hasRole('lider_semillero') || $lider->training_center_id !== Auth::user()->training_center_id) {
+        if (! $lider->hasRole('lider_semillero') || $lider->training_center_id !== Auth::user()->training_center_id) {
             abort(403, 'No tienes permiso para gestionar este usuario.');
+        }
+
+        if (! \App\Support\UserOwnershipAccess::canManage(Auth::user(), $lider)) {
+            abort(403, 'Solo quien creó esta cuenta puede gestionarla.');
         }
     }
 
@@ -209,7 +215,7 @@ class LiderSemilleroController extends Controller
     {
         return Seedling::query()
             ->whereNull('leader_id')
-            ->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $director->training_center_id))
+            ->where('training_center_id', $director->training_center_id)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
@@ -219,7 +225,7 @@ class LiderSemilleroController extends Controller
         return Seedling::query()
             ->whereKey($semilleroId)
             ->whereNull('leader_id')
-            ->whereHas('researchGroup', fn ($q) => $q->where('training_center_id', $director->training_center_id))
+            ->where('training_center_id', $director->training_center_id)
             ->first();
     }
 }

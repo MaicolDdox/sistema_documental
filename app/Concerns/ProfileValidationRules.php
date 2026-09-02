@@ -4,6 +4,7 @@ namespace App\Concerns;
 
 use App\Models\User;
 use App\Enums\GeneroEnum;
+use App\Enums\NivelFormacionEnum;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
@@ -36,7 +37,9 @@ trait ProfileValidationRules
             ],
             'entity_position_id'  => ['nullable', 'exists:entity_positions,id'],
             'linkage_type_id'     => ['nullable', 'exists:linkage_types,id'],
-            'training_program_id' => ['nullable', 'exists:training_programs,id'],
+            'cvlac_link'          => ['nullable', 'string', 'max:500'],
+            'nivel_formacion'     => ['nullable', new Enum(NivelFormacionEnum::class)],
+            'fecha_vinculacion'   => ['nullable', 'date'],
         ];
     }
 

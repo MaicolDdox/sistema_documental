@@ -15,7 +15,7 @@ class InfoSemilleroController extends Controller
      */
     public function edit(): View
     {
-        $semillero = Auth::user()->ledSeedlings()->with('researchGroup')->first();
+        $semillero = Auth::user()->ledSeedlings()->first();
 
         return view('lider_semillero.info_semillero', compact('semillero'));
     }
