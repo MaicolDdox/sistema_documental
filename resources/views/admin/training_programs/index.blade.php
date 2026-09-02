@@ -73,14 +73,14 @@
                                     'tipo' => $program->trainingProgramType?->nombre ?? '—',
                                     'modalidad' => $program->modalidad ? ucfirst($program->modalidad->value) : '—',
                                     'estado' => $program->estado ? ucfirst($program->estado->value) : '—',
-                                    'descripccion' => $program->descripccion ?? '',
+                                    'descripcion' => $program->descripcion ?? '',
                                 ];
                                 $editPrograma = [
                                     'nombre' => $program->nombre,
                                     'tipo' => $program->trainingProgramType?->nombre ?? '',
                                     'modalidad' => $program->modalidad?->value ?? 'presencial',
                                     'estado' => $program->estado?->value ?? 'activo',
-                                    'descripccion' => $program->descripccion ?? '',
+                                    'descripcion' => $program->descripcion ?? '',
                                 ];
                                 $estadoActivo = $program->estado?->value === 'activo';
                             @endphp
@@ -189,7 +189,7 @@
                         <div><dt class="text-slate-500 font-medium">Tipo</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.tipo || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Modalidad</dt><dd class="text-slate-900 mt-0.5" x-text="detalle?.modalidad || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Estado</dt><dd class="mt-0.5"><span :class="(detalle?.estado || '').toLowerCase() === 'activo' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-700'" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" x-text="detalle?.estado || '—'"></span></dd></div>
-                        <div x-show="detalle?.descripccion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalle?.descripccion"></dd></div>
+                        <div x-show="detalle?.descripcion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalle?.descripcion"></dd></div>
                     </dl>
                 </template>
                 <div class="mt-6 flex justify-end">
@@ -235,8 +235,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="edit_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                            <textarea name="descripccion" id="edit_descripccion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
+                            <label for="edit_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                            <textarea name="descripcion" id="edit_descripcion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-2">
@@ -337,9 +337,9 @@
                         @error('estado')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modal_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                        <textarea name="descripccion" id="modal_descripccion" rows="2" class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripccion') }}</textarea>
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="modal_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                        <textarea name="descripcion" id="modal_descripcion" rows="2" class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripcion') }}</textarea>
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalNuevoPrograma = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">Cancelar</button>
@@ -362,7 +362,7 @@
                 confirmEliminarNombre: '',
                 pendingDeleteFormId: null,
                 detalle: null,
-                editData: { nombre: '', tipo: '', modalidad: 'presencial', estado: 'activo', descripccion: '' },
+                editData: { nombre: '', tipo: '', modalidad: 'presencial', estado: 'activo', descripcion: '' },
                 editFormAction: '',
                 openDetalle(data) {
                     this.detalle = data;
@@ -375,7 +375,7 @@
                         training_program_type_id: String(data.training_program_type_id || ''),
                         modalidad: data.modalidad || 'presencial',
                         estado: data.estado || 'activo',
-                        descripccion: data.descripccion || ''
+                        descripcion: data.descripcion || ''
                     };
                     this.modalEditar = true;
                     this.$nextTick(() => {
@@ -383,8 +383,8 @@
                         document.getElementById('edit_tipo').value = this.editData.tipo || '';
                         document.getElementById('edit_modalidad').value = this.editData.modalidad;
                         document.getElementById('edit_estado').value = this.editData.estado;
-                        const desc = document.getElementById('edit_descripccion');
-                        if (desc) desc.value = this.editData.descripccion || '';
+                        const desc = document.getElementById('edit_descripcion');
+                        if (desc) desc.value = this.editData.descripcion || '';
                     });
                 },
                 intentEliminar(estadoActivo, formId, nombre) {

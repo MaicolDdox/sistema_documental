@@ -34,9 +34,9 @@
                 @error('minciencias_typology_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div>
-                <label for="descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                <textarea name="descripccion" id="descripccion" rows="2" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripccion') }}</textarea>
-                @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                <label for="descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                <textarea name="descripcion" id="descripcion" rows="2" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripcion') }}</textarea>
+                @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
             </div>
             <div class="flex gap-3 pt-2">
                 <a href="{{ route('admin.minciencias-typologies.index') }}" class="px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</a>

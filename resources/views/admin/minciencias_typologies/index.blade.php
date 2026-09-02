@@ -37,8 +37,8 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse($typologies as $typology)
                         @php
-                            $detalleT = ['nombre' => $typology->nombre, 'codigo' => $typology->codigo ?? '—', 'subcategorias' => $typology->subcategories_count ?? 0, 'descripccion' => $typology->descripccion ?? ''];
-                            $editT = ['nombre' => $typology->nombre, 'codigo' => $typology->codigo ?? '', 'descripccion' => $typology->descripccion ?? ''];
+                            $detalleT = ['nombre' => $typology->nombre, 'codigo' => $typology->codigo ?? '—', 'subcategorias' => $typology->subcategories_count ?? 0, 'descripcion' => $typology->descripcion ?? ''];
+                            $editT = ['nombre' => $typology->nombre, 'codigo' => $typology->codigo ?? '', 'descripcion' => $typology->descripcion ?? ''];
                             $hasSub = ($typology->subcategories_count ?? 0) > 0;
                         @endphp
                         <tr class="hover:bg-slate-50/50">
@@ -95,8 +95,8 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse($subcategories as $sub)
                         @php
-                            $detalleS = ['nombre' => $sub->nombre, 'tipologia' => $sub->mincienciasTypology?->nombre ?? '—', 'descripccion' => $sub->descripccion ?? ''];
-                            $editS = ['nombre' => $sub->nombre, 'minciencias_typology_id' => (string) $sub->minciencias_typology_id, 'descripccion' => $sub->descripccion ?? ''];
+                            $detalleS = ['nombre' => $sub->nombre, 'tipologia' => $sub->mincienciasTypology?->nombre ?? '—', 'descripcion' => $sub->descripcion ?? ''];
+                            $editS = ['nombre' => $sub->nombre, 'minciencias_typology_id' => (string) $sub->minciencias_typology_id, 'descripcion' => $sub->descripcion ?? ''];
                         @endphp
                         <tr class="hover:bg-slate-50/50">
                             <td class="px-4 py-2.5 font-medium text-slate-900">{{ $sub->nombre }}</td>
@@ -142,7 +142,7 @@
                         <div><dt class="text-slate-500 font-medium">Nombre</dt><dd class="text-slate-900 mt-0.5" x-text="detalleT?.nombre"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Código</dt><dd class="text-slate-900 mt-0.5" x-text="detalleT?.codigo || '—'"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Subcategorías</dt><dd class="text-slate-900 mt-0.5" x-text="detalleT?.subcategorias ?? 0"></dd></div>
-                        <div x-show="detalleT?.descripccion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalleT?.descripccion"></dd></div>
+                        <div x-show="detalleT?.descripcion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalleT?.descripcion"></dd></div>
                     </dl>
                 </template>
                 <div class="mt-6 flex justify-end">
@@ -171,8 +171,8 @@
                             <input type="text" name="codigo" id="edit_t_codigo" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                         </div>
                         <div>
-                            <label for="edit_t_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                            <textarea name="descripccion" id="edit_t_descripccion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
+                            <label for="edit_t_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                            <textarea name="descripcion" id="edit_t_descripcion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-2">
@@ -205,9 +205,9 @@
                         @error('codigo')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modal_t_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                        <textarea name="descripccion" id="modal_t_descripccion" rows="2" class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripccion') }}</textarea>
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="modal_t_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                        <textarea name="descripcion" id="modal_t_descripcion" rows="2" class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripcion') }}</textarea>
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalNuevaTipologia = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -270,7 +270,7 @@
                     <dl class="space-y-3 text-sm">
                         <div><dt class="text-slate-500 font-medium">Nombre</dt><dd class="text-slate-900 mt-0.5" x-text="detalleS?.nombre"></dd></div>
                         <div><dt class="text-slate-500 font-medium">Tipología</dt><dd class="text-slate-900 mt-0.5" x-text="detalleS?.tipologia || '—'"></dd></div>
-                        <div x-show="detalleS?.descripccion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalleS?.descripccion"></dd></div>
+                        <div x-show="detalleS?.descripcion"><dt class="text-slate-500 font-medium">Descripción</dt><dd class="text-slate-900 mt-0.5 text-xs" x-text="detalleS?.descripcion"></dd></div>
                     </dl>
                 </template>
                 <div class="mt-6 flex justify-end">
@@ -303,8 +303,8 @@
                             </select>
                         </div>
                         <div>
-                            <label for="edit_s_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                            <textarea name="descripccion" id="edit_s_descripccion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
+                            <label for="edit_s_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                            <textarea name="descripcion" id="edit_s_descripcion" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10"></textarea>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end gap-2">
@@ -342,9 +342,9 @@
                         @error('minciencias_typology_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modal_s_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                        <textarea name="descripccion" id="modal_s_descripccion" rows="2" class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripccion') }}</textarea>
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="modal_s_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+                        <textarea name="descripcion" id="modal_s_descripcion" rows="2" class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripcion') }}</textarea>
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalNuevaSubcategoria = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -406,7 +406,7 @@
                 detalleT: null,
                 modalDetalleT: false,
                 modalEditarT: false,
-                editDataT: { nombre: '', codigo: '', descripccion: '' },
+                editDataT: { nombre: '', codigo: '', descripcion: '' },
                 editFormActionT: '',
                 modalNuevaTipologia: @json($errors->any() && old('_form_type') === 'typology'),
                 deleteErrorT: @json(session('delete_error_typology')),
@@ -416,13 +416,13 @@
                 openDetalleT(data) { this.detalleT = data; this.modalDetalleT = true; },
                 openEditarT(id, data) {
                     this.editFormActionT = baseT + '/' + id;
-                    this.editDataT = { nombre: data.nombre || '', codigo: data.codigo || '', descripccion: data.descripccion || '' };
+                    this.editDataT = { nombre: data.nombre || '', codigo: data.codigo || '', descripcion: data.descripcion || '' };
                     this.modalEditarT = true;
                     this.$nextTick(() => {
                         document.getElementById('edit_t_nombre').value = this.editDataT.nombre;
                         document.getElementById('edit_t_codigo').value = this.editDataT.codigo;
-                        const d = document.getElementById('edit_t_descripccion');
-                        if (d) d.value = this.editDataT.descripccion;
+                        const d = document.getElementById('edit_t_descripcion');
+                        if (d) d.value = this.editDataT.descripcion;
                     });
                 },
                 intentEliminarT(hasSubcategories, formId, nombre) {
@@ -445,7 +445,7 @@
                 detalleS: null,
                 modalDetalleS: false,
                 modalEditarS: false,
-                editDataS: { nombre: '', minciencias_typology_id: '', descripccion: '' },
+                editDataS: { nombre: '', minciencias_typology_id: '', descripcion: '' },
                 editFormActionS: '',
                 modalNuevaSubcategoria: @json($errors->any() && old('_form_type') === 'subcategory'),
                 deleteErrorS: @json(session('delete_error_subcategory')),
@@ -455,13 +455,13 @@
                 openDetalleS(data) { this.detalleS = data; this.modalDetalleS = true; },
                 openEditarS(id, data) {
                     this.editFormActionS = baseS + '/' + id;
-                    this.editDataS = { nombre: data.nombre || '', minciencias_typology_id: String(data.minciencias_typology_id || ''), descripccion: data.descripccion || '' };
+                    this.editDataS = { nombre: data.nombre || '', minciencias_typology_id: String(data.minciencias_typology_id || ''), descripcion: data.descripcion || '' };
                     this.modalEditarS = true;
                     this.$nextTick(() => {
                         document.getElementById('edit_s_nombre').value = this.editDataS.nombre;
                         document.getElementById('edit_s_minciencias_typology_id').value = this.editDataS.minciencias_typology_id;
-                        const d = document.getElementById('edit_s_descripccion');
-                        if (d) d.value = this.editDataS.descripccion;
+                        const d = document.getElementById('edit_s_descripcion');
+                        if (d) d.value = this.editDataS.descripcion;
                     });
                 },
                 intentEliminarS(formId, nombre) {
