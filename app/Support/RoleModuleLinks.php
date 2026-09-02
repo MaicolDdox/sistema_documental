@@ -14,8 +14,14 @@ use Spatie\Permission\Models\Role;
  */
 final class RoleModuleLinks
 {
-    /** Misma prioridad que App\Livewire\Auth\Login (redirección tras autenticación). */
-    private const LOGIN_ROLE_PRIORITY = [
+    /**
+     * Misma prioridad que App\Livewire\Auth\Login (redirección tras autenticación).
+     * También es la lista canónica de los 6 nombres de rol válidos del sistema —
+     * úsala para filtrar cualquier listado de roles desde la tabla `roles`, así
+     * las filas viejas/huérfanas que queden en BD (de un rol eliminado en un
+     * rediseño) nunca se cuelan en un formulario o selector.
+     */
+    public const LOGIN_ROLE_PRIORITY = [
         'super_administrador',
         'administrador_sistema',
         'director_semilleros',
