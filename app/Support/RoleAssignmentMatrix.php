@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 
 /**
  * Matriz de creación de usuarios exclusiva del rediseño de roles: un solo
@@ -25,7 +24,7 @@ final class RoleAssignmentMatrix
             return [];
         }
         if (TrainingCenterAccess::isSuperAdmin($auth)) {
-            return Role::pluck('name')->all();
+            return RoleModuleLinks::LOGIN_ROLE_PRIORITY;
         }
         if ($auth->hasRole('administrador_sistema')) {
             return ['director_semilleros', 'co_investigador'];
@@ -51,11 +50,10 @@ final class RoleAssignmentMatrix
      */
     public static function additionalRoleOptionNamesFor(string $primaryRole): array
     {
-        return Role::where('name', '!=', 'super_administrador')
-            ->where('name', '!=', $primaryRole)
-            ->orderBy('name')
-            ->pluck('name')
-            ->all();
+        $names = array_diff(RoleModuleLinks::LOGIN_ROLE_PRIORITY, ['super_administrador', $primaryRole]);
+        sort($names);
+
+        return array_values($names);
     }
 
     /**

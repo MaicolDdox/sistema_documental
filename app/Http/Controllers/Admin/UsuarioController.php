@@ -60,7 +60,7 @@ class UsuarioController extends Controller
         }
 
         $usuarios = $query->paginate(15)->withQueryString();
-        $roles = Role::all();
+        $roles = Role::whereIn('name', \App\Support\RoleModuleLinks::LOGIN_ROLE_PRIORITY)->orderBy('name')->get();
         $rolesAsignables = Role::whereIn('name', $this->assignableRoles())->orderBy('name')->get();
         $estados = EstadoEnum::cases();
         // Este listado ya excluye al propio usuario que consulta

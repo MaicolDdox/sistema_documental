@@ -9,6 +9,7 @@ use App\Models\TrainingCenter;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
 use App\Services\Admin\UserCreationService;
+use App\Support\RoleModuleLinks;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,7 +59,7 @@ class UsuarioSistemaController extends Controller
         }
 
         $usuarios = $query->latest()->paginate(15)->withQueryString();
-        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $roles = Role::whereIn('name', RoleModuleLinks::LOGIN_ROLE_PRIORITY)->whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
         $estados = EstadoEnum::cases();
 
         return view('super-admin.usuarios-sistema.index', compact('usuarios', 'roles', 'estados'));
@@ -70,7 +71,7 @@ class UsuarioSistemaController extends Controller
 
     public function create(): View
     {
-        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $roles = Role::whereIn('name', RoleModuleLinks::LOGIN_ROLE_PRIORITY)->whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
         $centros = TrainingCenter::activos()->orderBy('nombre')->get();
 
         return view('super-admin.usuarios-sistema.create', compact('roles', 'centros'));
@@ -139,7 +140,7 @@ class UsuarioSistemaController extends Controller
             ->with('roles')
             ->findOrFail($id);
 
-        $roles = Role::whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
+        $roles = Role::whereIn('name', RoleModuleLinks::LOGIN_ROLE_PRIORITY)->whereNotIn('name', self::ROLES_EXCLUIDOS)->orderBy('name')->get();
         $centros = TrainingCenter::activos()->orderBy('nombre')->get();
 
         $namesRol = $usuario->roles->pluck('name')->all();
