@@ -28,7 +28,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $entityPositions->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($entityPositions as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -95,7 +95,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $linkageTypes->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($linkageTypes as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -162,7 +162,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $projectModalities->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($projectModalities as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -229,7 +229,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $investigationTypes->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($investigationTypes as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -296,7 +296,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $technologicalLines->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($technologicalLines as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -363,7 +363,7 @@
                 <p class="text-xs text-slate-500 mb-3">{{ $thematicAreas->count() }} registros</p>
                 <ul class="space-y-2">
                     @forelse($thematicAreas as $item)
-                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripccion="{{ e($item->descripccion ?? '') }}">
+                    <li class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0" data-id="{{ $item->id }}" data-nombre="{{ e($item->nombre) }}" data-descripcion="{{ e($item->descripcion ?? '') }}">
                         <span class="text-sm text-slate-800">{{ $item->nombre }}</span>
                         <div class="relative shrink-0" x-data="{ open: false }">
                             <button type="button"
@@ -435,9 +435,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="cargo_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="cargo_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="cargo_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="cargo_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalCargo = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -464,9 +464,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="vinculacion_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="vinculacion_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="vinculacion_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="vinculacion_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalVinculacion = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -493,9 +493,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="modalidad_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="modalidad_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="modalidad_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="modalidad_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalModalidad = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -522,9 +522,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="investigacion_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="investigacion_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="investigacion_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="investigacion_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalInvestigacion = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -551,9 +551,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="linea_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="linea_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="linea_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="linea_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalLinea = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -580,9 +580,9 @@
                         @error('nombre')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="tematica_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="tematica_descripccion" value="{{ old('descripccion') }}" required class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                        @error('descripccion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <label for="tematica_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="tematica_descripcion" value="{{ old('descripcion') }}" required class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        @error('descripcion')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalTematica = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -607,7 +607,7 @@
                     </div>
                     <div>
                         <dt class="text-slate-500 font-medium">Descripción</dt>
-                        <dd class="text-slate-900 mt-0.5" x-text="detalleItem.descripccion || '—'"></dd>
+                        <dd class="text-slate-900 mt-0.5" x-text="detalleItem.descripcion || '—'"></dd>
                     </div>
                 </dl>
                 <div class="mt-6 pt-4 border-t border-slate-100">
@@ -634,8 +634,8 @@
                         <input type="text" name="nombre" id="edit_cargo_nombre" x-model="editCargo.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_cargo_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_cargo_descripccion" x-model="editCargo.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_cargo_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_cargo_descripcion" x-model="editCargo.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditCargo = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -660,8 +660,8 @@
                         <input type="text" name="nombre" id="edit_vinculacion_nombre" x-model="editVinculacion.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_vinculacion_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_vinculacion_descripccion" x-model="editVinculacion.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_vinculacion_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_vinculacion_descripcion" x-model="editVinculacion.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditVinculacion = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -686,8 +686,8 @@
                         <input type="text" name="nombre" id="edit_modalidad_nombre" x-model="editModalidad.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_modalidad_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_modalidad_descripccion" x-model="editModalidad.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_modalidad_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_modalidad_descripcion" x-model="editModalidad.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditModalidad = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -712,8 +712,8 @@
                         <input type="text" name="nombre" id="edit_investigacion_nombre" x-model="editInvestigacion.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_investigacion_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_investigacion_descripccion" x-model="editInvestigacion.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_investigacion_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_investigacion_descripcion" x-model="editInvestigacion.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditInvestigacion = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -738,8 +738,8 @@
                         <input type="text" name="nombre" id="edit_linea_nombre" x-model="editLinea.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_linea_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_linea_descripccion" x-model="editLinea.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_linea_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_linea_descripcion" x-model="editLinea.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditLinea = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -764,8 +764,8 @@
                         <input type="text" name="nombre" id="edit_tematica_nombre" x-model="editTematica.nombre" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div>
-                        <label for="edit_tematica_descripccion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
-                        <input type="text" name="descripccion" id="edit_tematica_descripccion" x-model="editTematica.descripccion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                        <label for="edit_tematica_descripcion" class="block text-sm font-medium text-slate-700 mb-1">Descripción <span class="text-red-500">*</span></label>
+                        <input type="text" name="descripcion" id="edit_tematica_descripcion" x-model="editTematica.descripcion" required class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" @click="modalEditTematica = false" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50">Cancelar</button>
@@ -787,77 +787,77 @@
                 modalLinea: @json($errors->any() && old('_form_type') === 'technological_line'),
                 modalTematica: @json($errors->any() && old('_form_type') === 'thematic_area'),
                 modalDetalle: false,
-                detalleItem: { tipo: '', nombre: '', descripccion: '' },
+                detalleItem: { tipo: '', nombre: '', descripcion: '' },
                 modalEditCargo: false,
                 modalEditVinculacion: false,
                 modalEditModalidad: false,
                 modalEditInvestigacion: false,
                 modalEditLinea: false,
                 modalEditTematica: false,
-                editCargo: { id: null, nombre: '', descripccion: '' },
-                editVinculacion: { id: null, nombre: '', descripccion: '' },
-                editModalidad: { id: null, nombre: '', descripccion: '' },
-                editInvestigacion: { id: null, nombre: '', descripccion: '' },
-                editLinea: { id: null, nombre: '', descripccion: '' },
-                editTematica: { id: null, nombre: '', descripccion: '' },
+                editCargo: { id: null, nombre: '', descripcion: '' },
+                editVinculacion: { id: null, nombre: '', descripcion: '' },
+                editModalidad: { id: null, nombre: '', descripcion: '' },
+                editInvestigacion: { id: null, nombre: '', descripcion: '' },
+                editLinea: { id: null, nombre: '', descripcion: '' },
+                editTematica: { id: null, nombre: '', descripcion: '' },
                 openDetalle(li, tipo) {
                     if (!li || !li.dataset) return;
                     this.detalleItem = {
                         tipo: tipo || '',
                         nombre: (li.dataset.nombre || '').replace(/&quot;/g, '"'),
-                        descripccion: (li.dataset.descripccion || '').replace(/&quot;/g, '"')
+                        descripcion: (li.dataset.descripcion || '').replace(/&quot;/g, '"')
                     };
                     this.modalDetalle = true;
                 },
-                openEditCargo(id, nombre, descripccion) {
-                    this.editCargo = { id: id ? Number(id) : null, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditCargo(id, nombre, descripcion) {
+                    this.editCargo = { id: id ? Number(id) : null, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditCargo = true;
                 },
                 openEditCargoFromEl(li) {
                     if (!li || !li.dataset) return;
                     const nombre = (li.dataset.nombre || '').replace(/&quot;/g, '"');
-                    const descripccion = (li.dataset.descripccion || '').replace(/&quot;/g, '"');
-                    this.openEditCargo(li.dataset.id, nombre, descripccion);
+                    const descripcion = (li.dataset.descripcion || '').replace(/&quot;/g, '"');
+                    this.openEditCargo(li.dataset.id, nombre, descripcion);
                 },
-                openEditVinculacion(id, nombre, descripccion) {
-                    this.editVinculacion = { id, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditVinculacion(id, nombre, descripcion) {
+                    this.editVinculacion = { id, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditVinculacion = true;
                 },
                 openEditVinculacionFromEl(li) {
                     if (!li || !li.dataset) return;
-                    this.openEditVinculacion(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripccion || '').replace(/&quot;/g, '"'));
+                    this.openEditVinculacion(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripcion || '').replace(/&quot;/g, '"'));
                 },
-                openEditModalidad(id, nombre, descripccion) {
-                    this.editModalidad = { id, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditModalidad(id, nombre, descripcion) {
+                    this.editModalidad = { id, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditModalidad = true;
                 },
                 openEditModalidadFromEl(li) {
                     if (!li || !li.dataset) return;
-                    this.openEditModalidad(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripccion || '').replace(/&quot;/g, '"'));
+                    this.openEditModalidad(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripcion || '').replace(/&quot;/g, '"'));
                 },
-                openEditInvestigacion(id, nombre, descripccion) {
-                    this.editInvestigacion = { id, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditInvestigacion(id, nombre, descripcion) {
+                    this.editInvestigacion = { id, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditInvestigacion = true;
                 },
                 openEditInvestigacionFromEl(li) {
                     if (!li || !li.dataset) return;
-                    this.openEditInvestigacion(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripccion || '').replace(/&quot;/g, '"'));
+                    this.openEditInvestigacion(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripcion || '').replace(/&quot;/g, '"'));
                 },
-                openEditLinea(id, nombre, descripccion) {
-                    this.editLinea = { id, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditLinea(id, nombre, descripcion) {
+                    this.editLinea = { id, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditLinea = true;
                 },
                 openEditLineaFromEl(li) {
                     if (!li || !li.dataset) return;
-                    this.openEditLinea(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripccion || '').replace(/&quot;/g, '"'));
+                    this.openEditLinea(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripcion || '').replace(/&quot;/g, '"'));
                 },
-                openEditTematica(id, nombre, descripccion) {
-                    this.editTematica = { id, nombre: nombre || '', descripccion: descripccion || '' };
+                openEditTematica(id, nombre, descripcion) {
+                    this.editTematica = { id, nombre: nombre || '', descripcion: descripcion || '' };
                     this.modalEditTematica = true;
                 },
                 openEditTematicaFromEl(li) {
                     if (!li || !li.dataset) return;
-                    this.openEditTematica(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripccion || '').replace(/&quot;/g, '"'));
+                    this.openEditTematica(li.dataset.id, (li.dataset.nombre || '').replace(/&quot;/g, '"'), (li.dataset.descripcion || '').replace(/&quot;/g, '"'));
                 }
             };
         }

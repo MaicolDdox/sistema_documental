@@ -60,7 +60,7 @@
                 <div>
                     <label for="descripcion" class="block text-sm font-medium text-slate-700 mb-1.5">Descripción o Enfoque (Opcional)</label>
                     <textarea name="descripcion" id="descripcion" rows="4" 
-                              class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">{{ old('descripcion', $semillero->descripccion) }}</textarea>
+                              class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10 transition-all">{{ old('descripcion', $semillero->descripcion) }}</textarea>
                     @error('descripcion') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 

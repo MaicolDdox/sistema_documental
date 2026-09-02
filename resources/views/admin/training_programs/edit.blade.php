@@ -66,10 +66,10 @@
                     @enderror
                 </div>
                 <div>
-                    <label for="descripccion" class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
-                    <textarea name="descripccion" id="descripccion" rows="2"
-                              class="w-full border @error('descripccion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripccion', $training_program->descripccion) }}</textarea>
-                    @error('descripccion')
+                    <label for="descripcion" class="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+                    <textarea name="descripcion" id="descripcion" rows="2"
+                              class="w-full border @error('descripcion') border-red-500 @else border-slate-200 @enderror rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">{{ old('descripcion', $training_program->descripcion) }}</textarea>
+                    @error('descripcion')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
