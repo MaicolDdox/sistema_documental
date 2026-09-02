@@ -1,15 +1,5 @@
 # GIDESTH — Sistema Documental de Semilleros de Investigación
 
-## Stack tecnológico
-- **Laravel:** 12.51.0 | **PHP:** 8.2.28
-- **Frontend reactivo:** Livewire 4.0 + Flux 2.9.0 (UI components)
-- **CSS:** Tailwind CSS 4.0 (utility-first)
-- **Auth:** Laravel Fortify + Spatie Permission 6.24
-- **Base de datos:** MySQL — `sistema_documental` (127.0.0.1:3306)
-- **Testing:** PHPUnit 11.5.3 con SQLite en memoria
-- **Reportes:** DomPDF 3.1 (PDF) + PHPSpreadsheet 5.5 (Excel)
-- **Bundler:** Vite 7 con laravel-vite-plugin
-
 ## Arquitectura del proyecto
 
 ### Organización por rol (CRÍTICO)
@@ -60,16 +50,6 @@ TrainingCenterAccess::isSuperAdmin(auth()->user())
 
 ## Convenciones de código
 
-### Tipado
-```php
-// Siempre tipos de retorno explícitos:
-public function index(Request $request): View {}
-public function create(int $userId, ?User $user = null): Collection {}
-
-// Constantes en SNAKE_CASE:
-const CENTRO_BOUND_ROLE_NAMES = [...];
-```
-
 ### Enums — uso obligatorio para estados y tipos
 ```php
 // En modelos, siempre castear enums:
@@ -103,105 +83,6 @@ $results = Modelo::query()
     ->paginate(15);
 ```
 
-## Livewire 4.0 — convenciones específicas
-
-```php
-<?php
-
-namespace App\Livewire\Admin\Users;
-
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\Attributes\Url;
-use Livewire\Attributes\Computed;
-use Illuminate\Contracts\View\View;
-
-class UserIndex extends Component
-{
-    use WithPagination;
-
-    #[Url]                    // Sincroniza con URL
-    public string $search = '';
-
-    public string $estado = '';
-
-    // IMPORTANTE en Livewire 4: resetear paginación al buscar
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    #[Computed]
-    public function users(): \Illuminate\Pagination\LengthAwarePaginator
-    {
-        return TrainingCenterAccess::scopeUserQueryForList(
-            User::with(['person', 'roles']),
-            auth()->user()
-        )
-        ->when($this->search, fn($q) => $q->whereHas('person', fn($p) =>
-            $p->where('primer_nombre', 'like', "%{$this->search}%")
-        ))
-        ->paginate(15);
-    }
-
-    public function render(): View
-    {
-        return view('livewire.admin.users.user-index');
-    }
-}
-```
-
-### Flux UI — componentes disponibles
-```blade
-{{-- Botones --}}
-<flux:button variant="primary">Guardar</flux:button>
-<flux:button variant="danger" wire:click="eliminar">Eliminar</flux:button>
-
-{{-- Inputs --}}
-<flux:input wire:model.blur="nombre" label="Nombre" placeholder="..." />
-<flux:select wire:model="estado" label="Estado">
-    <flux:select.option value="">Todos</flux:select.option>
-    @foreach(EstadoEnum::cases() as $estado)
-        <flux:select.option value="{{ $estado->value }}">{{ $estado->label() }}</flux:select.option>
-    @endforeach
-</flux:select>
-
-{{-- Tablas --}}
-<flux:table>
-    <flux:table.head>
-        <flux:table.row>
-            <flux:table.heading>Nombre</flux:table.heading>
-        </flux:table.row>
-    </flux:table.head>
-    <flux:table.body>
-        @foreach($this->users as $user)
-        <flux:table.row>
-            <flux:table.cell>{{ $user->getNameAttribute() }}</flux:table.cell>
-        </flux:table.row>
-        @endforeach
-    </flux:table.body>
-</flux:table>
-```
-
-## Roles y permisos — Spatie Permission
-
-```php
-// Verificar rol:
-$user->hasRole('director_semilleros')
-$user->hasAnyRole(['admin', 'super_administrador'])
-
-// En Policies — patrón del proyecto:
-public function update(User $user, ResearchGroup $group): bool
-{
-    return $user->id === $group->director_id
-        || $user->hasRole('super_administrador');
-}
-
-// Roles que requieren training_center_id (de TrainingCenterAccess):
-// director_semilleros, lider_semillero, asesor_semillero,
-// director_investigacion, investigador_asociado
-```
-
 ## Testing — PHPUnit (NO Pest)
 
 ```php
@@ -227,22 +108,6 @@ class NombreTest extends TestCase
         $response->assertStatus(200);
     }
 }
-```
-
-## Generación de reportes
-
-```php
-// PDF con DomPDF:
-use Barryvdh\DomPDF\Facade\Pdf;
-$pdf = Pdf::loadView('pdf.reporte', compact('datos'));
-return $pdf->download('reporte.pdf');
-
-// Excel con PhpSpreadsheet:
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-$spreadsheet = new Spreadsheet();
-$sheet = $spreadsheet->getActiveSheet();
-$sheet->setCellValue('A1', 'Encabezado');
 ```
 
 ## Reglas críticas — NO hacer sin avisar

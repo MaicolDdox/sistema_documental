@@ -1,17 +1,16 @@
 # REPORTE DE CONTEXTO TÉCNICO DEL PROYECTO
 
-Generado: 2026-05-26  
-Repositorio: sistema_documental  
-Rama actual: feature/aldana_refactoring
+Generado: 2026-09-02 (reescritura completa — la versión anterior, de 2026-05-26, describía la arquitectura de 7 roles previa al rediseño de agosto de 2026)
+Repositorio: sistema_documental
+Rama en el momento de escribir esto: `fix/superadmin-eliminar-usuarios-y-roles-muertos` (con el trabajo de las sesiones de agosto — rediseño de roles y sistema multi-rol — sin commitear)
 
 ---
 
 ## 📋 INFORMACIÓN GENERAL DEL PROYECTO
 
-**Nombre:** GIDESTH (Sistema Documental)  
-**Tipo:** Aplicación web educativa para gestión de semilleros de investigación y documentación  
-**URL Local:** http://localhost  
-**Base de datos:** MySQL (sistema_documental)
+**Nombre:** GIDESTH (Sistema Documental) — `.env.example` usa `APP_NAME=SIGESI` como nombre de marca en producción
+**Tipo:** Aplicación web educativa para gestión de semilleros de investigación y documentación
+**Base de datos:** MySQL (`sistema_documental`)
 
 ---
 
@@ -26,6 +25,7 @@ Rama actual: feature/aldana_refactoring
 | **Flux** | 2.9.0 | Sistema de componentes UI para Livewire |
 | **Laravel Fortify** | 1.30 | Stack de autenticación |
 | **Spatie Permission** | 6.24 | Gestión de roles y permisos |
+| **Resend** (`resend/resend-laravel`) | 1.4 | Envío de correo transaccional |
 
 ### Frontend
 | Componente | Versión | Descripción |
@@ -33,6 +33,7 @@ Rama actual: feature/aldana_refactoring
 | **Tailwind CSS** | 4.0.7 | Framework CSS |
 | **Vite** | 7.0.4 | Bundler (con laravel-vite-plugin) |
 | **Axios** | 1.7.4 | Cliente HTTP |
+| **Chart.js** | 4.5.1 | Gráficos (uso puntual — varias cards con Chart.js fueron eliminadas por no tener función real, ver `docs/SESION_2026-08-13_REDISENO_ROLES.md`, BUG-023) |
 
 ### Librerías adicionales
 | Paquete | Versión | Propósito |
@@ -40,6 +41,7 @@ Rama actual: feature/aldana_refactoring
 | **barryvdh/laravel-dompdf** | 3.1 | Generación de PDFs |
 | **phpoffice/phpspreadsheet** | 5.5 | Exportación a Excel |
 | **laravel/tinker** | 2.10.1 | REPL interactivo |
+| **laravel-shift/blueprint** | 2.13 (dev) | Generador de migraciones/modelos |
 
 ### Testing
 | Componente | Versión | Descripción |
@@ -58,312 +60,245 @@ Rama actual: feature/aldana_refactoring
 ```
 app/
 ├── Actions/              # Acciones de negocio (Fortify)
-├── Concerns/             # Traits compartidos (validaciones, reglas)
-├── Enums/                # Enumeraciones (EstadoEnum, TipoDocumentoEnum, etc.)
+├── Concerns/              # Traits compartidos (validaciones, reglas)
+├── Enums/                 # Enumeraciones (ver tabla abajo)
 ├── Http/
-│   ├── Controllers/      # Controladores organizados por módulo
-│   │   ├── Admin/
-│   │   ├── AsesorSemillero/
-│   │   ├── DirectorInvestigacion/
-│   │   ├── DirectorSemilleros/
-│   │   ├── InvestigadorAsociado/
-│   │   ├── LiderSemillero/
-│   │   ├── SuperAdmin/
-│   │   └── Web/
-│   ├── Middleware/       # Middleware custom (EnsureUserIsActive, RedirectDirectorToModule, etc.)
-│   ├── Requests/         # Form Requests organizados por módulo
-│   └── Responses/
-├── Livewire/             # Componentes Livewire
-│   ├── Actions/
-│   ├── Admin/
-│   │   └── Users/        # Components de gestión de usuarios
-│   ├── Auth/
-│   ├── Settings/
-│   └── Shared/
-├── Mail/                 # Clases de notificación/email
-├── Models/               # Modelos Eloquent (~40+ modelos)
-├── Policies/             # Políticas de autorización
-│   ├── DirectorPolicy
-│   ├── GroupProductPolicy
-│   ├── GrupoPolicy
-│   ├── ProductoPolicy
-│   └── ProyectoPolicy
-├── Providers/            # Service providers
-├── Services/             # Clases de servicios
-│   ├── Director/
-│   └── Investigador/
-└── Support/              # Clases utilitarias
-    ├── TrainingCenterAccess.php  # Control de acceso a centros de formación
-    └── RoleModuleLinks.php        # Mapeo roles-módulos
+│   ├── Controllers/       # Controladores organizados por rol
+│   │   ├── Admin/                  # administrador_sistema
+│   │   ├── SuperAdmin/             # super_administrador
+│   │   ├── DirectorSemilleros/     # director_semilleros
+│   │   ├── LiderSemillero/         # lider_semillero
+│   │   ├── LiderProyecto/          # lider_proyecto
+│   │   ├── Coinvestigador/         # co_investigador
+│   │   ├── Web/                    # catálogos compartidos entre roles
+│   │   └── Settings/               # perfil, password, cuenta (todos los roles)
+│   ├── Middleware/        # Middleware custom (ver tabla abajo)
+│   ├── Requests/          # Form Requests organizados por módulo
+│   └── Responses/         # LoginResponse (Fortify, inicializa rol activo)
+├── Livewire/
+│   ├── Actions/           # Logout
+│   ├── Admin/Users/        # UserCreate, UserEdit, UserIndex
+│   ├── Auth/               # Login
+│   ├── Settings/           # Appearance, TwoFactor
+│   └── Shared/             # UserNameDisplay
+├── Mail/                   # Clases de notificación/email
+├── Models/                 # ~28 modelos Eloquent (ver lista abajo)
+├── Policies/                # ⚠️ vacío (ver nota en "Patrones no encontrados")
+├── Providers/               # Service providers
+├── Services/
+│   ├── Admin/               # NotificacionService, UserCreationService
+│   └── LiderSemillero/      # ProyectoLiderService, RevisionEvidenciaService
+└── Support/                 # Clases utilitarias centrales (ver tabla abajo)
 ```
 
 ### Directorios en `database/`
-- **migrations/** - 50+ migraciones para tablas de dominio
-- **factories/** - Factory para generar datos de prueba
-- **seeders/** - Seeders para datos iniciales
+- **migrations/** — 13+ migraciones nuevas solo en agosto de 2026 (rediseño de roles + multi-rol), todas `Ran`, ninguna pendiente.
+- **factories/** — Factories para datos de prueba.
+- **seeders/** — `RolesAndPermissionsSeeder` (6 roles, 11 módulos de permisos), seeders de catálogos.
 
 ### Directorios en `resources/`
 ```
 resources/views/
 ├── admin/
-├── asesor_semillero/
-├── components/
-├── dashboard/
-├── director_investigacion/
-├── director_semilleros/
-├── flux/
-├── investigador/
-├── layouts/
-├── lider_semillero/
-├── livewire/              # Vistas para componentes Livewire
-├── partials/
-├── settings/
 ├── super-admin/
-└── emails/
+├── director_semilleros/
+├── lider_semillero/
+├── lider_proyecto/
+├── co_investigador/
+├── components/            # app-layout.blade.php (sidebar + selector "Mis roles")
+├── dashboard/
+├── emails/
+├── flux/
+├── layouts/
+├── livewire/
+├── partials/
+└── settings/
 ```
+
+> Ya no existen `asesor_semillero/`, `director_investigacion/` ni `investigador/` — se eliminaron junto con esos roles en agosto de 2026.
 
 ---
 
 ## 🏛️ PATRONES ARQUITECTURALES DETECTADOS
 
 ### 1. **Service Layer**
-Ubicación: `app/Services/`
-
-Ejemplo: `Director/`, `Investigador/` contienen lógica de negocio reutilizable.
-
-**Patrón:**
-```php
-// app/Services/Director/GestionarGrupo.php
-public function crearGrupo(array $data): ResearchGroup {
-    // lógica compleja
-}
-```
+Ubicación: `app/Services/`. Hoy solo cubre `Admin/` (creación de usuarios, notificaciones) y `LiderSemillero/` (creación de proyecto, revisión de evidencias en 2 etapas). Los servicios de `Director/` e `Investigador/` del diseño anterior fueron eliminados junto con esos roles — el resto de controladores por rol (`DirectorSemilleros`, `LiderProyecto`, `Coinvestigador`, `SuperAdmin`) implementan su lógica directamente en el controlador.
 
 ### 2. **Actions (Fortify)**
-Ubicación: `app/Actions/Fortify/`
-
-Acciones específicas de autenticación y gestión de usuarios.
+Ubicación: `app/Actions/Fortify/`. Acciones específicas de autenticación y gestión de usuarios (`CreateNewUser`, etc.).
 
 ### 3. **Concerns (Traits)**
-Ubicación: `app/Concerns/`
-
-Reutilización de validaciones:
-- `ProfileValidationRules` - reglas de validación para perfiles
-- `PasswordValidationRules` - reglas para contraseñas
-
-**Patrón:**
-```php
-class UserController extends Controller {
-    use ProfileValidationRules;
-    
-    public function store(Request $request) {
-        $validated = $request->validate($this->profileRules());
-    }
-}
-```
+Ubicación: `app/Concerns/`.
+- `ProfileValidationRules` — reglas de validación de perfil (incluye CVLAC, Nivel de Formación, Fecha de Vinculación para `co_investigador`).
+- `PasswordValidationRules` — reglas de contraseña.
+- `StreamsPublicStorageFiles` — descarga estandarizada de archivos de `storage/app/public` (reemplazó las distintas implementaciones de "Ver en el navegador"/"Descargar" que existían por módulo).
 
 ### 4. **Enumeraciones**
-Ubicación: `app/Enums/`
+Ubicación: `app/Enums/` — 10 enums:
 
-Estados y tipos como Enums tipados:
-- `EstadoEnum` (Activo, Inactivo)
-- `TipoDocumentoEnum`
-- `GeneroEnum`
-- `JornadaEnum`
-- `ModalidadEnum`
-- `RolGrupoEnum`
-- `TipoParticipacionEnum`
-- `TipoProyectoOrigenEnum`
+| Enum | Casos |
+|------|-------|
+| `EstadoEnum` | Activo, Inactivo |
+| `EstadoRevisionEnum` | Pendiente, EnRevision, Aprobado, Rechazado |
+| `GeneroEnum` | Masculino, Femenino, PrefieroNoDecirlo |
+| `ModalidadEnum` | Virtual, Presencial |
+| `NivelFormacionEnum` | Tecnico, Tecnologo, Pregrado, Posgrado |
+| `TipoDocumentoEnum` | DocumentoIdentidad, CedulaCiudadana, Pasaporte, CedulaExtrangera |
+| `TipoEvidenciaEnum` | Desarrollo, Formulacion, Ejecucion, ProductoFinal |
+| `TipoParticipacionEnum` | Origen, Aliado, Cooperacion |
+| `TipoProyectoOrigenEnum` | SGPS, CapacidadInstalada, Formativa, IniciativaCentro, Articulacion, Semilleros, Otro |
+| `RolGrupoEnum` | Director, InvestigadorLider, InvestigadorAsociado, Integrante — ⚠️ **sin ninguna referencia en el código fuera de su propio archivo**; era del flujo de `ResearchGroup` ya eliminado, candidato a limpieza |
+
+`JornadaEnum` fue eliminado (`BUG-20260813-042`, junto con el campo "Jornada" del programa de formación).
 
 ### 5. **Políticas de Autorización (Policies)**
-Ubicación: `app/Policies/`
-
-Control de acceso basado en recursos:
-- `DirectorPolicy`
-- `GroupProductPolicy`
-- `GrupoPolicy`
-- `ProductoPolicy`
-- `ProyectoPolicy`
-
-**Patrón:**
-```php
-// DirectorPolicy.php
-public function update(User $user, Director $director): bool {
-    return $user->id === $director->user_id;
-}
-```
+Ubicación: `app/Policies/` — **actualmente vacío**. Las policies del diseño anterior (`DirectorPolicy`, `GroupProductPolicy`, `GrupoPolicy`, `ProductoPolicy`, `ProyectoPolicy`) se eliminaron junto con los modelos `ResearchGroup`/`Product`/`GroupProduct`. La autorización hoy se hace con permisos Spatie (`$this->authorize('modulo.accion')`) y validaciones manuales de ownership/centro en cada controlador (p. ej. `ensureDelCentro()`, `ensureOwnedLiderProyecto()`), no con clases `Policy`.
 
 ### 6. **Middleware Customizado**
 Ubicación: `app/Http/Middleware/`
 
-- `EnsureUserIsActive` - Verifica usuario activo
-- `PreventBackHistory` - Previene botón atrás
-- `RedirectDirectorToModule` - Redirige según rol
-- `RequireTrainingCenter` - Requiere centro de formación
+| Middleware | Función |
+|---|---|
+| `EnsureUserIsActive` | Bloquea usuarios con `estado = inactivo` |
+| `PreventBackHistory` | Cabeceras no-cache contra el botón atrás |
+| `RedirectDirectorToModule` | Redirige `/dashboard` según el rol activo |
+| `RequireTrainingCenter` | Exige `training_center_id` en roles que lo requieren |
+| `EnsureActiveRole` (alias `active_role`) | Aísla el acceso a un grupo de rutas al **rol activo** de sesión, no solo al rol asignado — núcleo del sistema multi-rol |
 
 ### 7. **Control de Acceso por Centro (Multi-tenancy simplificado)**
 Ubicación: `app/Support/TrainingCenterAccess.php`
 
-Implementa lógica de restricción por `training_center_id`:
-- **Super administrador**: ve todos los centros
-- **Admin de centro**: restringido a su centro
-- **Roles ligados a sede**: `director_semilleros`, `lider_semillero`, `asesor_semillero`, `director_investigacion`, `investigador_asociado`
-
-### 8. **Componentes Livewire Reactivos**
-Ubicación: `app/Livewire/`
-
-Ejemplo: `Admin/Users/UserIndex.php`
 ```php
-class UserIndex extends Component {
-    use WithPagination;
-    
-    #[Url]
-    public string $search = '';
-    
-    public function render() {
-        $users = User::when($this->search, ...)
-                     ->paginate(15);
-        return view('livewire.admin.users.user-index', compact('users'));
-    }
-}
+public const CENTRO_BOUND_ROLE_NAMES = [
+    'administrador_sistema',
+    'director_semilleros',
+    'lider_semillero',
+    'lider_proyecto',
+];
 ```
 
-**Características:**
-- Atributos `#[Url]` para sincronizar estado con URL
-- `WithPagination` para paginación
-- Métodos públicos como acciones (ej: `toggleEstado()`)
+`co_investigador` es el **único rol global** — no está en esta lista y nunca requiere `training_center_id`. Además de `scopeUserQueryForList()` (listados, excluye al propio usuario), existe `scopeUserQueryForMetrics()` (conteos/dashboards, no excluye al usuario) — separados desde `BUG-20260813-035` para no romper métricas al reutilizar el scope de listados.
 
-### 9. **Form Requests**
-Ubicación: `app/Http/Requests/`
+### 8. **Sistema de rol activo / multi-rol**
+Ubicación: `app/Support/ActiveRoleContext.php`, `app/Support/RoleAssignmentMatrix.php`, `app/Support/RoleModuleLinks.php`.
 
-Validación centralizada en clases FormRequest:
-- `StorePersonRequest`
-- `StoreCityRequest`
-- `StoreDepartmentRequest`
-- Organizados por módulo
+- `ActiveRoleContext` — resuelve/cambia el rol activo en sesión (`current()`, `switchTo()`, `initializeForUser()`, `isPrimary()`).
+- `RoleAssignmentMatrix` — universo de roles adicionales permitidos por pantalla de creación/edición (nunca permite inyectar `super_administrador`).
+- `RoleModuleLinks` — prioridad de rol para login/redirección, labels legibles y URL del dashboard de cada rol.
+
+### 9. **Componentes Livewire Reactivos**
+Ubicación: `app/Livewire/`. Solo el módulo de usuarios de Admin (`UserCreate`, `UserEdit`, `UserIndex`) usa Livewire para CRUD — el resto del sistema (todos los módulos por rol) es controladores + Blade tradicional, no Livewire.
+
+### 10. **Form Requests**
+Ubicación: `app/Http/Requests/`, organizados por módulo/catálogo (`StoreTrainingProgramRequest`, etc.). Los Form Requests del diseño anterior ligados a `Product`/`GroupProduct`/`ResearchGroup` fueron eliminados.
 
 ---
 
 ## 🔐 SISTEMA DE AUTENTICACIÓN Y AUTORIZACIÓN
 
 ### Autenticación
-- **Driver:** Laravel Fortify
-- **Verificación de email:** Implementada (`MustVerifyEmail`)
-- **2FA:** Soporte con `TwoFactorAuthenticatable`
-- **Remember me:** Disponible
+- **Driver:** Laravel Fortify.
+- **Verificación de email:** Implementada (`MustVerifyEmail`).
+- **2FA:** Soporte con `TwoFactorAuthenticatable`, QR code.
+- **Correo transaccional:** Resend (reemplazó la configuración de Mailtrap del entorno de desarrollo anterior).
 
-### Autorización - Roles (Spatie Permission)
-El proyecto define estos roles principales:
+### Autorización — Roles (Spatie Permission)
+El proyecto define exactamente **6 roles** (`RolesAndPermissionsSeeder`):
 ```
-- super_administrador          # Acceso global
-- administrador_sistema        # Admin de un centro
-- director_semilleros         # Gestiona semilleros
-- lider_semillero             # Lidera un semillero
-- asesor_semillero            # Asesora semilleros
-- director_investigacion      # Gestiona investigación
-- investigador_asociado       # Participa en investigación
-- admin (legacy)              # Retrocompatibilidad
+- super_administrador     # Acceso global, sin training_center_id
+- administrador_sistema   # Admin de un centro (ligado a centro)
+- director_semilleros     # Gestiona semilleros de su centro (ligado a centro)
+- lider_semillero         # Lidera un semillero (ligado a centro)
+- lider_proyecto          # Lidera un proyecto (ligado a centro)
+- co_investigador         # Colabora en proyectos de cualquier centro — rol global
 ```
+
+11 módulos de permisos: `usuarios`, `catalogos`, `semilleros`, `proyectos`, `aprendices`, `productos`, `evidencias`, `documentos`, `archivos_semillero`, `minciencias`, `reportes`.
+
+> **Nota de autorización abierta (`BUG-20260813-057`, sin resolver por decisión explícita):** las rutas de `external-advisors`, `minciencias-typologies`, `minciencias-subcategories`, `training-programs`, `training-centers` en el grupo compartido `admin.` de `routes/web.php` no tienen middleware `role:` — cualquier usuario autenticado puede acceder sin importar su rol.
 
 ### Model User
 **Ubicación:** `app/Models/User.php`
 
-**Características:**
 ```php
-- HasRoles (Spatie Permission)
-- HasFactory
-- Notifiable
-- TwoFactorAuthenticatable
+- HasRoles (Spatie Permission), HasFactory, Notifiable, TwoFactorAuthenticatable
 - MustVerifyEmail
+
+// fillable clave
+- training_center_id, created_by_user_id, primary_role_name, estado
 
 // Relaciones clave
 - trainingCenter(): BelongsTo
+- createdBy(): BelongsTo (self — quién creó esta cuenta, regla de "solo el creador edita")
 - person(): HasOne
-- researchGroups(): BelongsToMany
-- seedlings(): BelongsToMany
-- createdSeedlings(), ledSeedlings(): HasMany
-- createdProjects(), projectAuthors(): HasMany
-- groupProducts(): HasMany
-
-// Scopes
-- scopeActive()  // Solo usuarios activos
-
-// Helpers
-- getNameAttribute()           // Nombre desde Person
-- initials()                   // Iniciales para avatares
-- routeNotificationForMail()   // Email prioritario
 ```
+
+`created_by_user_id` respalda la regla de propiedad (`UserOwnershipAccess::canManage()`): en general solo quien creó una cuenta puede gestionarla, con excepción explícita para cuentas huérfanas (creadas antes de que existiera esta columna, `BUG-20260813-033`).
 
 ---
 
 ## 📊 BASE DE DATOS
 
 ### Motor
-- **Driver:** MySQL (configurable en .env)
-- **Base de datos:** sistema_documental
-- **Conexión:** 127.0.0.1:3306 (usuario root sin contraseña en dev)
+- **Driver:** MySQL en producción/desarrollo; **SQLite en memoria** en tests (`phpunit.xml`).
+- **Conexión dev:** 127.0.0.1:3306.
 
-### Tablas principales (50+ migraciones)
+### Tablas principales
 
 **Catálogo:**
-- departments, cities, training_centers, training_records, training_programs
-- entity_positions, linkage_types, investigation_types, minciencias_typologies
+- `departments`, `cities`, `training_centers`, `training_programs`, `training_program_types`
+- `entity_positions`, `linkage_types`, `investigation_types`, `minciencias_typologies`, `minciencias_subcategories`
+- `research_lines`, `technological_lines`, `thematic_areas`, `project_modalities`
+- `catalogos` (modelo genérico de tipo libre — ver nota de posible código muerto en `MODELO_NEGOCIO.md`)
 
 **Dominio:**
-- users, people (información personal)
-- research_groups, seedlings, projects, grupo_productos
-- research_lines, technological_lines, thematic_areas, knowledge_areas
+- `users`, `people`
+- `seedlings`, `projects`, `macro_projects`
+- `minciencias_products`, `minciencias_product_files`
 
 **Relacionales:**
-- research_group_users, seedling_members
-- project_authors, product_authors, product_evidence
+- `project_learners` (aprendices — datos libres, no usuarios)
+- `project_authors` (vincula usuarios `co_investigador` a proyectos)
+- `project_evidences` (4 tipos, con columnas de revisión de 2 etapas y de notificación "punto rojo": `visto_por_lider_proyecto_at`, `visto_por_lider_semillero_at`)
+- `seedling_advisors`, `seedling_files`, `seedling_internal_documents`
+
+**Tablas eliminadas en el rediseño de agosto de 2026:** `research_groups`, `research_group_users`, `products`, `product_authors`, `product_evidences`, `group_products`, `group_product_reviews`, `project_seedlings`, `seedling_members`, `knowledge_areas`, `knowledge_grand_areas`, `training_records`.
 
 ### Sesiones y Cache
-- **SESSION_DRIVER:** database (sesiones en BD)
-- **CACHE_STORE:** database (caché en BD)
-- **QUEUE_CONNECTION:** database (colas en BD)
+- **SESSION_DRIVER:** database
+- **CACHE_STORE:** database
+- **QUEUE_CONNECTION:** database (configurada, sin Jobs definidos — igual que antes)
 
 ---
 
 ## 🧪 TESTING
 
 ### Configuración
-**Archivo:** `phpunit.xml`
+**Archivo:** `phpunit.xml` — SQLite en memoria (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`).
 
-```xml
-<testsuites>
-    <testsuite name="Unit">
-        <directory>tests/Unit</directory>
-    </testsuite>
-    <testsuite name="Feature">
-        <directory>tests/Feature</directory>
-    </testsuite>
-</testsuites>
-
-<!-- Testing usa SQLite en memoria -->
-<env name="DB_CONNECTION" value="sqlite"/>
-<env name="DB_DATABASE" value=":memory:"/>
+### Tests existentes — **80 archivos, 294 tests pasando** (807 assertions, ~86s)
+```
+tests/
+├── Feature/
+│   ├── Admin/                 (1 archivo)
+│   ├── Auth/                  (3 archivos)
+│   ├── Coinvestigador/        (1 archivo)
+│   ├── LiderProyecto/         (1 archivo)
+│   ├── LiderSemillero/        (1 archivo)
+│   ├── Regression/            (69 archivos — 1 por cada BUG-20260813-NNN corregido)
+│   ├── DashboardTest.php
+│   └── ExampleTest.php
+└── Unit/
+    └── ExampleTest.php
 ```
 
-### Tests existentes (11 archivos)
-**Feature Tests:**
-- `Auth/AuthenticationTest.php`
-- `Auth/PasswordConfirmationTest.php`
-- `Auth/PasswordResetTest.php`
-- `Auth/TwoFactorChallengeTest.php`
-- `DashboardTest.php`
-- `ExampleTest.php`
-- `Settings/PasswordUpdateTest.php`
-- `Settings/ProfileUpdateTest.php`
-- `Settings/TwoFactorAuthenticationTest.php`
-
-**Unit Tests:**
-- `ExampleTest.php`
+Cada test de `Regression/` corresponde a un bug/reforma con ID secuencial documentado en `docs/CHANGELOG-sesion-2026-08.md` / `docs/FEAT-20260830-001-multirol.md`, con docblock explicando causa raíz y solución — convención establecida en `docs/SESION_2026-08-13_REDISENO_ROLES.md`.
 
 ### Ejecución
 ```bash
-composer test          # Ejecuta todos los tests
-composer test:lint     # Solo linting con Pint
+composer test          # PHPUnit + Pint
+php artisan test        # Solo PHPUnit
+composer lint            # Solo Pint
 ```
 
 ---
@@ -371,150 +306,38 @@ composer test:lint     # Solo linting con Pint
 ## 🎨 FRONTEND Y CONVENCIONES
 
 ### Estilos
-- **Framework CSS:** Tailwind CSS 4.0
-- **Estrategia:** Utility-first con clases compuestas
-
-Ejemplo de componente:
-```html
-<div class="sgd-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
-    <p class="text-sm font-medium text-slate-500">{{ $label }}</p>
-</div>
-```
-
-### Componentes Livewire
-**Convenciones:**
-- Ubicación: `app/Livewire/[Modulo]/[Nombre].php`
-- Vistas: `resources/views/livewire/[modulo]/[vista].blade.php`
-- Traits: `WithPagination` para listados
-- Atributos: `#[Url]` para parámetros en URL
+Tailwind CSS 4.0, utility-first. Color primario institucional `#39A900` (verde SENA) usado de forma consistente en formularios y botones.
 
 ### Vistas Blade
-**Organización por módulo:**
-- `resources/views/admin/`
-- `resources/views/director_semilleros/`
-- `resources/views/lider_semillero/`
-- `resources/views/asesor_semillero/`
-- `resources/views/investigador/`
-
-**Layouts compartidos:**
-- `resources/views/layouts/app.blade.php`
-- `resources/views/components/` (componentes Blade reutilizables)
+Organización por rol: `resources/views/{admin,super-admin,director_semilleros,lider_semillero,lider_proyecto,co_investigador}/`.
+Layout compartido: `resources/views/components/app-layout.blade.php` — sidebar con badges de notificación "punto rojo" y el selector **"Mis roles"** (solo visible con ≥2 roles asignados).
 
 ### Vite Config
-```javascript
-// vite.config.js
-export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: true,
-        }),
-        tailwindcss(),
-    ],
-});
-```
+Sin cambios respecto al reporte anterior: Tailwind vía `@tailwindcss/vite`, `laravel-vite-plugin`.
 
 ---
 
 ## 📝 CONVENCIONES DE CÓDIGO DETECTADAS
 
-### Type Hinting
-✅ **Completamente tipado**
-```php
-public function index(Request $request): View {}
-public function create(int $userId, ?User $user = null): Collection {}
-```
-
-### Naming Conventions
-- **Modelos:** PascalCase (User, ResearchGroup, Seedling)
-- **Métodos:** camelCase (toggleEstado, routeNotificationForMail)
-- **Propiedades:** snake_case (training_center_id, primer_nombre)
-- **Constantes:** SNAKE_CASE (CENTRO_BOUND_ROLE_NAMES)
-
-### Enums
-✅ **Uso extenso de Enums para tipos y estados**
-```php
-enum EstadoEnum: string {
-    case Activo = 'activo';
-    case Inactivo = 'inactivo';
-}
-
-// En casts del modelo:
-protected function casts(): array {
-    return [
-        'estado' => EstadoEnum::class,
-        'tipo_documento' => TipoDocumentoEnum::class,
-    ];
-}
-```
-
-### Formatting
-- **PSR-12** con Laravel Pint (linting via `composer lint`)
-- **Indentación:** 4 espacios
-- **Línea máxima:** Se respeta en archivos existentes
-
-### Docblocks
-- Uso de docblocks en métodos públicos (rara vez multilinea)
-- Type hints en docblocks para claridad en tipos complejos
-
-### Comentarios
-- Mínimos, solo para lógica no-obvia
-- Separadores ASCII para secciones: `// ─────────────────────`
+Sin cambios respecto al reporte anterior — siguen vigentes:
+- Type hinting completo (PHP 8.2+).
+- Naming: modelos PascalCase, métodos camelCase, propiedades snake_case, constantes SNAKE_CASE.
+- Enums tipados en casts de modelo.
+- PSR-12 vía Laravel Pint (`composer lint`).
+- Separadores ASCII de sección: `// ─────────────────────────────────────────────`.
+- Comentarios mínimos, solo para lógica no-obvia (varios docblocks de clase explican decisiones de diseño no evidentes — p. ej. por qué `MincienciasProduct` no se vincula a ningún semillero).
 
 ---
 
 ## 🔍 EJEMPLO DE PATRÓN: TrainingCenterAccess
 
-**Ubicación:** `app/Support/TrainingCenterAccess.php`
-
-Este archivo es central para entender la filosofía del proyecto:
-
-```php
-final class TrainingCenterAccess {
-    // Roles que requieren un centro de formación asignado
-    const CENTRO_BOUND_ROLE_NAMES = [
-        'director_semilleros', 'lider_semillero', 'asesor_semillero',
-        'director_investigacion', 'investigador_asociado',
-    ];
-    
-    // Métodos estáticos para control de acceso
-    public static function isSuperAdmin(?User $user): bool
-    public static function scopedToTrainingCenter(?User $user): bool
-    public static function validateCentroBoundRoleAssignment(...)
-    public static function scopeUserQueryForList(Builder $query, ?User $user): Builder
-    public static function centersForSelect(?User $user): Collection
-    public static function rolesForUserForm(?User $auth): Collection
-}
-```
-
-**Uso típico:**
-```php
-// En controladores/Livewire
-$users = TrainingCenterAccess::scopeUserQueryForList(
-    User::with(['person', 'roles']),
-    auth()->user()
-)->paginate(15);
-```
+Sin cambios de fondo respecto al reporte anterior, salvo la lista de roles ligados a centro (ver arriba) y la separación `scopeUserQueryForList()` / `scopeUserQueryForMetrics()`. Sigue siendo el archivo más importante del proyecto para entender el aislamiento de datos.
 
 ---
 
 ## 📦 DEPENDENCIAS CLAVE
 
-### Production
-- ✅ `laravel/framework` - Core
-- ✅ `livewire/livewire` - Componentes reactivos
-- ✅ `livewire/flux` - UI components
-- ✅ `spatie/laravel-permission` - Roles & permisos
-- ✅ `laravel/fortify` - Autenticación
-- ✅ `barryvdh/laravel-dompdf` - PDFs
-- ✅ `phpoffice/phpspreadsheet` - Excel
-- ✅ `laravel/tinker` - REPL
-
-### Development
-- ✅ `phpunit/phpunit` - Testing
-- ✅ `laravel/pint` - Code formatting
-- ✅ `laravel/sail` - Docker dev environment
-- ✅ `mockery/mockery` - Mocking
+Sin cambios de fondo respecto al reporte anterior, con la adición de `resend/resend-laravel` (correo) y `laravel-shift/blueprint` (dev, generador de scaffolding).
 
 ---
 
@@ -523,155 +346,50 @@ $users = TrainingCenterAccess::scopeUserQueryForList(
 ### Scripts disponibles
 ```bash
 composer setup          # Setup inicial (install, migrate, npm install, build)
-composer dev           # Inicia servidor + queue + npm dev (concurrently)
-composer test          # Tests + linting
-composer lint          # Pint linting
-npm run build          # Build para producción
-npm run dev            # Dev server Vite con HMR
+composer dev             # Inicia servidor + queue + npm dev (concurrently)
+composer test            # Tests + linting
+composer lint             # Pint linting
+npm run build             # Build para producción
+npm run dev               # Dev server Vite con HMR
 ```
 
-### Variables de entorno clave (.env)
+### Variables de entorno clave (`.env.example`, valores de producción)
 ```
-APP_NAME=GIDESTH
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost
+APP_NAME=SIGESI
+APP_ENV=production
+APP_DEBUG=false
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=sistema_documental
-DB_USERNAME=root
-DB_PASSWORD=
 
 SESSION_DRIVER=database
 QUEUE_CONNECTION=database
 CACHE_STORE=database
 
 MAIL_MAILER=smtp
-MAIL_HOST=sandbox.smtp.mailtrap.io  # Configurado para Mailtrap
+MAIL_SCHEME=smtps
+MAIL_PORT=465
 ```
 
 ---
 
 ## 🎯 PATRONES NO ENCONTRADOS (Información negativa)
 
-Estos patrones **NO** se usan en el proyecto:
+Sin cambios respecto al reporte anterior — siguen sin usarse: Repositories, Events & Listeners, Jobs, Observers, API Resources, DTOs, Sanctum/Passport. Se agrega:
 
-- ❌ **Repositories** - Se consulta directamente con Eloquent
-- ❌ **Events & Listeners** - No hay eventos de dominio
-- ❌ **Jobs & Queues** - Queue está configurada pero no hay Jobs definidos
-- ❌ **Observers** - No hay observadores automáticos
-- ❌ **API Resources** - No hay respuestas JSON tipadas (es aplicación Livewire/Blade)
-- ❌ **DTOs** - No hay Data Transfer Objects explícitos
-- ❌ **Sanctum/Passport** - Solo Fortify para autenticación web
-- ❌ **Seeders complejos** - Solo estructura base
+- ❌ **Policies activas** — la carpeta `app/Policies/` existe pero está vacía; la autorización se resuelve con permisos Spatie + checks manuales de ownership en cada controlador, no con clases `Policy` registradas.
 
 ---
 
 ## 💡 OBSERVACIONES CLAVE
 
-1. **Multi-tenancy simplificado:** El campo `training_center_id` actúa como tenant, con lógica centralizada en `TrainingCenterAccess`
-
-2. **Arquitectura modular:** Controladores, Livewire y Vistas organizadas por rol/módulo (Admin, DirectorSemilleros, etc.)
-
-3. **Type Safety:** PHP 8.2+ con tipos completos, Enums para dominios, Spatie Permission para RBAC
-
-4. **Reactividad sin frontend:** Livewire 4.0 + Flux proporciona UX moderna sin necesidad de framework JS separado
-
-5. **Formatos mixtos:** Genera PDFs y Excel para reportes/exportaciones
-
-6. **Trait-based validation:** Reutilización de reglas de validación mediante Concerns/Traits
-
-7. **Scope-based queries:** Uso extenso de `when()` y scopes para reutilización de lógica de filtrado
-
----
-
-## 🛠️ SKILLS RECOMENDADAS PARA CLAUDE CODE
-
-Basándose en el contexto técnico detectado:
-
-### Nivel ALTO (Esencial)
-1. **laravel-refactoring** - Para mejoras de código en modelos y controladores
-2. **livewire-components** - Para crear/mejorar componentes Livewire
-3. **database-migrations** - Para modificaciones de esquema
-4. **laravel-testing** - Para escribir/reparar tests
-5. **permissions-rbac** - Para gestionar roles y permisos con Spatie
-
-### Nivel MEDIO (Muy Útil)
-6. **tailwind-styling** - Para ajustes CSS con Tailwind
-7. **eloquent-queries** - Para optimización de queries
-8. **blade-templating** - Para mejorar vistas
-9. **form-validation** - Para refinar validaciones
-10. **pdf-excel-export** - Para reportes con DomPDF y PHPSpreadsheet
-
-### Nivel BAJO (Contextual)
-11. **api-routes** (si se expande API)
-12. **job-queues** (si se activan colas asincrónicas)
-13. **email-notifications** (si se implementan más emails)
-
----
-
-## 🤖 AGENTES RECOMENDADOS PARA CLAUDE CODE
-
-### Agentes especializados sugeridos
-
-1. **Agent: Data Modeler**
-   - Uso: Entender relaciones Eloquent complejas
-   - Trigger: "Analizar estructura de relaciones en Users/ResearchGroups"
-
-2. **Agent: Permission Architect**
-   - Uso: Diseñar políticas de acceso y roles
-   - Trigger: "¿Cómo debería estructura los permisos para...?"
-
-3. **Agent: Migration Expert**
-   - Uso: Crear migraciones sin romper datos
-   - Trigger: "Necesito agregar una columna a la tabla users sin migración rollback"
-
-4. **Agent: Livewire Specialist**
-   - Uso: Crear componentes Livewire complejos
-   - Trigger: "Crear un componente Livewire que haga..."
-
-5. **Agent: Test Writer**
-   - Uso: Escribir tests para nuevas features
-   - Trigger: "Escribe tests para..."
-
-6. **Agent: Performance Analyst**
-   - Uso: Optimizar queries N+1 y relaciones Eloquent
-   - Trigger: "Analizar performance de esta query"
-
-7. **Agent: Security Auditor**
-   - Uso: Validar permisos y autenticación
-   - Trigger: "¿Es segura esta implementación de...?"
-
----
-
-## 📖 RECURSOS INTERNOS
-
-**Archivos clave a estudiar:**
-- `app/Support/TrainingCenterAccess.php` - Control de acceso multi-tenant
-- `app/Models/User.php` - Modelo raíz con todas las relaciones
-- `app/Http/Controllers/Admin/DashboardController.php` - Patrón de controlador avanzado
-- `app/Livewire/Admin/Users/UserIndex.php` - Componente Livewire con paginación
-- `app/Concerns/ProfileValidationRules.php` - Trait de validaciones reutilizable
-- `phpunit.xml` - Configuración de testing
-- `vite.config.js` - Configuración del bundler
-
----
-
-## ✅ CHECKLIST PARA CONFIGURACIÓN INICIAL
-
-- [ ] Laravel 12.51.0 soportado por IDE
-- [ ] PHP 8.2+ linting activado
-- [ ] Spatie Permission documentation bookmarked
-- [ ] Livewire 4.0 documentation disponible
-- [ ] Tailwind CSS IntelliSense instalado en VS Code
-- [ ] PHPUnit runner configurado en IDE
-- [ ] MySQL conectado y running
-- [ ] `composer install && npm install` ejecutados
-- [ ] `.env` configurado con credenciales
-- [ ] `php artisan migrate` ejecutado
-- [ ] `npm run dev` y `php artisan serve` funcionando
+1. **Dos rediseños grandes desde la versión anterior de este reporte:** colapso de 7 a 6 roles (agosto, `SESION_2026-08-13_REDISENO_ROLES.md`) y sistema de rol activo/multi-rol (`FEAT-20260830-001-multirol.md`), ambos sin commitear en la rama actual al momento de escribir esto.
+2. **`co_investigador` es el único rol sin centro fijo** — puede colaborar en proyectos de varios centros y gestiona productos Minciencias personales revisados por el centro que él mismo elige.
+3. **El flujo de "producto" se dividió en dos flujos independientes:** evidencias de proyecto (dentro de un semillero, 2 etapas para producto final) y productos Minciencias personales (fuera de cualquier semillero, 1 etapa, revisado por un admin de centro). Ya no existe el flujo único "asesor → líder → investigador → director" del diseño anterior.
+4. **Suite de regresión disciplinada:** 69 de los 80 archivos de test son de regresión, cada uno atado a un ID de bug documentado — reduce el riesgo de reintroducir bugs ya corregidos, pero también significa que la cobertura sigue el orden en que se encontraron los bugs, no una cobertura sistemática por módulo.
+5. **Restos de código muerto identificados pero no limpiados:** `RolGrupoEnum` (sin referencias), el modelo/CRUD genérico `Catalogo` (sin FKs de otras tablas apuntándole).
+6. **Hueco de autorización documentado y pendiente:** el grupo de catálogos compartidos en `routes/web.php` no tiene middleware `role:` (`BUG-20260813-057`).
 
 ---
 
