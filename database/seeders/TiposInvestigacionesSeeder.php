@@ -19,7 +19,7 @@ class TiposInvestigacionesSeeder extends Seeder
         foreach ($tipos as $nombre) {
             \App\Models\InvestigationType::firstOrCreate(
                 ['nombre' => $nombre],
-                ['descripccion' => null]
+                ['descripcion' => null]
             );
         }
     }

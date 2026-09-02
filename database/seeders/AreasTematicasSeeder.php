@@ -21,7 +21,7 @@ class AreasTematicasSeeder extends Seeder
         foreach ($areas as $nombre) {
             \App\Models\ThematicArea::firstOrCreate(
                 ['nombre' => $nombre],
-                ['descripccion' => null]
+                ['descripcion' => null]
             );
         }
     }
