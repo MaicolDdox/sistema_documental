@@ -6,70 +6,38 @@
 
 ---
 
-## ⚠️ El seeding actual está roto — `db:seed` falla antes de crear usuarios
+## ✅ El seeding roto ya se corrigió
 
-`database/seeders/DatabaseSeeder.php` llama a `ResearchGroupSeeder::class`, que referencia `App\Models\ResearchGroup` — **modelo eliminado** en el rediseño de roles de agosto (junto con la entidad "grupo de investigación" completa). El orden de ejecución es:
+`database/seeders/DatabaseSeeder.php` llamaba a `ResearchGroupSeeder::class`, que referenciaba `App\Models\ResearchGroup` — **modelo eliminado** en el rediseño de roles de agosto. Eso hacía que `php artisan db:seed` fallara justo después de crear roles/permisos, antes de llegar a los catálogos. **Ya se quitó `ResearchGroupSeeder` de la cadena y se eliminó el archivo** — el orden actual es:
 
 ```
 DepartmentSeeder → CitySeeder → TrainingCenterSeeder → RolesAndPermissionsSeeder
-    → ResearchGroupSeeder   ← 💥 Error fatal: clase App\Models\ResearchGroup no existe
-    → UserSeeder            ← nunca se ejecuta
-    → SuperAdminSeeder       ← nunca se ejecuta
-    → [8 seeders de catálogos] ← nunca se ejecutan
+    → SuperAdminSeeder
+    → [8 seeders de catálogos]
 ```
 
-Con el código actual, `php artisan db:seed` en una base de datos nueva crea departamentos, ciudades, centros de formación y los roles/permisos — y **se detiene ahí**: ningún usuario ni catálogo (líneas de investigación, cargos, tipos de vinculación, Minciencias, etc.) llega a sembrarse. Todo el contenido de este documento a partir de aquí describe lo que **debería** sembrarse (leído directamente del código de cada seeder), no lo que efectivamente entra en una base de datos nueva hoy.
+## SIN USUARIOS DE PRUEBA EN EL SEEDING POR DEFECTO
 
-**Fix trivial disponible:** quitar la línea `ResearchGroupSeeder::class` de `DatabaseSeeder.php` (y opcionalmente eliminar el archivo `database/seeders/ResearchGroupSeeder.php`, que ya no tiene ninguna otra referencia). Ver si quieres que lo aplique.
+El proyecto **ya no incluye un `UserSeeder`** con cuentas de prueba (nombres, emails `@sena.edu.co`, contraseña compartida `Password123!`): ese archivo se eliminó a propósito para no publicar datos de usuarios — aunque fueran ficticios — en el repositorio público de GitHub, que además queda expuesto en cada deploy automático a producción.
 
----
+`php artisan db:seed` hoy solo crea:
+- Departamentos, ciudades y centros de formación (catálogos geográficos).
+- Roles y permisos (`RolesAndPermissionsSeeder`).
+- **Un único super administrador bootstrap** (`SuperAdminSeeder`, ver abajo) — necesario para poder entrar al sistema por primera vez.
+- Los catálogos de dominio (líneas, áreas, cargos, tipos de vinculación, Minciencias).
 
-## CREDENCIALES DE ACCESO POR ROL
+Si necesitas usuarios de prueba adicionales (director de semilleros, líder de semillero, líder de proyecto, co-investigador) para probar el sistema en **local**, créalos manualmente desde la interfaz (con el super admin bootstrap) o con un seeder/script propio que **no** se versione en git (por ejemplo, agregándolo a `.gitignore`).
 
-> **Contraseña universal para todos los usuarios de prueba:** `Password123!` (definidas en `UserSeeder`; el super administrador puede sobreescribirse con las variables de entorno `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD` / `SUPER_ADMIN_DOCUMENT`, usadas por `SuperAdminSeeder`).
+### Super Administrador bootstrap (`SuperAdminSeeder`)
+Único usuario que crea el seeding por defecto. Configurable por variables de entorno — **cámbialas en cualquier entorno que no sea tu máquina local**:
 
-### Super Administrador
-| Campo | Valor |
-|-------|-------|
-| Email | superadmin@sena.edu.co |
-| Contraseña | Password123! |
-| Documento | 900000001 |
-| Rol | super_administrador |
-| Centro | ninguno (rol sin `training_center_id`) |
+| Variable de entorno | Valor por defecto si no se define |
+|---|---|
+| `SUPER_ADMIN_EMAIL` | `superadmin@sena.edu.co` |
+| `SUPER_ADMIN_PASSWORD` | `Password123!` |
+| `SUPER_ADMIN_DOCUMENT` | `900000001` |
 
-### Administradores del Sistema (2 usuarios, uno por centro)
-| Email | Documento | Centro | Creado por |
-|-------|-----------|--------|------------|
-| ydmoreno@sena.edu.co | 34327134 | Centro de Formación Agroindustrial (9116) | superadmin |
-| jovalenciap@sena.edu.co | 10304952 | Centro de la Industria, la Empresa y los Servicios (9527) | superadmin |
-
-### Directores de Semilleros (2 usuarios)
-| Email | Documento | Centro | Creado por |
-|-------|-----------|--------|------------|
-| directorsem@sena.edu.co | 1076504087 | Centro de Formación Agroindustrial (9116) | ydmoreno (admin) |
-| dirsemillero@sena.edu.co | 52345678 | Centro de la Industria, la Empresa y los Servicios (9527) | jovalenciap (admin) |
-
-### Líderes de Semillero (2 usuarios)
-| Email | Documento | Centro | Creado por |
-|-------|-----------|--------|------------|
-| lidersem@sena.edu.co | 87654321 | Centro de Formación Agroindustrial (9116) | directorsem |
-| liderIndustrialsem@sena.edu.co | 103049521 | Centro de la Industria, la Empresa y los Servicios (9527) | dirsemillero |
-
-### Líderes de Proyecto (2 usuarios)
-| Email | Documento | Centro | Creado por |
-|-------|-----------|--------|------------|
-| liderproyecto@sena.edu.co | 55114455 | Centro de Formación Agroindustrial (9116) | lidersem |
-| liderproyectoIndu@sena.edu.co | 55114456 | Centro de la Industria, la Empresa y los Servicios (9527) | liderIndustrialsem |
-
-### Co-investigadores (2 usuarios — rol global, sin centro)
-| Email | Documento | Centro | Creado por |
-|-------|-----------|--------|------------|
-| coinvestigador@sena.edu.co | 33333333 | *(ninguno)* | ydmoreno (admin) |
-| coinvestigadorIndu@sena.edu.co | 33333334 | *(ninguno)* | jovalenciap (admin) |
-
-**Total de usuarios que crea `UserSeeder` (una vez arreglado el paso 5): 11** (1 super admin + 2 admin + 2 director de semilleros + 2 líder de semillero + 2 líder de proyecto + 2 co-investigador), respetando la cadena de creación real del sistema (`created_by_user_id`).
-
-Cada usuario recibe automáticamente un `Person` asociado (nombre, apellido, género) con `entity_position_id` y `linkage_type_id` fijos vía `crearPersonaSiFalta()` en `UserSeeder`.
+⚠️ Si se despliega a producción sin definir estas 3 variables en el `.env` del servidor, el sistema queda con un super administrador de credenciales públicas y conocidas. Definirlas es un paso obligatorio antes de cualquier `db:seed` en un entorno real.
 
 ---
 
@@ -196,15 +164,15 @@ Reemplazó la lista anterior de 15 cargos (`BUG-20260813-044`); se usa en el cam
 Estos catálogos aparecían en la versión previa de este documento y **fueron eliminados por completo** (tabla, modelo, seeder, controlador, vistas) en el rediseño de agosto de 2026 — no intentes sembrarlos ni buscarlos en la interfaz:
 
 - **Grandes Áreas de Conocimiento** y **Áreas de Conocimiento** (`knowledge_grand_areas`, `knowledge_areas`) — `BUG-20260813-041`.
-- **Grupos de Investigación** (`research_groups`) — el `ResearchGroupSeeder` que aún los siembra es código muerto que rompe el resto del `db:seed` (ver advertencia al inicio de este documento).
+- **Grupos de Investigación** (`research_groups`) — junto con el `ResearchGroupSeeder` que los sembraba (código muerto, ya eliminado).
 
 ---
 
-## ESTADÍSTICAS GENERALES (una vez corregido el seeding)
+## ESTADÍSTICAS GENERALES
 
 | Elemento | Cantidad |
 |----------|----------|
-| Usuarios totales | 11 |
+| Usuarios que crea `db:seed` | 1 (solo el super administrador bootstrap) |
 | Roles | 6 |
 | Permisos | 81 |
 | Módulos de permisos | 11 |
