@@ -20,7 +20,7 @@ class LineasInvestigacionesSeeder extends Seeder
         foreach ($lineas as $nombre) {
             \App\Models\ResearchLine::firstOrCreate(
                 ['nombre' => $nombre],
-                ['descripccion' => null]
+                ['descripcion' => null]
             );
         }
     }

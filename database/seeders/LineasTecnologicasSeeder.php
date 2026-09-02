@@ -20,7 +20,7 @@ class LineasTecnologicasSeeder extends Seeder
         foreach ($lineas as $nombre) {
             \App\Models\TechnologicalLine::firstOrCreate(
                 ['nombre' => $nombre],
-                ['descripccion' => null]
+                ['descripcion' => null]
             );
         }
     }

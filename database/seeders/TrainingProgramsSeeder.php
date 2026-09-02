@@ -14,9 +14,9 @@ class TrainingProgramsSeeder extends Seeder
     {
         // 1. Crear Tipos de Programa (si no existen)
         $tipos = [
-            ['id' => 1, 'nombre' => 'Tecnólogo', 'descripccion' => 'Programas de nivel tecnológico.'],
-            ['id' => 2, 'nombre' => 'Técnico', 'descripccion' => 'Programas de nivel técnico.'],
-            ['id' => 3, 'nombre' => 'Especialización Tecnológica', 'descripccion' => 'Especialización nivel tecnológico.'],
+            ['id' => 1, 'nombre' => 'Tecnólogo', 'descripcion' => 'Programas de nivel tecnológico.'],
+            ['id' => 2, 'nombre' => 'Técnico', 'descripcion' => 'Programas de nivel técnico.'],
+            ['id' => 3, 'nombre' => 'Especialización Tecnológica', 'descripcion' => 'Especialización nivel tecnológico.'],
         ];
 
         foreach ($tipos as $tipo) {

@@ -18,7 +18,7 @@ class ModalidadesProyectosSeeder extends Seeder
         foreach ($modalidades as $nombre) {
             \App\Models\ProjectModality::firstOrCreate(
                 ['nombre' => $nombre],
-                ['descripccion' => null]
+                ['descripcion' => null]
             );
         }
     }
