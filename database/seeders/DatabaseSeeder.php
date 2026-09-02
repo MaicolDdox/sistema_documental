@@ -23,11 +23,10 @@ class DatabaseSeeder extends Seeder
             CitySeeder::class,
             TrainingCenterSeeder::class,
             RolesAndPermissionsSeeder::class, // ← debe ir ANTES de UserSeeder
-            ResearchGroupSeeder::class,
             UserSeeder::class,
             SuperAdminSeeder::class,
 
-            // Catálogos módulo Asesor Semillero
+            // Catálogos
             LineasInvestigacionesSeeder::class,
             LineasTecnologicasSeeder::class,
             AreasTematicasSeeder::class,
@@ -37,7 +36,6 @@ class DatabaseSeeder extends Seeder
             LinkageTypesSeeder::class,
             TrainingProgramsSeeder::class,
             MincienciasSeeder::class,
-            KnowledgeAreasSeeder::class,
         ]);
     }
 }
