@@ -3,7 +3,17 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Red Nacional de Investigación Académica y Semilleros</title>
+        <title>SIGESI — Sistema de Gestión de Semilleros de Investigación SENA</title>
+
+        <meta name="description" content="Gestiona grupos de investigación, semilleros, proyectos y productos académicos del SENA desde una sola plataforma institucional.">
+        <meta name="robots" content="index, follow">
+        <link rel="canonical" href="{{ url('/') }}">
+
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="SIGESI — Sistema de Gestión de Semilleros de Investigación SENA">
+        <meta property="og:description" content="Gestiona grupos de investigación, semilleros, proyectos y productos académicos del SENA desde una sola plataforma institucional.">
+        <meta property="og:url" content="{{ url('/') }}">
+        <meta property="og:locale" content="es_CO">
 
         <link rel="icon" href="/favicon.ico?v=2" sizes="any">
         <link rel="icon" href="/favicon-32x32.png?v=2" type="image/png" sizes="32x32">
