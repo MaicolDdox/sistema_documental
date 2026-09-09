@@ -14,6 +14,12 @@ trait LiderProyectoContext
 {
     protected function miProyecto(): Project
     {
-        return Project::where('lider_proyecto_user_id', Auth::id())->firstOrFail();
+        $proyecto = Project::where('lider_proyecto_user_id', Auth::id())->first();
+
+        if ($proyecto === null) {
+            abort(404, 'No tienes un proyecto asignado como Líder de Proyecto. Contacta a tu Director de Semilleros.');
+        }
+
+        return $proyecto;
     }
 }
