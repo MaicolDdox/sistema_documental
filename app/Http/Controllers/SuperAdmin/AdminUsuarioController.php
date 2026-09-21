@@ -50,7 +50,7 @@ class AdminUsuarioController extends Controller
         $centros = TrainingCenter::activos()->orderBy('nombre')->get();
         $rolesAdicionales = \Spatie\Permission\Models\Role::whereIn(
             'name',
-            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL)
+            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL, auth()->user())
         )->orderBy('name')->get();
 
         return view('super-admin.usuarios.create', compact('centros', 'rolesAdicionales'));
@@ -84,7 +84,7 @@ class AdminUsuarioController extends Controller
         $additionalRoles = $request->boolean('tiene_mas_roles')
             ? array_values(array_intersect(
                 $validated['additional_roles'] ?? [],
-                \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL)
+                \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL, auth()->user())
             ))
             : [];
 
@@ -122,7 +122,7 @@ class AdminUsuarioController extends Controller
         $currentAdditionalRoles = array_values(array_diff($usuario->roles->pluck('name')->all(), [self::ROL]));
         $rolesAdicionales = \Spatie\Permission\Models\Role::whereIn(
             'name',
-            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL)
+            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL, auth()->user())
         )->orderBy('name')->get();
 
         return view('super-admin.usuarios.edit', compact('usuario', 'centros', 'rolesAdicionales', 'currentAdditionalRoles'));
@@ -176,6 +176,7 @@ class AdminUsuarioController extends Controller
             self::ROL,
             $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
             true, // super_administrador siempre puede gestionar roles adicionales
+            auth()->user(),
         );
 
         return redirect()->route('super-admin.administradores.index')->with('success', 'Administrador actualizado correctamente.');

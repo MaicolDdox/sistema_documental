@@ -51,11 +51,20 @@ final class RoleAssignmentMatrix
      * principal, y solo super_administrador puede asignarlo) y excepto el
      * propio rol principal que se está creando.
      *
+     * administrador_sistema también se excluye salvo que quien está viendo
+     * el formulario ($auth) sea super_administrador: solo el súper admin
+     * puede ver/otorgar administrador_sistema como rol adicional.
+     *
      * @return list<string>
      */
-    public static function additionalRoleOptionNamesFor(string $primaryRole): array
+    public static function additionalRoleOptionNamesFor(string $primaryRole, ?User $auth = null): array
     {
-        $names = array_diff(RoleModuleLinks::LOGIN_ROLE_PRIORITY, ['super_administrador', $primaryRole]);
+        $excluded = ['super_administrador', $primaryRole];
+        if (! TrainingCenterAccess::isSuperAdmin($auth)) {
+            $excluded[] = 'administrador_sistema';
+        }
+
+        $names = array_diff(RoleModuleLinks::LOGIN_ROLE_PRIORITY, $excluded);
         sort($names);
 
         return array_values($names);
@@ -70,13 +79,13 @@ final class RoleAssignmentMatrix
      *
      * @param  array<int, string>  $requestedAdditionalRoles  Lo que llegó del formulario, SIN sanear.
      */
-    public static function syncAdditionalRoles(User $user, string $primaryRole, array $requestedAdditionalRoles, bool $canManage): void
+    public static function syncAdditionalRoles(User $user, string $primaryRole, array $requestedAdditionalRoles, bool $canManage, ?User $auth = null): void
     {
         if (! $canManage) {
             return;
         }
 
-        $allowed = self::additionalRoleOptionNamesFor($primaryRole);
+        $allowed = self::additionalRoleOptionNamesFor($primaryRole, $auth);
         $sanitized = array_intersect($requestedAdditionalRoles, $allowed);
 
         foreach ($allowed as $roleName) {

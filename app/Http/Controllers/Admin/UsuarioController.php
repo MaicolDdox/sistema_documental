@@ -94,7 +94,7 @@ class UsuarioController extends Controller
 
         $rolesAdicionales = Role::whereIn(
             'name',
-            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_semilleros')
+            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_semilleros', auth()->user())
         )->orderBy('name')->get();
 
         return view('admin.director_semilleros.create', compact('rolesAdicionales'));
@@ -116,7 +116,7 @@ class UsuarioController extends Controller
 
         $rolesAdicionales = Role::whereIn(
             'name',
-            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_grupo_investigacion')
+            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_grupo_investigacion', auth()->user())
         )->orderBy('name')->get();
 
         return view('admin.director_grupo_investigacion.create', compact('rolesAdicionales'));
@@ -161,7 +161,7 @@ class UsuarioController extends Controller
         $additionalRoles = $request->boolean('tiene_mas_roles')
             ? array_values(array_intersect(
                 $validated['additional_roles'] ?? [],
-                \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rol)
+                \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rol, $actor)
             ))
             : [];
 
@@ -217,7 +217,7 @@ class UsuarioController extends Controller
             ? $usuario->primary_role_name
             : (\App\Support\RoleModuleLinks::pickPrimaryRoleNameFromNames($namesRol) ?? $usuario->roles->first()?->name ?? '');
         $additionalRoleOptions = $canManageAdditionalRoles
-            ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual))->orderBy('name')->get()
+            ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual, auth()->user()))->orderBy('name')->get()
             : collect();
         $currentAdditionalRoles = array_values(array_diff($namesRol, [$rolPrincipalActual]));
 
@@ -338,6 +338,7 @@ class UsuarioController extends Controller
             $validated['rol'],
             $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
             $this->canManageAdditionalRoles($usuario),
+            auth()->user(),
         );
 
         return redirect()->route('admin.usuarios.index')
