@@ -14,7 +14,7 @@ class CredencialesAcceso extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly User   $usuario,
+        public readonly User $usuario,
         public readonly string $passwordTemporal,
         public readonly string $appUrl,
     ) {}

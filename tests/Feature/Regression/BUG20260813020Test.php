@@ -21,7 +21,7 @@ use Tests\TestCase;
  * Regresión: BUG-20260813-020
  * Auditoría + refinamiento del rol Co-investigador:
  * 1) El sidebar tenía un ítem "Proyectos Vinculados" que duplicaba el
- *    "Dashboard" genérico (ambos apuntaban a co-investigador.dashboard).
+ *    "Dashboard" genérico (ambos apuntaban a co-investigador-sdi.dashboard).
  *    Se conservan ambos ítems pero con función distinta: "Dashboard" es el
  *    resumen + reporte, "Proyectos Vinculados" pasó a ser un desplegable
  *    (mismo patrón que el sidebar de Líder de Semillero) que lista cada
@@ -58,7 +58,7 @@ class BUG20260813020Test extends TestCase
 
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $liderSemillero = User::factory()->create(['training_center_id' => $centro->id]);
         $liderSemillero->assignRole('lider_semillero');
@@ -69,8 +69,8 @@ class BUG20260813020Test extends TestCase
         ]);
         $liderProyecto->assignRole('lider_proyecto');
 
-        $coinvestigador = User::factory()->create(['estado' => EstadoEnum::Activo]);
-        $coinvestigador->assignRole('co_investigador');
+        $coinvestigador = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
+        $coinvestigador->assignRole('co_investigador_sdi');
 
         $semillero = Seedling::create([
             'creator_id' => $liderSemillero->id,
@@ -82,7 +82,7 @@ class BUG20260813020Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $proyecto = Project::create([
             'project_creator_id' => $liderSemillero->id,
@@ -103,7 +103,7 @@ class BUG20260813020Test extends TestCase
     {
         [$coinvestigador] = $this->crearEscenario();
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.dashboard'));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.dashboard'));
 
         $response->assertOk();
         $html = $response->getContent();
@@ -117,7 +117,7 @@ class BUG20260813020Test extends TestCase
     {
         [$coinvestigador] = $this->crearEscenario();
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.dashboard'));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.dashboard'));
 
         $response->assertOk();
         $response->assertSee('Proyecto Test');
@@ -126,12 +126,12 @@ class BUG20260813020Test extends TestCase
 
     public function test_coinvestigador_no_vinculado_no_puede_ver_el_proyecto(): void
     {
-        [, , $proyecto] = $this->crearEscenario();
+        [$coinvestigador, , $proyecto] = $this->crearEscenario();
 
-        $otro = User::factory()->create(['estado' => EstadoEnum::Activo]);
-        $otro->assignRole('co_investigador');
+        $otro = User::factory()->create(['estado' => EstadoEnum::Activo, 'training_center_id' => $coinvestigador->training_center_id]);
+        $otro->assignRole('co_investigador_sdi');
 
-        $response = $this->actingAs($otro)->get(route('co-investigador.proyectos.show', $proyecto));
+        $response = $this->actingAs($otro)->get(route('co-investigador-sdi.proyectos.show', $proyecto));
 
         $response->assertForbidden();
     }
@@ -147,7 +147,7 @@ class BUG20260813020Test extends TestCase
             'uploaded_by' => $liderProyecto->id,
         ]);
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.proyectos.show', $proyecto));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.proyectos.show', $proyecto));
 
         $response->assertOk();
         $response->assertSee('Avance subido por el líder');
@@ -158,7 +158,7 @@ class BUG20260813020Test extends TestCase
         [$coinvestigador, , $proyecto] = $this->crearEscenario();
 
         $response = $this->actingAs($coinvestigador)->post(
-            route('co-investigador.proyectos.evidencias.store', $proyecto),
+            route('co-investigador-sdi.proyectos.evidencias.store', $proyecto),
             [
                 'nombre' => 'Mi avance',
                 'archivo' => UploadedFile::fake()->create('avance.pdf', 100),
@@ -185,7 +185,7 @@ class BUG20260813020Test extends TestCase
             'uploaded_by' => $liderProyecto->id,
         ]);
 
-        $response = $this->actingAs($coinvestigador)->delete(route('co-investigador.evidencias.destroy', $evidenciaAjena));
+        $response = $this->actingAs($coinvestigador)->delete(route('co-investigador-sdi.evidencias.destroy', $evidenciaAjena));
 
         $response->assertForbidden();
         $this->assertDatabaseHas('project_evidences', ['id' => $evidenciaAjena->id]);
@@ -202,7 +202,7 @@ class BUG20260813020Test extends TestCase
             'uploaded_by' => $coinvestigador->id,
         ]);
 
-        $response = $this->actingAs($coinvestigador)->delete(route('co-investigador.evidencias.destroy', $evidenciaPropia));
+        $response = $this->actingAs($coinvestigador)->delete(route('co-investigador-sdi.evidencias.destroy', $evidenciaPropia));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('project_evidences', ['id' => $evidenciaPropia->id]);

@@ -163,7 +163,7 @@
                         </div>
                     </div>
 
-                    @if(auth()->user()->hasRole('co_investigador'))
+                    @if(auth()->user()->hasAnyRole(['co_investigador_gdi', 'co_investigador_sdi']))
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1.5">Nivel de Formación</label>

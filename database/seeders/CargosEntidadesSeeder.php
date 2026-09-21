@@ -29,8 +29,10 @@ class CargosEntidadesSeeder extends Seeder
             'Otro:',
         ];
 
-        foreach ($cargos as $nombre) {
-            \App\Models\EntityPosition::firstOrCreate(['nombre' => $nombre]);
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($cargos as $nombre) {
+                \App\Models\EntityPosition::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => $nombre]);
+            }
         }
     }
 }

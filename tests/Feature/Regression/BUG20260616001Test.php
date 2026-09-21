@@ -24,7 +24,7 @@ class BUG20260616001Test extends TestCase
 
     public function test_full_two_factor_login_cycle_authenticates_with_valid_otp_code(): void
     {
-        $engine = new Google2FA();
+        $engine = new Google2FA;
         $secret = $engine->generateSecretKey();
 
         $user = User::factory()->create([
@@ -58,7 +58,7 @@ class BUG20260616001Test extends TestCase
 
     public function test_full_two_factor_login_cycle_rejects_invalid_otp_code(): void
     {
-        $engine = new Google2FA();
+        $engine = new Google2FA;
         $secret = $engine->generateSecretKey();
 
         $user = User::factory()->create([

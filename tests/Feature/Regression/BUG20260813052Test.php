@@ -29,7 +29,7 @@ class BUG20260813052Test extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-052']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-052', 'department_id' => $depto->id]);
@@ -40,14 +40,14 @@ class BUG20260813052Test extends TestCase
 
         $this->user = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
         $this->user->assignRole('lider_semillero');
-        $this->user->assignRole('co_investigador');
+        $this->user->assignRole('co_investigador_sdi');
     }
 
     public function test_modulo_del_rol_no_activo_devuelve_403_por_url_directa(): void
     {
         // lider_semillero es el principal (mayor prioridad) -> queda activo
         // por defecto. co_investigador es un rol asignado pero NO activo.
-        $response = $this->actingAs($this->user)->get('/co-investigador');
+        $response = $this->actingAs($this->user)->get('/co-investigador-sdi');
 
         $response->assertForbidden();
     }
@@ -63,11 +63,11 @@ class BUG20260813052Test extends TestCase
     {
         $this->actingAs($this->user)->get(route('lider-sem.dashboard'))->assertOk();
 
-        $this->post(route('roles.switch'), ['role' => 'co_investigador'])
-            ->assertRedirect('/co-investigador');
+        $this->post(route('roles.switch'), ['role' => 'co_investigador_sdi'])
+            ->assertRedirect('/co-investigador-sdi');
 
         // Ahora co_investigador es el activo: su módulo responde...
-        $this->get('/co-investigador')->assertOk();
+        $this->get('/co-investigador-sdi')->assertOk();
 
         // ...y el que antes era accesible (lider_semillero) ahora se bloquea.
         $this->get(route('lider-sem.dashboard'))->assertForbidden();
@@ -75,10 +75,10 @@ class BUG20260813052Test extends TestCase
 
     public function test_un_solo_rol_asignado_nunca_recibe_403_por_aislamiento(): void
     {
-        $solo = User::factory()->create(['estado' => EstadoEnum::Activo]);
-        $solo->assignRole('co_investigador');
+        $solo = User::factory()->create(['estado' => EstadoEnum::Activo, 'training_center_id' => $this->user->training_center_id]);
+        $solo->assignRole('co_investigador_sdi');
 
-        $response = $this->actingAs($solo)->get('/co-investigador');
+        $response = $this->actingAs($solo)->get('/co-investigador-sdi');
 
         $response->assertOk();
     }

@@ -4,10 +4,10 @@ namespace Tests\Feature\Regression;
 
 use App\Enums\EstadoEnum;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Tests\TestCase;
 
 /**
@@ -26,7 +26,7 @@ class BUG20260603003Test extends TestCase
         Notification::fake();
 
         $user = User::factory()->unverified()->create([
-            'email'  => 'test@sena.edu.co',
+            'email' => 'test@sena.edu.co',
             'estado' => EstadoEnum::Activo,
         ]);
 
@@ -38,7 +38,7 @@ class BUG20260603003Test extends TestCase
     public function test_route_notification_for_mail_usa_email_del_usuario(): void
     {
         $user = User::factory()->create([
-            'email'  => 'usuario@sena.edu.co',
+            'email' => 'usuario@sena.edu.co',
             'estado' => EstadoEnum::Activo,
         ]);
 
@@ -64,7 +64,7 @@ class BUG20260603003Test extends TestCase
             ->onlyMethods(['notify'])
             ->getMock();
 
-        $userMock->id    = $user->id;
+        $userMock->id = $user->id;
         $userMock->email = $user->email;
         $userMock->expects($this->once())
             ->method('notify')

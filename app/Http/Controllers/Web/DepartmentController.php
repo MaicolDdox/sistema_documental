@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreDepartmentRequest;
 use App\Http\Requests\UpdateDepartmentRequest;
+use App\Models\Department;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DepartmentController extends Controller
 {
-    private function getFields() {
+    private function getFields()
+    {
         return [
             'nombre' => ['type' => 'text', 'options' => []],
 
@@ -22,11 +23,12 @@ class DepartmentController extends Controller
     public function index(): View
     {
         $items = Department::paginate(10);
+
         return view('admin.parametric.index', [
             'items' => $items,
             'title' => 'Departamentos',
             'routePrefix' => 'admin.departments',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -35,7 +37,7 @@ class DepartmentController extends Controller
         return view('admin.parametric.create', [
             'title' => 'Crear Departamentos',
             'routePrefix' => 'admin.departments',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -44,11 +46,11 @@ class DepartmentController extends Controller
         $validated = $request->validate($this->getValidationRules());
         // Custom request logic applies if $request is not just a base Request.
         if (method_exists($request, 'validated') && 'StoreDepartmentRequest' !== 'Request') {
-             $validated = $request->validated();
+            $validated = $request->validated();
         }
-        
+
         Department::create($validated);
-        
+
         return redirect()->route('admin.departments.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -59,7 +61,7 @@ class DepartmentController extends Controller
             'item' => $department,
             'title' => 'Editar Departamentos',
             'routePrefix' => 'admin.departments',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -67,11 +69,11 @@ class DepartmentController extends Controller
     {
         $validated = $request->validate($this->getValidationRules());
         if (method_exists($request, 'validated') && 'UpdateDepartmentRequest' !== 'Request') {
-             $validated = $request->validated();
+            $validated = $request->validated();
         }
-        
+
         $department->update($validated);
-        
+
         return redirect()->route('admin.departments.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }
@@ -80,6 +82,7 @@ class DepartmentController extends Controller
     {
         try {
             $department->delete();
+
             return redirect()->route('admin.departments.index')
                 ->with('success', 'Registro eliminado exitosamente.');
         } catch (\Illuminate\Database\QueryException $e) {
@@ -87,16 +90,17 @@ class DepartmentController extends Controller
                 ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
-    
+
     protected function getValidationRules(): array
     {
         $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
+        foreach (array_keys($this->getFields()) as $f) {
+            $rules[$f] = 'required';
         }
+
         return $rules;
     }
-    
-    // Note: Laravel resolves model bindings. 
+
+    // Note: Laravel resolves model bindings.
     // Ensure the parameter name $department matches route.
 }

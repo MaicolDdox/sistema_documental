@@ -3,15 +3,17 @@
 namespace App\Support;
 
 use App\Models\User;
+use App\Services\Admin\RoleAssignmentService;
 
 /**
- * Matriz de creación de usuarios exclusiva del rediseño de roles: un solo
- * rol puede crear/asignar cada rol, sin solapes.
+ * Matriz de creación de usuarios exclusiva de la reforma de roles GDI/SDI:
+ * un solo rol puede crear/asignar cada rol, sin solapes.
  *
- * super_administrador  -> cualquier rol
- * administrador_sistema -> director_semilleros, co_investigador
- * director_semilleros   -> lider_semillero
- * lider_semillero       -> lider_proyecto
+ * super_administrador    -> cualquier rol
+ * administrador_sistema  -> director_semilleros, director_grupo_investigacion
+ * director_semilleros    -> lider_semillero, co_investigador_sdi
+ * lider_semillero        -> lider_proyecto
+ * director_grupo_investigacion -> co_investigador_gdi
  */
 final class RoleAssignmentMatrix
 {
@@ -27,13 +29,16 @@ final class RoleAssignmentMatrix
             return RoleModuleLinks::LOGIN_ROLE_PRIORITY;
         }
         if ($auth->hasRole('administrador_sistema')) {
-            return ['director_semilleros', 'co_investigador'];
+            return ['director_semilleros', 'director_grupo_investigacion'];
         }
         if ($auth->hasRole('director_semilleros')) {
-            return ['lider_semillero'];
+            return ['lider_semillero', 'co_investigador_sdi'];
         }
         if ($auth->hasRole('lider_semillero')) {
             return ['lider_proyecto'];
+        }
+        if ($auth->hasRole('director_grupo_investigacion')) {
+            return ['co_investigador_gdi'];
         }
 
         return [];
@@ -78,7 +83,9 @@ final class RoleAssignmentMatrix
             $shouldHave = in_array($roleName, $sanitized, true);
             $has = $user->hasRole($roleName);
             if ($shouldHave && ! $has) {
-                $user->assignRole($roleName);
+                // BUG-20260914-006: rutar por RoleAssignmentService valida
+                // restricción de centro también para roles adicionales.
+                app(RoleAssignmentService::class)->assign($user, $roleName);
             } elseif (! $shouldHave && $has) {
                 $user->removeRole($roleName);
             }

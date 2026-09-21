@@ -13,6 +13,7 @@ class MincienciasSubcategory extends Model
     protected $table = 'minciencias_subcategories';
 
     protected $fillable = [
+        'training_center_id',
         'minciencias_typology_id',
         'nombre',
         'descripcion',
@@ -25,5 +26,10 @@ class MincienciasSubcategory extends Model
     public function mincienciasTypology(): BelongsTo
     {
         return $this->belongsTo(MincienciasTypology::class, 'minciencias_typology_id');
+    }
+
+    public function trainingCenter(): BelongsTo
+    {
+        return $this->belongsTo(TrainingCenter::class, 'training_center_id');
     }
 }

@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\LiderSemillero;
 
+use App\Enums\EstadoEnum;
 use App\Enums\EstadoRevisionEnum;
 use App\Enums\TipoEvidenciaEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Project;
-use App\Models\ProjectAuthor;
-use App\Models\ProjectEvidence;
 use App\Models\Seedling;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +20,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         /** @var Seedling|null $miSemillero */
         $miSemillero = $user->ledSeedlings()
-            ->with(['members.person', 'advisors'])
+            ->with(['members.person', 'advisors', 'projects' => fn ($q) => $q->with(['projectEvidences', 'authors'])])
             ->first();
 
         $metricas = $this->calcularMetricas($user, $miSemillero);
@@ -51,8 +50,8 @@ class DashboardController extends Controller
         $sinProyectoActivoCount = 0;
 
         if ($miSemillero) {
-            $integrantes = $miSemillero->members()->count();
-            $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
+            $integrantes = $miSemillero->members->count();
+            $projectIds = $miSemillero->projects->pluck('id');
 
             $haceSeisMeses = now()->subMonths(6);
             $integrantesNuevosSemestre = DB::table('seedling_members')
@@ -60,26 +59,27 @@ class DashboardController extends Controller
                 ->where('created_at', '>=', $haceSeisMeses)
                 ->count();
 
-            $productosPendientesCount = ProjectEvidence::whereIn('project_id', $projectIds)
+            $productosPendientesCount = $miSemillero->projects
+                ->flatMap(fn ($p) => $p->projectEvidences ?? collect())
                 ->where('tipo', TipoEvidenciaEnum::ProductoFinal)
                 ->where('estado_revision_lider', EstadoRevisionEnum::Pendiente)
                 ->count();
 
             // Activo para tablero: estado activo y no finalizado por fecha.
-            $proyectosActivosCount = Project::whereIn('id', $projectIds)
-                ->active()
-                ->where(function ($q) {
-                    $q->whereNull('fecha_fin')
-                        ->orWhereDate('fecha_fin', '>=', now()->toDateString());
+            $proyectosActivosCount = $miSemillero->projects
+                ->where('estado', EstadoEnum::Activo)
+                ->filter(function ($p) {
+                    return ! $p->fecha_fin || $p->fecha_fin->isSameOrAfter(now()->startOfDay());
                 })
                 ->count();
 
-            $userIdsConProyectoActivo = ProjectAuthor::whereIn('project_id', $projectIds)
+            $userIdsConProyectoActivo = $miSemillero->projects
+                ->flatMap(fn ($p) => $p->authors ?? collect())
                 ->where('activo', true)
                 ->pluck('user_id')
                 ->unique()
                 ->values();
-            $memberIds = $miSemillero->members()->pluck('users.id');
+            $memberIds = $miSemillero->members->pluck('id');
             $sinProyectoActivoCount = $memberIds->diff($userIdsConProyectoActivo)->count();
         }
 
@@ -104,15 +104,13 @@ class DashboardController extends Controller
             return collect();
         }
 
-        $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
-
-        return ProjectEvidence::with(['project.liderProyecto.person'])
-            ->whereIn('project_id', $projectIds)
+        return $miSemillero->projects
+            ->flatMap(fn ($p) => $p->projectEvidences ?? collect())
             ->where('tipo', TipoEvidenciaEnum::ProductoFinal)
             ->where('estado_revision_lider', EstadoRevisionEnum::Pendiente)
-            ->orderBy('updated_at', 'desc')
+            ->sortByDesc('updated_at')
             ->take(10)
-            ->get();
+            ->values();
     }
 
     private function integrantesSinProyectoActivo(?Seedling $miSemillero)
@@ -120,16 +118,15 @@ class DashboardController extends Controller
         if (! $miSemillero) {
             return collect();
         }
-        $projectIds = Project::where('seedling_id', $miSemillero->id)->pluck('id');
-        $userIdsConProyectoActivo = ProjectAuthor::whereIn('project_id', $projectIds)
+
+        $userIdsConProyectoActivo = $miSemillero->projects
+            ->flatMap(fn ($p) => $p->authors ?? collect())
             ->where('activo', true)
             ->pluck('user_id')
             ->unique()
             ->values();
 
-        return $miSemillero->members()
-            ->with('person')
-            ->get()
+        return $miSemillero->members
             ->map(function ($u) use ($userIdsConProyectoActivo) {
                 $u->tiene_proyecto_activo = $userIdsConProyectoActivo->contains($u->id);
 

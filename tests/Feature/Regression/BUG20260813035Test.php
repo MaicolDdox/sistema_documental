@@ -42,7 +42,7 @@ class BUG20260813035Test extends TestCase
         return [$admin, $centro];
     }
 
-    public function test_scopeUserQueryForMetrics_incluye_al_propio_usuario(): void
+    public function test_scope_user_query_for_metrics_incluye_al_propio_usuario(): void
     {
         [$admin] = $this->crearAdminConCentro();
 
@@ -51,7 +51,7 @@ class BUG20260813035Test extends TestCase
         $this->assertContains($admin->email, $emails);
     }
 
-    public function test_scopeUserQueryForList_sigue_excluyendo_al_propio_usuario(): void
+    public function test_scope_user_query_for_list_sigue_excluyendo_al_propio_usuario(): void
     {
         // BUG-20260813-003 no se debe romper: gestión de usuarios sigue
         // sin mostrar al propio admin.

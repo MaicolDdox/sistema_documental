@@ -53,14 +53,14 @@ class BUG20260813003Test extends TestCase
         ]);
 
         foreach ([
-            'usuarios.listar', 'usuarios.crear', 'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador',
+            'usuarios.listar', 'usuarios.crear', 'usuarios.crear_director_semilleros', 'usuarios.crear_director_grupo_investigacion',
         ] as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
         $rol = Role::firstOrCreate(['name' => 'administrador_sistema', 'guard_name' => 'web']);
-        $rol->givePermissionTo(['usuarios.listar', 'usuarios.crear', 'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador']);
+        $rol->givePermissionTo(['usuarios.listar', 'usuarios.crear', 'usuarios.crear_director_semilleros', 'usuarios.crear_director_grupo_investigacion']);
         Role::firstOrCreate(['name' => 'director_semilleros', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'director_grupo_investigacion', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'super_administrador', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
 
@@ -114,7 +114,7 @@ class BUG20260813003Test extends TestCase
 
         $response->assertOk();
         $nombresRolesAsignables = $response->viewData('rolesAsignables')->pluck('name');
-        $this->assertEqualsCanonicalizing(['director_semilleros', 'co_investigador'], $nombresRolesAsignables->all());
+        $this->assertEqualsCanonicalizing(['director_semilleros', 'director_grupo_investigacion'], $nombresRolesAsignables->all());
     }
 
     public function test_store_con_rol_fijo_ignora_intento_de_override_por_request(): void
@@ -147,14 +147,21 @@ class BUG20260813003Test extends TestCase
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.usuarios.asignar_rol_store'));
     }
 
-    public function test_sidebar_muestra_coinvestigadores_no_asesores_externos(): void
+    /**
+     * Reforma GDI/SDI: administrador_sistema ya no gestiona co-investigadores
+     * directamente (esa función pasó a director_semilleros/director_grupo_investigacion),
+     * así que el ítem de sidebar que reemplazó a "Asesores Externos" en su
+     * momento pasó a ser "Director de Grupo de Investigación" — se conserva
+     * la aserción "Asesores Externos" ya no aparece.
+     */
+    public function test_sidebar_muestra_director_grupo_investigacion_no_asesores_externos(): void
     {
         [$admin] = $this->crearAdminConCentro();
 
         $response = $this->actingAs($admin)->get(route('admin.dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Co-investigadores');
+        $response->assertSee('Director de Grupo de Investigación');
         $response->assertDontSee('Asesores Externos');
     }
 

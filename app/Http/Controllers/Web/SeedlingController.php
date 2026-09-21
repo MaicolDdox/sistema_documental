@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Seedling;
 use App\Http\Requests\StoreSeedlingRequest;
 use App\Http\Requests\UpdateSeedlingRequest;
+use App\Models\Seedling;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 

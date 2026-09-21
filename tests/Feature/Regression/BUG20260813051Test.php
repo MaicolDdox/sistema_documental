@@ -22,13 +22,13 @@ class BUG20260813051Test extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
     }
 
     private function crearUsuarioMultiRol(): User
     {
         $user = User::factory()->create(['training_center_id' => null]);
-        $user->assignRole('co_investigador');
+        $user->assignRole('co_investigador_sdi');
         $user->assignRole('lider_proyecto');
 
         return $user;
@@ -75,11 +75,11 @@ class BUG20260813051Test extends TestCase
         // El principal (lider_proyecto) queda activo por defecto; se cambia
         // al secundario (co_investigador) para probar una transición real.
         $response = $this->post(route('roles.switch'), [
-            'role' => 'co_investigador',
+            'role' => 'co_investigador_sdi',
         ]);
 
-        $response->assertRedirect('/co-investigador');
-        $this->assertSame('co_investigador', session('rol_activo'));
+        $response->assertRedirect('/co-investigador-sdi');
+        $this->assertSame('co_investigador_sdi', session('rol_activo'));
     }
 
     public function test_el_sidebar_refleja_el_rol_activo_tras_cambiar_en_una_pagina_compartida(): void
@@ -88,7 +88,7 @@ class BUG20260813051Test extends TestCase
         $this->actingAs($user)->get(route('profile.edit'));
 
         // Cambia el rol activo al secundario (co_investigador).
-        $this->post(route('roles.switch'), ['role' => 'co_investigador']);
+        $this->post(route('roles.switch'), ['role' => 'co_investigador_sdi']);
 
         // /settings/profile no tiene prefijo de rol propio: antes del fix el
         // sidebar seguía mostrando el contexto del rol principal aquí

@@ -15,11 +15,13 @@ class ModalidadesProyectosSeeder extends Seeder
             'Otros',
         ];
 
-        foreach ($modalidades as $nombre) {
-            \App\Models\ProjectModality::firstOrCreate(
-                ['nombre' => $nombre],
-                ['descripcion' => null]
-            );
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($modalidades as $nombre) {
+                \App\Models\ProjectModality::firstOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => null]
+                );
+            }
         }
     }
 }

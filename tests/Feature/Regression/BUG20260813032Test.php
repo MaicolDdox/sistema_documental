@@ -6,7 +6,6 @@ use App\Enums\EstadoEnum;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\Seedling;
-use App\Models\SeedlingFile;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

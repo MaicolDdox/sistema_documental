@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class SemilleroController extends Controller
 {
     use StreamsPublicStorageFiles;
+
     /**
      * Listar semilleros con filtros (estado, búsqueda).
      */
@@ -142,9 +143,7 @@ class SemilleroController extends Controller
     public function show(Seedling $semillero)
     {
         $this->authorize('semilleros.ver_detalle');
-
-        // Validar que el semillero es de su centro
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('view', $semillero);
 
         $semillero->loadCount(['members as integrantes_count', 'projects as proyectos_count']);
         $semillero->load([
@@ -170,7 +169,7 @@ class SemilleroController extends Controller
     public function edit(Seedling $semillero)
     {
         $this->authorize('semilleros.editar');
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('update', $semillero);
 
         $user = Auth::user();
 
@@ -192,7 +191,7 @@ class SemilleroController extends Controller
     public function update(Request $request, Seedling $semillero)
     {
         $this->authorize('semilleros.editar');
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('update', $semillero);
 
         $validated = $request->validate([
             'nombre' => 'required|string|max:150',
@@ -240,7 +239,7 @@ class SemilleroController extends Controller
     public function reasignarLider(Request $request, Seedling $semillero)
     {
         $this->authorize('semilleros.reasignar_lider');
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('update', $semillero);
 
         $validated = $request->validate([
             'nuevo_lider_id' => 'required|exists:users,id',
@@ -272,7 +271,7 @@ class SemilleroController extends Controller
     public function toggleEstado(Seedling $semillero)
     {
         $this->authorize('semilleros.activar_desactivar');
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('update', $semillero);
 
         if ($semillero->estado === EstadoEnum::Activo) {
             // No desactivar un semillero con proyectos activos (mostrar warning)
@@ -296,7 +295,7 @@ class SemilleroController extends Controller
     public function destroy(Seedling $semillero)
     {
         $this->authorize('semilleros.editar');
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('delete', $semillero);
 
         $semillero->delete();
 
@@ -308,7 +307,7 @@ class SemilleroController extends Controller
     {
         $this->authorize('semilleros.ver_detalle');
         $semillero = $evidencia->project?->seedling ?? abort(404);
-        $this->checkCentroFormacion($semillero);
+        $this->authorize('view', $semillero);
 
         return $this->descargarArchivoPublico($evidencia->archivo, $evidencia->nombre);
     }
@@ -316,13 +315,13 @@ class SemilleroController extends Controller
     public function descargarDocumento(SeedlingFile $documento): StreamedResponse
     {
         $this->authorize('semilleros.ver_detalle');
-        $this->checkCentroFormacion($documento->seedling);
+        $this->authorize('view', $documento->seedling);
 
         return $this->descargarArchivoPublico($documento->url_archivo, $documento->archivo);
     }
 
     /**
-     * BUG-20260813-045 — codigo pasó de integer a string (alfanumérico), así
+     * BUG-20260813-045: codigo pasó de integer a string (alfanumérico), así
      * que MAX('codigo') en SQL ya no sirve para sugerir el siguiente
      * consecutivo: sobre un varchar, MySQL compara lexicográficamente, no
      * numéricamente ("9" > "10"). Se calcula el máximo numérico en PHP,
@@ -330,30 +329,15 @@ class SemilleroController extends Controller
      */
     private function siguienteCodigoSugerido(): string
     {
-        $maximoNumerico = Seedling::pluck('codigo')
+        $trainingCenterId = Auth::user()->training_center_id;
+
+        $maximoNumerico = Seedling::query()
+            ->where('training_center_id', $trainingCenterId)
+            ->pluck('codigo')
             ->filter(fn ($c) => ctype_digit((string) $c))
             ->map(fn ($c) => (int) $c)
             ->max();
 
-        return (string) (($maximoNumerico ?? Seedling::count()) + 1);
-    }
-
-    /**
-     * Extra validación de regla de negocio "Solo gestiona semilleros del mismo centro_formacion_id"
-     * Scope principal: seedlings.training_center_id. Fallback: creator.training_center_id.
-     */
-    private function checkCentroFormacion(Seedling $semillero): void
-    {
-        $user = Auth::user();
-        if (! $user->training_center_id) {
-            return;
-        }
-
-        $centerOfRecord = $semillero->training_center_id
-            ?? $semillero->creator?->training_center_id;
-
-        if ($centerOfRecord !== null && (int) $centerOfRecord !== (int) $user->training_center_id) {
-            abort(403, 'No tienes permiso para gestionar semilleros de otros centros de formación.');
-        }
+        return (string) (($maximoNumerico ?? Seedling::query()->where('training_center_id', $trainingCenterId)->count()) + 1);
     }
 }

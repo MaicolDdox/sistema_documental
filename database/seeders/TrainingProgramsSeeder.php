@@ -2,49 +2,60 @@
 
 namespace Database\Seeders;
 
-use App\Models\TrainingProgramType;
-use App\Models\TrainingProgram;
 use App\Enums\EstadoEnum;
 use App\Enums\ModalidadEnum;
+use App\Models\TrainingCenter;
+use App\Models\TrainingProgram;
+use App\Models\TrainingProgramType;
 use Illuminate\Database\Seeder;
 
 class TrainingProgramsSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Crear Tipos de Programa (si no existen)
         $tipos = [
-            ['id' => 1, 'nombre' => 'Tecnólogo', 'descripcion' => 'Programas de nivel tecnológico.'],
-            ['id' => 2, 'nombre' => 'Técnico', 'descripcion' => 'Programas de nivel técnico.'],
-            ['id' => 3, 'nombre' => 'Especialización Tecnológica', 'descripcion' => 'Especialización nivel tecnológico.'],
+            'Tecnólogo' => 'Programas de nivel tecnológico.',
+            'Técnico' => 'Programas de nivel técnico.',
+            'Especialización Tecnológica' => 'Especialización nivel tecnológico.',
         ];
 
-        foreach ($tipos as $tipo) {
-            TrainingProgramType::updateOrCreate(['id' => $tipo['id']], $tipo);
-        }
-
-        // 2. Crear Programas de Formación
         $programas = [
             [
-                'id' => 1,
-                'training_program_type_id' => 1,
+                'tipo' => 'Tecnólogo',
                 'nombre' => 'Análisis y Desarrollo de Software',
                 'descripcion' => 'ADSO',
                 'modalidad' => ModalidadEnum::Presencial->value,
                 'estado' => EstadoEnum::Activo->value,
             ],
             [
-                'id' => 2,
-                'training_program_type_id' => 1,
+                'tipo' => 'Tecnólogo',
                 'nombre' => 'Gestión Administrativa',
                 'descripcion' => 'Gestión Administrativa',
                 'modalidad' => ModalidadEnum::Virtual->value,
                 'estado' => EstadoEnum::Activo->value,
-            ]
+            ],
         ];
 
-        foreach ($programas as $prog) {
-            TrainingProgram::updateOrCreate(['id' => $prog['id']], $prog);
+        foreach (TrainingCenter::all() as $centro) {
+            $tipoIds = [];
+            foreach ($tipos as $nombre => $descripcion) {
+                $tipoIds[$nombre] = TrainingProgramType::updateOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => $descripcion]
+                )->id;
+            }
+
+            foreach ($programas as $prog) {
+                TrainingProgram::updateOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $prog['nombre']],
+                    [
+                        'training_program_type_id' => $tipoIds[$prog['tipo']],
+                        'descripcion' => $prog['descripcion'],
+                        'modalidad' => $prog['modalidad'],
+                        'estado' => $prog['estado'],
+                    ]
+                );
+            }
         }
     }
 }

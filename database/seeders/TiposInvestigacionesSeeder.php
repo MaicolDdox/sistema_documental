@@ -16,11 +16,13 @@ class TiposInvestigacionesSeeder extends Seeder
             'Innovación',
         ];
 
-        foreach ($tipos as $nombre) {
-            \App\Models\InvestigationType::firstOrCreate(
-                ['nombre' => $nombre],
-                ['descripcion' => null]
-            );
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($tipos as $nombre) {
+                \App\Models\InvestigationType::firstOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => null]
+                );
+            }
         }
     }
 }

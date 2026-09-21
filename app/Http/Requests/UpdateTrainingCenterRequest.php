@@ -24,6 +24,7 @@ class UpdateTrainingCenterRequest extends FormRequest
     {
         $param = $this->route('training_center') ?? $this->route('trainingcenter');
         $id = is_object($param) ? $param->id : $param;
+
         return [
             'nombre' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('training_centers', 'nombre')->ignore($id)],
             'codigo' => ['required', 'integer', 'min:0'],

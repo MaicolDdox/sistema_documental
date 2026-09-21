@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class CoinvestigadorController extends Controller
@@ -18,11 +19,12 @@ class CoinvestigadorController extends Controller
 
         $vinculados = $proyecto->authors()
             ->wherePivot('activo', true)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'co_investigador'))
+            ->whereHas('roles', fn ($q) => $q->where('name', 'co_investigador_sdi'))
             ->with('person')
             ->get();
 
-        $disponiblesQuery = User::role('co_investigador')
+        $disponiblesQuery = User::role('co_investigador_sdi')
+            ->where('training_center_id', Auth::user()->training_center_id)
             ->with('person')
             ->whereNotIn('id', $vinculados->pluck('id'));
 
@@ -48,7 +50,12 @@ class CoinvestigadorController extends Controller
 
         $validated = $request->validate(['user_id' => 'required|exists:users,id']);
 
-        $coInvestigador = User::role('co_investigador')->findOrFail($validated['user_id']);
+        $coInvestigador = User::role('co_investigador_sdi')->findOrFail($validated['user_id']);
+
+        if ((int) $coInvestigador->training_center_id !== (int) Auth::user()->training_center_id) {
+            return redirect()->route('lider-proyecto.coinvestigadores.index')
+                ->with('error', 'Solo puedes vincular co-investigadores de tu mismo centro de formación.');
+        }
 
         $proyecto->authors()->syncWithoutDetaching([
             $coInvestigador->id => ['activo' => true],

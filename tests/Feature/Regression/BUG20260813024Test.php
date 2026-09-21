@@ -55,14 +55,14 @@ class BUG20260813024Test extends TestCase
         ]);
 
         foreach ([
-            'usuarios.listar', 'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador',
+            'usuarios.listar', 'usuarios.crear_director_semilleros', 'usuarios.crear_director_grupo_investigacion',
         ] as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
         $rol = Role::firstOrCreate(['name' => 'administrador_sistema', 'guard_name' => 'web']);
-        $rol->givePermissionTo(['usuarios.listar', 'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador']);
+        $rol->givePermissionTo(['usuarios.listar', 'usuarios.crear_director_semilleros', 'usuarios.crear_director_grupo_investigacion']);
         Role::firstOrCreate(['name' => 'director_semilleros', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'director_grupo_investigacion', 'guard_name' => 'web']);
 
         $admin = User::factory()->create([
             'training_center_id' => $centro->id,
@@ -79,8 +79,12 @@ class BUG20260813024Test extends TestCase
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.usuarios.store'));
         $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.director-semilleros.create'));
         $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.director-semilleros.store'));
-        $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.co-investigadores.create'));
-        $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.co-investigadores.store'));
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.director-grupo-investigacion.create'));
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('admin.director-grupo-investigacion.store'));
+        // Reforma GDI/SDI: administrador_sistema ya no crea co-investigadores
+        // directamente, esas rutas se eliminaron.
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.co-investigadores.create'));
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.co-investigadores.store'));
     }
 
     public function test_pagina_usuarios_no_ofrece_boton_de_crear_generico(): void
@@ -92,7 +96,7 @@ class BUG20260813024Test extends TestCase
         $response->assertOk();
         $response->assertDontSee('Nuevo usuario');
         $response->assertSee('Director de Semilleros');
-        $response->assertSee('Co-investigador');
+        $response->assertSee('Director de Grupo de Investigación');
     }
 
     public function test_crear_director_semilleros_asigna_ese_rol_y_hereda_centro_del_admin(): void
@@ -111,49 +115,59 @@ class BUG20260813024Test extends TestCase
         $response->assertRedirect(route('admin.usuarios.index'));
         $creado = User::where('email', 'director.nuevo@test.com')->firstOrFail();
         $this->assertTrue($creado->hasRole('director_semilleros'));
-        $this->assertFalse($creado->hasRole('co_investigador'));
+        $this->assertFalse($creado->hasRole('director_grupo_investigacion'));
         $this->assertSame($centro->id, $creado->training_center_id);
     }
 
-    public function test_crear_coinvestigador_asigna_ese_rol_sin_centro(): void
+    /**
+     * Reforma GDI/SDI: reemplaza test_crear_coinvestigador_asigna_ese_rol_sin_centro
+     * (esa ruta y ese rol ya no existen). director_grupo_investigacion es el
+     * rol nuevo que administrador_sistema crea en su lugar, y a diferencia
+     * del co_investigador original, SÍ hereda el centro del admin.
+     */
+    public function test_crear_director_grupo_investigacion_asigna_ese_rol_y_hereda_centro_del_admin(): void
     {
-        [$admin] = $this->crearAdminConCentro();
+        [$admin, $centro] = $this->crearAdminConCentro();
 
-        $response = $this->actingAs($admin)->post(route('admin.co-investigadores.store'), [
+        $response = $this->actingAs($admin)->post(route('admin.director-grupo-investigacion.store'), [
             'nombre' => 'Nuevo',
-            'apellido' => 'Coinvestigador',
+            'apellido' => 'DirectorGrupo',
             'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana->value,
             'numero_documento' => '444555666',
-            'email' => 'coinvestigador.nuevo@test.com',
+            'email' => 'directorgrupo.nuevo@test.com',
             'password' => 'Password123!',
         ]);
 
         $response->assertRedirect(route('admin.usuarios.index'));
-        $creado = User::where('email', 'coinvestigador.nuevo@test.com')->firstOrFail();
-        $this->assertTrue($creado->hasRole('co_investigador'));
+        $creado = User::where('email', 'directorgrupo.nuevo@test.com')->firstOrFail();
+        $this->assertTrue($creado->hasRole('director_grupo_investigacion'));
         $this->assertFalse($creado->hasRole('director_semilleros'));
-        $this->assertNull($creado->training_center_id);
+        $this->assertSame($centro->id, $creado->training_center_id);
     }
 
-    public function test_admin_ve_coinvestigadores_de_todo_el_sistema_sin_filtro_de_centro(): void
+    /**
+     * Reforma GDI/SDI: reemplaza test_admin_ve_coinvestigadores_de_todo_el_sistema_sin_filtro_de_centro.
+     * Ya no existe ningún rol "global" — co_investigador (el que motivaba la
+     * excepción sin filtro de centro) fue eliminado. Se confirma la
+     * invariante que lo sustituye: TODOS los roles, sin excepción, quedan
+     * acotados al centro del admin que consulta.
+     */
+    public function test_admin_no_ve_usuarios_de_otro_centro_al_no_existir_ya_roles_globales(): void
     {
         [$admin, $centro, $otroCentro] = $this->crearAdminConCentro();
 
-        // Co-investigador sin centro (caso normal, creado desde el flujo del admin).
-        $coinvestigadorGlobal = User::factory()->create(['training_center_id' => null]);
-        $coinvestigadorGlobal->assignRole('co_investigador');
+        $directorGrupoOtroCentro = User::factory()->create(['training_center_id' => $otroCentro->id]);
+        $directorGrupoOtroCentro->assignRole('director_grupo_investigacion');
 
-        // Usuario normal de OTRO centro (no debe verse).
         $usuarioOtroCentro = User::factory()->create(['training_center_id' => $otroCentro->id]);
         $usuarioOtroCentro->assignRole('director_semilleros');
 
-        // Usuario del propio centro del admin (sí debe verse).
         $usuarioMismoCentro = User::factory()->create(['training_center_id' => $centro->id]);
         $usuarioMismoCentro->assignRole('director_semilleros');
 
         $emails = TrainingCenterAccess::scopeUserQueryForList(User::query(), $admin)->pluck('email');
 
-        $this->assertContains($coinvestigadorGlobal->email, $emails);
+        $this->assertNotContains($directorGrupoOtroCentro->email, $emails);
         $this->assertContains($usuarioMismoCentro->email, $emails);
         $this->assertNotContains($usuarioOtroCentro->email, $emails);
     }

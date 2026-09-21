@@ -47,7 +47,7 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureTwoFactorDebugLogging(): void
     {
         Event::listen(TwoFactorAuthenticationFailed::class, function (TwoFactorAuthenticationFailed $event) {
-            $engine = new Google2FA();
+            $engine = new Google2FA;
             $secret = decrypt($event->user->two_factor_secret);
 
             Log::info('[2FA-DEBUG] Intento FALLIDO', [
@@ -100,13 +100,13 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureAuthentication(): void
     {
         Fortify::authenticateUsing(function (Request $request) {
-            $tipoDoc   = $request->input('tipo_documento');
-            $numDoc    = $request->input('numero_documento');
+            $tipoDoc = $request->input('tipo_documento');
+            $numDoc = $request->input('numero_documento');
 
             // 1. Buscar usuario por tipo_documento + numero_documento
             $user = User::where('tipo_documento', $tipoDoc)
-                        ->where('numero_documento', $numDoc)
-                        ->first();
+                ->where('numero_documento', $numDoc)
+                ->first();
 
             // 2. Si no existe el usuario, retornar null
             if (! $user) {
@@ -139,7 +139,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = $request->input('numero_documento') . '|' . $request->ip();
+            $throttleKey = $request->input('numero_documento').'|'.$request->ip();
 
             return Limit::perMinute(5)->by($throttleKey);
         });

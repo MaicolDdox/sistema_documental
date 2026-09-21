@@ -48,11 +48,11 @@ class BUG20260813036Test extends TestCase
         ]);
 
         return [$semillero, $creador, $liderProyecto, [
-            'research_line_id' => ResearchLine::firstOrCreate(['nombre' => 'Linea BUG-036'])->id,
-            'technological_line_id' => TechnologicalLine::firstOrCreate(['nombre' => 'Linea Tec BUG-036'])->id,
-            'thematic_area_id' => ThematicArea::firstOrCreate(['nombre' => 'Area BUG-036'])->id,
-            'project_modality_id' => ProjectModality::firstOrCreate(['nombre' => 'Modalidad BUG-036'])->id,
-            'investigation_type_id' => InvestigationType::firstOrCreate(['nombre' => 'Tipo BUG-036'])->id,
+            'research_line_id' => ResearchLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea BUG-036'])->id,
+            'technological_line_id' => TechnologicalLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea Tec BUG-036'])->id,
+            'thematic_area_id' => ThematicArea::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Area BUG-036'])->id,
+            'project_modality_id' => ProjectModality::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Modalidad BUG-036'])->id,
+            'investigation_type_id' => InvestigationType::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Tipo BUG-036'])->id,
         ]];
     }
 

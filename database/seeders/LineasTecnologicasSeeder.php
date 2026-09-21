@@ -17,11 +17,13 @@ class LineasTecnologicasSeeder extends Seeder
             'Línea de Sociedad, Cultura y Pedagogía',
         ];
 
-        foreach ($lineas as $nombre) {
-            \App\Models\TechnologicalLine::firstOrCreate(
-                ['nombre' => $nombre],
-                ['descripcion' => null]
-            );
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($lineas as $nombre) {
+                \App\Models\TechnologicalLine::firstOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => null]
+                );
+            }
         }
     }
 }

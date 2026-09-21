@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('research_group_users', function (Blueprint $table) {
             $table->enum('rol', ['director', 'investigador_lider', 'investigador_asociado', 'integrante'])
-                  ->default('integrante')
-                  ->change();
+                ->default('integrante')
+                ->change();
         });
     }
 
@@ -19,8 +19,8 @@ return new class extends Migration
     {
         Schema::table('research_group_users', function (Blueprint $table) {
             $table->enum('rol', ['investigador_lider', 'investigador_asociado', 'integrante'])
-                  ->default('integrante')
-                  ->change();
+                ->default('integrante')
+                ->change();
         });
     }
 };

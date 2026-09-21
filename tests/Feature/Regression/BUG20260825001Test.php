@@ -17,45 +17,18 @@ use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
- * Regresión: BUG-20260825-001
- * Nueva capacidad para el rol co_investigador: registrar un "Producto
- * Minciencias" propio, 100% personal y privado — sin vincularlo a ningún
- * semillero, proyecto ni líder de proyecto.
+ * Regresión: BUG-20260825-001 (adaptado a la reforma de roles GDI/SDI).
  *
- * Cubre:
- * - Un co_investigador puede crear un producto Minciencias sin semillero/proyecto/líder.
- * - El producto NO aparece en el índice de otro co_investigador.
- * - Otro co_investigador recibe 403 al intentar ver/editar/eliminar por URL directa (ownership leak).
- * - Subida y eliminación de archivo adjunto respeta ownership.
- * - Eliminar el producto elimina también sus archivos asociados (sin huérfanos).
+ * Capacidad original: co_investigador registraba un "Producto Minciencias"
+ * propio, eligiendo el centro de formación en el formulario. Tras la
+ * reforma, esa función quedó exclusivamente en co_investigador_gdi, que ya
+ * NO elige el centro (se hereda de su propio usuario, ver BUG-20260813-029
+ * reescrito). El resto de las reglas de ownership no cambió.
  */
 class BUG20260825001Test extends TestCase
 {
     use RefreshDatabase;
 
-    private function crearCoinvestigador(): User
-    {
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
-
-        $user = User::factory()->create([
-            'training_center_id' => null,
-            'estado' => EstadoEnum::Activo,
-        ]);
-        $user->assignRole('co_investigador');
-
-        return $user;
-    }
-
-    private function crearLineaInvestigacion(): ResearchLine
-    {
-        return ResearchLine::firstOrCreate(['nombre' => 'Línea Test BUG-20260825-001']);
-    }
-
-    /**
-     * BUG-20260813-029 volvió obligatorio training_center_id en
-     * minciencias_products (el co-investigador elige el centro al crear el
-     * producto, para que el administrador_sistema de ese centro lo apruebe).
-     */
     private function crearCentro(): TrainingCenter
     {
         $depto = Department::firstOrCreate(['nombre' => 'Depto Test BUG-20260825-001']);
@@ -67,24 +40,44 @@ class BUG20260825001Test extends TestCase
         );
     }
 
-    public function test_co_investigador_puede_crear_producto_minciencias_sin_vinculos(): void
+    private function crearCoinvestigador(): User
+    {
+        Role::firstOrCreate(['name' => 'co_investigador_gdi', 'guard_name' => 'web']);
+
+        $user = User::factory()->create([
+            'training_center_id' => $this->crearCentro()->id,
+            'estado' => EstadoEnum::Activo,
+        ]);
+        $user->assignRole('co_investigador_gdi');
+
+        return $user;
+    }
+
+    private function crearLineaInvestigacion(): ResearchLine
+    {
+        return ResearchLine::firstOrCreate([
+            'nombre' => 'Línea Test BUG-20260825-001',
+            'training_center_id' => $this->crearCentro()->id,
+        ]);
+    }
+
+    public function test_co_investigador_gdi_puede_crear_producto_minciencias_sin_vinculos(): void
     {
         $coinvestigador = $this->crearCoinvestigador();
         $linea = $this->crearLineaInvestigacion();
-        $centro = $this->crearCentro();
 
-        $response = $this->actingAs($coinvestigador)->post(route('co-investigador.productos.store'), [
+        $response = $this->actingAs($coinvestigador)->post(route('co-investigador-gdi.productos.store'), [
             'nombre' => 'Producto Minciencias Personal',
             'descripcion' => 'Descripción de prueba',
             'research_line_id' => $linea->id,
-            'training_center_id' => $centro->id,
         ]);
 
         $producto = MincienciasProduct::first();
 
-        $response->assertRedirect(route('co-investigador.productos.show', $producto));
+        $response->assertRedirect(route('co-investigador-gdi.productos.show', $producto));
         $this->assertNotNull($producto);
         $this->assertEquals($coinvestigador->id, $producto->user_id);
+        $this->assertEquals($coinvestigador->training_center_id, $producto->training_center_id);
         $this->assertDatabaseHas('minciencias_products', [
             'nombre' => 'Producto Minciencias Personal',
             'user_id' => $coinvestigador->id,
@@ -100,12 +93,12 @@ class BUG20260825001Test extends TestCase
         $producto = MincienciasProduct::create([
             'user_id' => $propietario->id,
             'research_line_id' => $linea->id,
-            'training_center_id' => $this->crearCentro()->id,
+            'training_center_id' => $propietario->training_center_id,
             'nombre' => 'Producto Solo Del Propietario',
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $response = $this->actingAs($otro)->get(route('co-investigador.productos.index'));
+        $response = $this->actingAs($otro)->get(route('co-investigador-gdi.productos.index'));
 
         $response->assertStatus(200);
         $response->assertDontSee($producto->nombre);
@@ -120,18 +113,18 @@ class BUG20260825001Test extends TestCase
         $producto = MincienciasProduct::create([
             'user_id' => $propietario->id,
             'research_line_id' => $linea->id,
-            'training_center_id' => $this->crearCentro()->id,
+            'training_center_id' => $propietario->training_center_id,
             'nombre' => 'Producto Ajeno',
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $this->actingAs($otro)->get(route('co-investigador.productos.show', $producto))->assertStatus(403);
-        $this->actingAs($otro)->get(route('co-investigador.productos.edit', $producto))->assertStatus(403);
-        $this->actingAs($otro)->put(route('co-investigador.productos.update', $producto), [
+        $this->actingAs($otro)->get(route('co-investigador-gdi.productos.show', $producto))->assertStatus(403);
+        $this->actingAs($otro)->get(route('co-investigador-gdi.productos.edit', $producto))->assertStatus(403);
+        $this->actingAs($otro)->put(route('co-investigador-gdi.productos.update', $producto), [
             'nombre' => 'Hackeado',
             'research_line_id' => $linea->id,
         ])->assertStatus(403);
-        $this->actingAs($otro)->delete(route('co-investigador.productos.destroy', $producto))->assertStatus(403);
+        $this->actingAs($otro)->delete(route('co-investigador-gdi.productos.destroy', $producto))->assertStatus(403);
 
         $this->assertDatabaseHas('minciencias_products', [
             'id' => $producto->id,
@@ -150,34 +143,34 @@ class BUG20260825001Test extends TestCase
         $producto = MincienciasProduct::create([
             'user_id' => $propietario->id,
             'research_line_id' => $linea->id,
-            'training_center_id' => $this->crearCentro()->id,
+            'training_center_id' => $propietario->training_center_id,
             'nombre' => 'Producto Con Archivos',
             'estado' => EstadoEnum::Activo,
         ]);
 
         // Un tercero no puede subir archivos a un producto ajeno.
-        $this->actingAs($otro)->post(route('co-investigador.productos.archivos.store', $producto), [
+        $this->actingAs($otro)->post(route('co-investigador-gdi.productos.archivos.store', $producto), [
             'archivo' => UploadedFile::fake()->create('intruso.pdf', 100),
         ])->assertStatus(403);
 
         // El propietario sí puede subir el archivo.
-        $response = $this->actingAs($propietario)->post(route('co-investigador.productos.archivos.store', $producto), [
+        $response = $this->actingAs($propietario)->post(route('co-investigador-gdi.productos.archivos.store', $producto), [
             'archivo' => UploadedFile::fake()->create('soporte.pdf', 100),
             'descripcion' => 'Soporte del producto',
         ]);
-        $response->assertRedirect(route('co-investigador.productos.show', $producto));
+        $response->assertRedirect(route('co-investigador-gdi.productos.show', $producto));
 
         $archivo = MincienciasProductFile::where('minciencias_product_id', $producto->id)->first();
         $this->assertNotNull($archivo);
         Storage::disk('public')->assertExists($archivo->archivo);
 
         // Un tercero no puede eliminar el archivo ajeno.
-        $this->actingAs($otro)->delete(route('co-investigador.archivos.destroy', $archivo))->assertStatus(403);
+        $this->actingAs($otro)->delete(route('co-investigador-gdi.archivos.destroy', $archivo))->assertStatus(403);
         $this->assertDatabaseHas('minciencias_product_files', ['id' => $archivo->id]);
 
         // El propietario sí puede eliminarlo, y el archivo físico también se borra.
-        $this->actingAs($propietario)->delete(route('co-investigador.archivos.destroy', $archivo))
-            ->assertRedirect(route('co-investigador.productos.show', $producto));
+        $this->actingAs($propietario)->delete(route('co-investigador-gdi.archivos.destroy', $archivo))
+            ->assertRedirect(route('co-investigador-gdi.productos.show', $producto));
 
         $this->assertDatabaseMissing('minciencias_product_files', ['id' => $archivo->id]);
         Storage::disk('public')->assertMissing($archivo->archivo);
@@ -193,20 +186,20 @@ class BUG20260825001Test extends TestCase
         $producto = MincienciasProduct::create([
             'user_id' => $propietario->id,
             'research_line_id' => $linea->id,
-            'training_center_id' => $this->crearCentro()->id,
+            'training_center_id' => $propietario->training_center_id,
             'nombre' => 'Producto A Eliminar',
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $this->actingAs($propietario)->post(route('co-investigador.productos.archivos.store', $producto), [
+        $this->actingAs($propietario)->post(route('co-investigador-gdi.productos.archivos.store', $producto), [
             'archivo' => UploadedFile::fake()->create('anexo.pdf', 100),
         ]);
 
         $archivo = MincienciasProductFile::where('minciencias_product_id', $producto->id)->first();
         $this->assertNotNull($archivo);
 
-        $this->actingAs($propietario)->delete(route('co-investigador.productos.destroy', $producto))
-            ->assertRedirect(route('co-investigador.productos.index'));
+        $this->actingAs($propietario)->delete(route('co-investigador-gdi.productos.destroy', $producto))
+            ->assertRedirect(route('co-investigador-gdi.productos.index'));
 
         $this->assertDatabaseMissing('minciencias_products', ['id' => $producto->id]);
         $this->assertDatabaseMissing('minciencias_product_files', ['id' => $archivo->id]);

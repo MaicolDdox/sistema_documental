@@ -3,16 +3,17 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\City;
-use Illuminate\Http\Request;
 use App\Http\Requests\StoreCityRequest;
 use App\Http\Requests\UpdateCityRequest;
+use App\Models\City;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CityController extends Controller
 {
-    private function getFields() {
+    private function getFields()
+    {
         return [
             'department_id' => ['type' => 'relation', 'options' => \App\Models\Department::all()],
             'nombre' => ['type' => 'text', 'options' => []],
@@ -23,11 +24,12 @@ class CityController extends Controller
     public function index(): View
     {
         $items = City::paginate(10);
+
         return view('admin.parametric.index', [
             'items' => $items,
             'title' => 'Municipios',
             'routePrefix' => 'admin.cities',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -36,7 +38,7 @@ class CityController extends Controller
         return view('admin.parametric.create', [
             'title' => 'Crear Municipios',
             'routePrefix' => 'admin.cities',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -45,11 +47,11 @@ class CityController extends Controller
         $validated = $request->validate($this->getValidationRules());
         // Custom request logic applies if $request is not just a base Request.
         if (method_exists($request, 'validated') && 'StoreCityRequest' !== 'Request') {
-             $validated = $request->validated();
+            $validated = $request->validated();
         }
-        
+
         City::create($validated);
-        
+
         return redirect()->route('admin.cities.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -60,7 +62,7 @@ class CityController extends Controller
             'item' => $city,
             'title' => 'Editar Municipios',
             'routePrefix' => 'admin.cities',
-            'fields' => $this->getFields()
+            'fields' => $this->getFields(),
         ]);
     }
 
@@ -68,11 +70,11 @@ class CityController extends Controller
     {
         $validated = $request->validate($this->getValidationRules());
         if (method_exists($request, 'validated') && 'UpdateCityRequest' !== 'Request') {
-             $validated = $request->validated();
+            $validated = $request->validated();
         }
-        
+
         $city->update($validated);
-        
+
         return redirect()->route('admin.cities.index')
             ->with('success', 'Registro actualizado exitosamente.');
     }
@@ -81,6 +83,7 @@ class CityController extends Controller
     {
         try {
             $city->delete();
+
             return redirect()->route('admin.cities.index')
                 ->with('success', 'Registro eliminado exitosamente.');
         } catch (\Illuminate\Database\QueryException $e) {
@@ -88,16 +91,17 @@ class CityController extends Controller
                 ->with('error', 'No se puede eliminar porque está asociado a otros registros.');
         }
     }
-    
+
     protected function getValidationRules(): array
     {
         $rules = [];
-        foreach(array_keys($this->getFields()) as $f) {
-             $rules[$f] = 'required';
+        foreach (array_keys($this->getFields()) as $f) {
+            $rules[$f] = 'required';
         }
+
         return $rules;
     }
-    
-    // Note: Laravel resolves model bindings. 
+
+    // Note: Laravel resolves model bindings.
     // Ensure the parameter name $city matches route.
 }

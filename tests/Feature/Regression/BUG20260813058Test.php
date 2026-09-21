@@ -6,7 +6,6 @@ use App\Enums\EstadoEnum;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\InvestigationType;
-use App\Models\Project;
 use App\Models\ProjectModality;
 use App\Models\ResearchLine;
 use App\Models\Seedling;
@@ -31,7 +30,9 @@ class BUG20260813058Test extends TestCase
     use RefreshDatabase;
 
     private TrainingCenter $centro;
+
     private TrainingCenter $otroCentro;
+
     private User $liderSemillero;
 
     protected function setUp(): void
@@ -72,11 +73,11 @@ class BUG20260813058Test extends TestCase
         return [
             'nombre' => 'Proyecto BUG-058',
             'lider_proyecto_user_id' => $liderProyectoUserId,
-            'research_line_id' => ResearchLine::firstOrCreate(['nombre' => 'Linea BUG-058'])->id,
-            'technological_line_id' => TechnologicalLine::firstOrCreate(['nombre' => 'Linea Tec BUG-058'])->id,
-            'thematic_area_id' => ThematicArea::firstOrCreate(['nombre' => 'Area BUG-058'])->id,
-            'project_modality_id' => ProjectModality::firstOrCreate(['nombre' => 'Modalidad BUG-058'])->id,
-            'investigation_type_id' => InvestigationType::firstOrCreate(['nombre' => 'Tipo BUG-058'])->id,
+            'research_line_id' => ResearchLine::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Linea BUG-058'])->id,
+            'technological_line_id' => TechnologicalLine::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Linea Tec BUG-058'])->id,
+            'thematic_area_id' => ThematicArea::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Area BUG-058'])->id,
+            'project_modality_id' => ProjectModality::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Modalidad BUG-058'])->id,
+            'investigation_type_id' => InvestigationType::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Tipo BUG-058'])->id,
         ];
     }
 

@@ -64,7 +64,9 @@ Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
         'director_semilleros' => redirect()->to('/director-semilleros', 302),
         'lider_semillero' => redirect()->to('/lider-semillero', 302),
         'lider_proyecto' => redirect()->to('/lider-proyecto', 302),
-        'co_investigador' => redirect()->to('/co-investigador', 302),
+        'director_grupo_investigacion' => redirect()->to('/director-grupo-investigacion', 302),
+        'co_investigador_gdi' => redirect()->to('/co-investigador-gdi', 302),
+        'co_investigador_sdi' => redirect()->to('/co-investigador-sdi', 302),
         'director_investigacion' => redirect()->to('/director', 302),
         'investigador_asociado' => redirect()->to('/investigador', 302),
         'asesor_semillero' => redirect()->to('/asesor-semillero/dashboard', 302),
@@ -90,34 +92,49 @@ Route::middleware(['auth', 'ensure.active'])->group(function () {
         // Route::view('dashboard', 'admin.dashboard')->name('dashboard');
 
         // Configuración general
-        Route::resource('departments', DepartmentController::class)->names('departments');
-        Route::resource('cities', CityController::class)->names('cities');
         Route::middleware('role:super_administrador')->group(function () {
             Route::resource('training-centers', TrainingCenterController::class)->names('training-centers');
             Route::patch('training-centers/{training_center}/toggle', [TrainingCenterController::class, 'toggle'])->name('training-centers.toggle');
         });
-        Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
-        Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
-        Route::resource('training-program-types', \App\Http\Controllers\Web\TrainingProgramTypeController::class)->names('training-program-types');
-        Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
-        Route::patch('training-programs/{training_program}/toggle', [TrainingProgramController::class, 'toggle'])->name('training-programs.toggle');
-        Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
-        Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
-        Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');
-        Route::resource('project-modalities', \App\Http\Controllers\Web\ProjectModalityController::class)->names('project-modalities');
-        Route::resource('investigation-types', \App\Http\Controllers\Web\InvestigationTypeController::class)->names('investigation-types');
-        Route::resource('minciencias-typologies', \App\Http\Controllers\Web\MincienciasTypologyController::class)->names('minciencias-typologies');
-        Route::resource('minciencias-subcategories', \App\Http\Controllers\Web\MincienciasSubcategoryController::class)->names('minciencias-subcategories');
 
-        // Gestión de usuarios (controllers clásicos + Livewire CRUD)
-        Route::resource('users', UserController::class)->names('users');
-        Route::resource('people', PersonController::class)->names('people');
-        Route::resource('external-advisors', ExternalAdvisorController::class)->names('external-advisors');
+        // Catálogos (BUG-20260813-062 — antes sin middleware de rol, cualquier
+        // usuario autenticado y activo podía editarlos; reforma de catálogos
+        // por centro: solo administrador_sistema los gestiona).
+        Route::middleware('role:administrador_sistema')->group(function () {
+            Route::resource('departments', DepartmentController::class)->names('departments');
+            Route::resource('cities', CityController::class)->names('cities');
+            Route::resource('entity-positions', EntityPositionController::class)->names('entity-positions');
+            Route::resource('linkage-types', LinkageTypeController::class)->names('linkage-types');
+            Route::resource('training-program-types', \App\Http\Controllers\Web\TrainingProgramTypeController::class)->names('training-program-types');
+            Route::resource('training-programs', TrainingProgramController::class)->names('training-programs');
+            Route::patch('training-programs/{training_program}/toggle', [TrainingProgramController::class, 'toggle'])->name('training-programs.toggle');
+            Route::resource('research-lines', ResearchLineController::class)->names('research-lines');
+            Route::resource('technological-lines', TechnologicalLineController::class)->names('technological-lines');
+            Route::resource('thematic-areas', ThematicAreaController::class)->names('thematic-areas');
+            Route::resource('project-modalities', \App\Http\Controllers\Web\ProjectModalityController::class)->names('project-modalities');
+            Route::resource('investigation-types', \App\Http\Controllers\Web\InvestigationTypeController::class)->names('investigation-types');
+            Route::resource('minciencias-typologies', \App\Http\Controllers\Web\MincienciasTypologyController::class)->names('minciencias-typologies');
+            Route::resource('minciencias-subcategories', \App\Http\Controllers\Web\MincienciasSubcategoryController::class)->names('minciencias-subcategories');
+            Route::resource('external-advisors', ExternalAdvisorController::class)->names('external-advisors');
+        });
 
-        // Livewire admin user management
-        Route::livewire('users-manage', \App\Livewire\Admin\Users\UserIndex::class)->name('users.manage');
-        Route::livewire('users-manage/create', \App\Livewire\Admin\Users\UserCreate::class)->name('users.manage.create');
-        Route::livewire('users-manage/{user}/edit', \App\Livewire\Admin\Users\UserEdit::class)->name('users.manage.edit');
+        // Gestión de usuarios (controllers clásicos + Livewire CRUD).
+        // role:administrador_sistema|director_semilleros|lider_semillero — el
+        // mismo universo que ya exigía UserIndex::mount() manualmente, y el
+        // único con al menos un rol asignable vía RoleAssignmentMatrix que
+        // además tiene una vía "genérica" segura aquí. director_grupo_investigacion
+        // queda deliberadamente FUERA: creando co_investigador_gdi por este
+        // camino genérico (CreateNewUser) no vincula grupo_investigacion_id
+        // como sí lo hace DirectorGrupoInvestigacion\CoInvestigadorController,
+        // dejaría cuentas huérfanas sin grupo.
+        Route::middleware('role:administrador_sistema|director_semilleros|lider_semillero')->group(function () {
+            Route::resource('users', UserController::class)->names('users');
+            Route::resource('people', PersonController::class)->names('people');
+
+            Route::livewire('users-manage', \App\Livewire\Admin\Users\UserIndex::class)->name('users.manage');
+            Route::livewire('users-manage/create', \App\Livewire\Admin\Users\UserCreate::class)->name('users.manage.create');
+            Route::livewire('users-manage/{user}/edit', \App\Livewire\Admin\Users\UserEdit::class)->name('users.manage.edit');
+        });
     });
 
     // Nota: los módulos "Investigación" (/research), "Semilleros" (/seedlings)

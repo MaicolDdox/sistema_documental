@@ -29,8 +29,8 @@ class NotificacionService
         } catch (\Throwable $e) {
             Log::error('NotificacionService: fallo al enviar credenciales', [
                 'usuario_id' => $user->id,
-                'email'      => $user->email,
-                'error'      => $e->getMessage(),
+                'email' => $user->email,
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -51,8 +51,8 @@ class NotificacionService
         } catch (\Throwable $e) {
             Log::error('NotificacionService: fallo al enviar notificación de contraseña restablecida', [
                 'usuario_id' => $user->id,
-                'email'      => $user->email,
-                'error'      => $e->getMessage(),
+                'email' => $user->email,
+                'error' => $e->getMessage(),
             ]);
         }
     }

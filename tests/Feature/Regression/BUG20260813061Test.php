@@ -28,7 +28,7 @@ class BUG20260813061Test extends TestCase
     public function test_el_listado_de_usuarios_incluye_el_checkbox_de_roles_adicionales_en_el_modal_real(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-061']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-061', 'department_id' => $depto->id]);
@@ -63,7 +63,7 @@ class BUG20260813061Test extends TestCase
     public function test_editar_desde_el_modal_real_sigue_guardando_roles_adicionales(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-061b']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-061b', 'department_id' => $depto->id]);
@@ -91,12 +91,12 @@ class BUG20260813061Test extends TestCase
             'email' => $director->email,
             'rol' => 'director_semilleros',
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['co_investigador', 'lider_semillero'],
+            'additional_roles' => ['co_investigador_sdi', 'lider_semillero'],
         ]);
 
         $response->assertRedirect(route('admin.usuarios.index'));
         $director->refresh();
-        $this->assertTrue($director->hasRole('co_investigador'));
+        $this->assertTrue($director->hasRole('co_investigador_sdi'));
         $this->assertTrue($director->hasRole('lider_semillero'));
     }
 }

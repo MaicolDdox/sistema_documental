@@ -123,8 +123,12 @@
                 $routeMenuContext = 'lider_semillero';
             } elseif (request()->routeIs('lider-proyecto.*')) {
                 $routeMenuContext = 'lider_proyecto';
-            } elseif (request()->routeIs('co-investigador.*')) {
-                $routeMenuContext = 'co_investigador';
+            } elseif (request()->routeIs('director-grupo-investigacion.*')) {
+                $routeMenuContext = 'director_grupo_investigacion';
+            } elseif (request()->routeIs('co-investigador-gdi.*')) {
+                $routeMenuContext = 'co_investigador_gdi';
+            } elseif (request()->routeIs('co-investigador-sdi.*')) {
+                $routeMenuContext = 'co_investigador_sdi';
             }
 
             // FEAT-20260830-001 (multi-rol): el rol activo en sesión manda
@@ -142,7 +146,9 @@
             $showDirectorSem = $sidebarUser && $sidebarUser->hasRole('director_semilleros') && $menuContext === 'director_semilleros';
             $showLiderSem = $sidebarUser && $sidebarUser->hasRole('lider_semillero') && $menuContext === 'lider_semillero';
             $showLiderProyecto = $sidebarUser && $sidebarUser->hasRole('lider_proyecto') && $menuContext === 'lider_proyecto';
-            $showCoinvestigador = $sidebarUser && $sidebarUser->hasRole('co_investigador') && $menuContext === 'co_investigador';
+            $showDirectorGrupoInvestigacion = $sidebarUser && $sidebarUser->hasRole('director_grupo_investigacion') && $menuContext === 'director_grupo_investigacion';
+            $showCoinvestigadorGdi = $sidebarUser && $sidebarUser->hasRole('co_investigador_gdi') && $menuContext === 'co_investigador_gdi';
+            $showCoinvestigadorSdi = $sidebarUser && $sidebarUser->hasRole('co_investigador_sdi') && $menuContext === 'co_investigador_sdi';
 
             // Punto rojo del Dashboard genérico: el líder de proyecto tiene una
             // revisión de formulación, ejecución o producto final sin ver
@@ -167,7 +173,9 @@
                 || request()->routeIs('dir-sem.dashboard')
                 || request()->routeIs('lider-sem.dashboard')
                 || request()->routeIs('lider-proyecto.dashboard')
-                || request()->routeIs('co-investigador.dashboard')
+                || request()->routeIs('director-grupo-investigacion.dashboard')
+                || request()->routeIs('co-investigador-gdi.dashboard')
+                || request()->routeIs('co-investigador-sdi.dashboard')
                 || request()->routeIs('director.dashboard')
                 || request()->routeIs('investigador.dashboard')
                 || request()->routeIs('asesor.dashboard');
@@ -262,7 +270,7 @@
                     Gestión Usuarios
                 </p>
 
-                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.director-semilleros.*', 'admin.co-investigadores.*') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openAdminUsers: {{ request()->routeIs('admin.usuarios.*', 'admin.director-semilleros.*', 'admin.director-grupo-investigacion.*') ? 'true' : 'false' }} }" class="mb-1">
                     <button @click="openAdminUsers = !openAdminUsers"
                             class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all">
                         <div class="flex items-center gap-3">
@@ -288,13 +296,26 @@
                             <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z"/></svg>
                             Director de Semilleros
                         </a>
-                        <a href="{{ route('admin.co-investigadores.create') }}"
-                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.co-investigadores.*') ? 'bg-slate-50 text-slate-900' : '' }}">
-                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                            Co-investigadores
+                        <a href="{{ route('admin.director-grupo-investigacion.create') }}"
+                           class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 {{ request()->routeIs('admin.director-grupo-investigacion.*') ? 'bg-slate-50 text-slate-900' : '' }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 019.374 21c-2.331 0-4.512-.645-6.374-1.766z"/></svg>
+                            Director de Grupo de Investigación
                         </a>
                     </div>
                 </div>
+
+                <a href="{{ route('admin.grupos-investigacion.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.grupos-investigacion.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                    </svg>
+                    Grupos de Investigación
+                </a>
+                <a href="{{ route('admin.vinculaciones-grupo-investigacion.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.vinculaciones-grupo-investigacion.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.25 6.75v10.5m-10.5-10.5v10.5M3.75 12h16.5"/>
+                    </svg>
+                    Vincular Grupo ↔ Director
+                </a>
 
                 <a href="{{ route('admin.semilleros.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all cursor-pointer {{ request()->routeIs('admin.semilleros.*') ? 'nav-item-active' : '' }}">
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
@@ -526,8 +547,24 @@
                     Co-investigadores
                 </a>
 
-            @elseif($showCoinvestigador)
-                {{-- Menú Co-investigador --}}
+            @elseif($showDirectorGrupoInvestigacion)
+                {{-- Menú Director de Grupo de Investigación --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MI GRUPO</p>
+                <a href="{{ route('director-grupo-investigacion.grupo.edit') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director-grupo-investigacion.grupo.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+                    Información del Grupo
+                </a>
+                <a href="{{ route('director-grupo-investigacion.co-investigadores.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director-grupo-investigacion.co-investigadores.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                    Co-investigadores GDI
+                </a>
+                <a href="{{ route('director-grupo-investigacion.minciencias.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('director-grupo-investigacion.minciencias.*') ? 'nav-item-active' : '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Productos Minciencias
+                </a>
+
+            @elseif($showCoinvestigadorSdi)
+                {{-- Menú Co-investigador SDI --}}
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">MIS PROYECTOS</p>
                 @php
                     $sidebarProyectosCoinvestigador = $sidebarUser
@@ -536,7 +573,7 @@
                             ->get(['id', 'nombre', 'estado'])
                         : collect();
                 @endphp
-                <div x-data="{ openProyectos: {{ request()->routeIs('co-investigador.proyectos.show') ? 'true' : 'false' }} }" class="mb-1">
+                <div x-data="{ openProyectos: {{ request()->routeIs('co-investigador-sdi.proyectos.show') ? 'true' : 'false' }} }" class="mb-1">
                     <button type="button" @click="openProyectos = !openProyectos" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all text-left">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
@@ -546,7 +583,7 @@
                     </button>
                     <div x-show="openProyectos" x-cloak x-collapse class="pl-11 pr-3 py-2 space-y-1 max-h-64 overflow-y-auto">
                         @forelse($sidebarProyectosCoinvestigador as $sidebarProyecto)
-                        <a href="{{ route('co-investigador.proyectos.show', $sidebarProyecto) }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->route('proyecto')?->id === $sidebarProyecto->id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                        <a href="{{ route('co-investigador-sdi.proyectos.show', $sidebarProyecto) }}" class="flex items-center gap-2 py-2 rounded-lg text-xs font-medium {{ request()->route('proyecto')?->id === $sidebarProyecto->id ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
                             <span class="w-1.5 h-1.5 rounded-full shrink-0 {{ $sidebarProyecto->estado?->value === 'activo' ? 'bg-green-500' : 'bg-slate-300' }}"></span>
                             <span class="truncate">{{ $sidebarProyecto->nombre }}</span>
                         </a>
@@ -556,7 +593,10 @@
                     </div>
                 </div>
 
-                <a href="{{ route('co-investigador.productos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('co-investigador.productos.*') ? 'nav-item-active' : '' }}">
+            @elseif($showCoinvestigadorGdi)
+                {{-- Menú Co-investigador GDI --}}
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2 mt-4">PRODUCTOS</p>
+                <a href="{{ route('co-investigador-gdi.productos.index') }}" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 transition-all {{ request()->routeIs('co-investigador-gdi.productos.*') ? 'nav-item-active' : '' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
                     Producto Minciencias
                 </a>

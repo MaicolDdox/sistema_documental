@@ -49,7 +49,7 @@ class BUG20260813018Test extends TestCase
 
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $liderSemillero = User::factory()->create(['training_center_id' => $centro->id]);
         $liderSemillero->assignRole('lider_semillero');
@@ -70,7 +70,7 @@ class BUG20260813018Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $proyecto = Project::create([
             'project_creator_id' => $liderSemillero->id,
@@ -82,12 +82,12 @@ class BUG20260813018Test extends TestCase
             'fecha_inicio' => now(),
         ]);
 
-        return [$liderProyecto, $proyecto];
+        return [$liderProyecto, $proyecto, $centro];
     }
 
     public function test_dashboard_muestra_resumen_aprendices_y_coinvestigadores_sin_variables_indefinidas(): void
     {
-        [$liderProyecto, $proyecto] = $this->crearEscenario();
+        [$liderProyecto, $proyecto, $centro] = $this->crearEscenario();
 
         ProjectLearner::create([
             'project_id' => $proyecto->id,
@@ -98,8 +98,8 @@ class BUG20260813018Test extends TestCase
             'nombre_tecnologo' => 'Análisis y Desarrollo de Software',
         ]);
 
-        $coinvestigador = User::factory()->create();
-        $coinvestigador->assignRole('co_investigador');
+        $coinvestigador = User::factory()->create(['training_center_id' => $centro->id]);
+        $coinvestigador->assignRole('co_investigador_sdi');
         $proyecto->authors()->attach($coinvestigador->id, ['activo' => true]);
 
         $response = $this->actingAs($liderProyecto)->get(route('lider-proyecto.dashboard'));
@@ -121,10 +121,10 @@ class BUG20260813018Test extends TestCase
 
     public function test_coinvestigadores_disponibles_se_listan_sin_necesidad_de_buscar(): void
     {
-        [$liderProyecto, $proyecto] = $this->crearEscenario();
+        [$liderProyecto, $proyecto, $centro] = $this->crearEscenario();
 
-        $disponible = User::factory()->create(['email' => 'disponible@test.com']);
-        $disponible->assignRole('co_investigador');
+        $disponible = User::factory()->create(['email' => 'disponible@test.com', 'training_center_id' => $centro->id]);
+        $disponible->assignRole('co_investigador_sdi');
 
         $response = $this->actingAs($liderProyecto)->get(route('lider-proyecto.coinvestigadores.index'));
 
@@ -134,10 +134,10 @@ class BUG20260813018Test extends TestCase
 
     public function test_coinvestigadores_ya_vinculados_no_aparecen_en_disponibles(): void
     {
-        [$liderProyecto, $proyecto] = $this->crearEscenario();
+        [$liderProyecto, $proyecto, $centro] = $this->crearEscenario();
 
-        $vinculado = User::factory()->create(['email' => 'vinculado@test.com']);
-        $vinculado->assignRole('co_investigador');
+        $vinculado = User::factory()->create(['email' => 'vinculado@test.com', 'training_center_id' => $centro->id]);
+        $vinculado->assignRole('co_investigador_sdi');
         $proyecto->authors()->attach($vinculado->id, ['activo' => true]);
 
         $response = $this->actingAs($liderProyecto)->get(route('lider-proyecto.coinvestigadores.index'));

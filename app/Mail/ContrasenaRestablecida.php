@@ -14,7 +14,7 @@ class ContrasenaRestablecida extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly User   $usuario,
+        public readonly User $usuario,
         public readonly string $nuevaPassword,
         public readonly string $restablecidaPor,
         public readonly string $appUrl,

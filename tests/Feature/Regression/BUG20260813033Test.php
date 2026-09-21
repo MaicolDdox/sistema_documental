@@ -32,7 +32,7 @@ class BUG20260813033Test extends TestCase
         ]);
     }
 
-    public function test_canManage_permite_cuenta_huerfana_sin_creador_registrado(): void
+    public function test_can_manage_permite_cuenta_huerfana_sin_creador_registrado(): void
     {
         $director = User::factory()->create(['created_by_user_id' => null]);
         $liderHuerfano = User::factory()->create(['created_by_user_id' => null]);
@@ -40,7 +40,7 @@ class BUG20260813033Test extends TestCase
         $this->assertTrue(UserOwnershipAccess::canManage($director, $liderHuerfano));
     }
 
-    public function test_canManage_sigue_bloqueando_cuenta_creada_por_otro(): void
+    public function test_can_manage_sigue_bloqueando_cuenta_creada_por_otro(): void
     {
         $creadorReal = User::factory()->create();
         $otroDirector = User::factory()->create();

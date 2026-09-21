@@ -17,7 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/lider_proyecto.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
-                ->group(base_path('routes/co_investigador.php'));
+                ->group(base_path('routes/co_investigador_gdi.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/co_investigador_sdi.php'));
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/director_grupo_investigacion.php'));
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
             \Illuminate\Support\Facades\Route::middleware('web')

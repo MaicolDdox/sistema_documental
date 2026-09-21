@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\City;
 use App\Models\Department;
+use Illuminate\Database\Seeder;
 
 class CitySeeder extends Seeder
 {
@@ -1160,6 +1160,6 @@ class CitySeeder extends Seeder
             City::insertOrIgnore($chunk);
         }
 
-        $this->command->info('✅ ' . count($batch) . ' municipios insertados.');
+        $this->command->info('✅ '.count($batch).' municipios insertados.');
     }
 }
