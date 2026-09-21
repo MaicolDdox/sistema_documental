@@ -149,7 +149,7 @@ class UsuarioSistemaController extends Controller
             : (\App\Support\RoleModuleLinks::pickPrimaryRoleNameFromNames($namesRol) ?? $usuario->roles->first()?->name ?? '');
         $currentAdditionalRoles = array_values(array_diff($namesRol, [$rolPrincipalActual]));
         $rolesAdicionales = $rolPrincipalActual !== ''
-            ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual))->orderBy('name')->get()
+            ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual, auth()->user()))->orderBy('name')->get()
             : collect();
 
         return view('super-admin.usuarios-sistema.edit', compact(
@@ -216,6 +216,7 @@ class UsuarioSistemaController extends Controller
                 $rol,
                 $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
                 true, // super_administrador siempre puede gestionar roles adicionales
+                auth()->user(),
             );
         }
 
