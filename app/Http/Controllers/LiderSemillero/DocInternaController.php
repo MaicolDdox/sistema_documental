@@ -8,8 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocInternaController extends Controller
 {
@@ -37,44 +37,45 @@ class DocInternaController extends Controller
                         ? Storage::disk('public')->size($doc->url_archivo)
                         : 0;
                     $doc->archivo_nombre = basename((string) $doc->url_archivo);
+
                     return $doc;
                 });
         }
 
         return view('lider_semillero.doc_interna.index', [
-            'semillero'   => $semillero,
+            'semillero' => $semillero,
             'documentos' => $documentos,
-            'tipos'       => self::tipos(),
+            'tipos' => self::tipos(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero) {
+        if (! $semillero) {
             return redirect()->route('lider-sem.doc-interna')->with('error', 'No tienes un semillero asignado.');
         }
 
         $request->validate([
-            'titulo'  => 'required|string|max:255',
-            'tipo'    => 'required|in:acta,informe,otro',
+            'titulo' => 'required|string|max:255',
+            'tipo' => 'required|in:acta,informe,otro',
             'archivo' => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:10240',
         ], [
-            'titulo.required'  => 'El título es obligatorio.',
+            'titulo.required' => 'El título es obligatorio.',
             'archivo.required' => 'Debes seleccionar un archivo.',
         ]);
 
-        $path = $request->file('archivo')->store('doc_interna/' . $semillero->id, 'public');
+        $path = $request->file('archivo')->store('doc_interna/'.$semillero->id, 'public');
         if ($path === false) {
             return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
         }
 
         SeedlingInternalDocument::create([
-            'seedling_id'  => $semillero->id,
-            'user_id'      => Auth::id(),
-            'titulo'       => $request->titulo,
-            'tipo'         => $request->tipo,
-            'url_archivo'  => $path,
+            'seedling_id' => $semillero->id,
+            'user_id' => Auth::id(),
+            'titulo' => $request->titulo,
+            'tipo' => $request->tipo,
+            'url_archivo' => $path,
         ]);
 
         return redirect()->route('lider-sem.doc-interna')->with('success', 'Documento subido correctamente.');
@@ -90,7 +91,7 @@ class DocInternaController extends Controller
         if (! $semillero || $documento->seedling_id !== $semillero->id) {
             abort(403, 'No puedes descargar este documento.');
         }
-        if (!Storage::disk('public')->exists($documento->url_archivo)) {
+        if (! Storage::disk('public')->exists($documento->url_archivo)) {
             abort(404, 'El archivo no existe.');
         }
 
@@ -103,7 +104,7 @@ class DocInternaController extends Controller
     public function destroy(SeedlingInternalDocument $documento): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || $documento->seedling_id !== $semillero->id) {
+        if (! $semillero || $documento->seedling_id !== $semillero->id) {
             abort(403, 'No puedes eliminar este documento.');
         }
         if ($documento->user_id !== Auth::id()) {

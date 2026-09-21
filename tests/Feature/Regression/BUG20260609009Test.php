@@ -25,17 +25,17 @@ class BUG20260609009Test extends TestCase
     private function crearUsuario(): User
     {
         $user = User::factory()->create([
-            'email'          => 'dest@test.com',
-            'estado'         => EstadoEnum::Activo,
+            'email' => 'dest@test.com',
+            'estado' => EstadoEnum::Activo,
             'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana,
         ]);
 
         $user->person()->create([
-            'primer_nombre'       => 'Juan',
-            'primer_apellido'     => 'Pérez',
-            'genero'              => 'masculino',
-            'celular'             => 300000000,
-            'eps'                 => 'Sura',
+            'primer_nombre' => 'Juan',
+            'primer_apellido' => 'Pérez',
+            'genero' => 'masculino',
+            'celular' => 300000000,
+            'eps' => 'Sura',
             'email_institucional' => 'dest@test.com',
         ]);
 
@@ -50,7 +50,7 @@ class BUG20260609009Test extends TestCase
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP connection failed'));
 
         $service = app(NotificacionService::class);
-        $user    = $this->crearUsuario();
+        $user = $this->crearUsuario();
 
         // No debe propagar la excepción — NotificacionService la captura
         $this->expectNotToPerformAssertions();
@@ -67,12 +67,11 @@ class BUG20260609009Test extends TestCase
         Mail::fake();
 
         $service = app(NotificacionService::class);
-        $user    = $this->crearUsuario();
+        $user = $this->crearUsuario();
 
         $service->enviarCredenciales($user, 'password123');
 
-        Mail::assertSent(\App\Mail\CredencialesAcceso::class, fn ($mail) =>
-            $mail->hasTo('dest@test.com')
+        Mail::assertSent(\App\Mail\CredencialesAcceso::class, fn ($mail) => $mail->hasTo('dest@test.com')
         );
     }
 
@@ -83,7 +82,7 @@ class BUG20260609009Test extends TestCase
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP timeout'));
 
         $service = app(NotificacionService::class);
-        $user    = $this->crearUsuario();
+        $user = $this->crearUsuario();
 
         $lanzó = false;
         try {

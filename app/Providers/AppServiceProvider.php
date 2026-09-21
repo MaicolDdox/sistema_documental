@@ -33,11 +33,22 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasAnyRole(['super_administrador', 'administrador_sistema']) ? true : null;
         });
 
-        // El rediseño de roles usa autorización por permiso (Spatie) o por
-        // dueño del recurso directamente en los controladores, no Policies
-        // de modelo — las políticas anteriores (Director/Grupo/Producto/
-        // GroupProduct/Proyecto) quedaron ligadas a entidades que ya no
-        // existen (ResearchGroup, Product, GroupProduct) y se eliminaron.
+        // ──────────────────────────────────────────────────────────────────
+        // Policies de modelo — reintroducidas en BUG-20260914-004
+        // ──────────────────────────────────────────────────────────────────
+        // Las Policies anteriores se eliminaron por quedar ligadas a entidades
+        // ya removidas (ResearchGroup, GroupProduct). Se reintroducen ahora
+        // para centralizar la regla de multi-tenancy por training_center_id
+        // tras detectar duplicación manual que causó los bugs 001-003 del
+        // 2026-09-14. Gate::before (línea 32) ya otorga acceso total a
+        // super_administrador y administrador_sistema; estas Policies solo
+        // se ejecutan para los demás roles. Se registran explícitamente
+        // (en vez de depender de auto-discovery) para que el mapeo quede
+        // documentado y auditable desde un único lugar.
+        Gate::policy(\App\Models\Seedling::class, \App\Policies\SeedlingPolicy::class);
+        Gate::policy(\App\Models\Project::class, \App\Policies\ProjectPolicy::class);
+        Gate::policy(\App\Models\GrupoInvestigacion::class, \App\Policies\GrupoInvestigacionPolicy::class);
+        Gate::policy(\App\Models\User::class, \App\Policies\UserPolicy::class);
     }
 
     /**

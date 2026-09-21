@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $user = Auth::user();
         $centerId = $user->training_center_id;
 
-        // Semilleros del centro
+        // Semilleros del centro — ejecutar la query base UNA sola vez
         $semillerosQuery = Seedling::with(['leader.person', 'members', 'advisors'])
             ->when(
                 $centerId,
@@ -24,11 +24,13 @@ class DashboardController extends Controller
                 fn ($q) => $q->whereRaw('0 = 1')
             );
 
-        $semilleros = (clone $semillerosQuery)->get();
-        $semillerosActivos = (clone $semillerosQuery)->active()->count();
+        $semilleros = $semillerosQuery->get();
+        $semillerosActivos = $semilleros
+            ->where('estado', \App\Enums\EstadoEnum::Activo)
+            ->count();
         $totalSemilleros = $semilleros->count();
 
-        // Líderes: todos los usuarios con rol lider_semillero del mismo centro (igual que en Líderes index)
+        // Líderes: todos los usuarios con rol lider_semillero del mismo centro — ejecutar UNA sola vez
         $lideresQuery = User::role('lider_semillero')
             ->when(
                 $centerId,
@@ -36,11 +38,13 @@ class DashboardController extends Controller
                 fn ($q) => $q->whereRaw('0 = 1')
             )
             ->with(['person', 'ledSeedlings']);
-        $totalLideres = (clone $lideresQuery)->count();
-        $lideresEsteMes = $centerId
-            ? (clone $lideresQuery)->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count()
-            : 0;
-        $misLideres = (clone $lideresQuery)->orderBy('email')->take(5)->get();
+
+        $todosLideres = $lideresQuery->get();
+        $totalLideres = $todosLideres->count();
+        $lideresEsteMes = $todosLideres
+            ->filter(fn ($l) => $l->created_at->month === now()->month && $l->created_at->year === now()->year)
+            ->count();
+        $misLideres = $todosLideres->sortBy('email')->take(5)->values();
 
         $integrantesTotales = $semilleros->sum(fn ($s) => $s->members->count());
         $integrantesNuevos = 0;

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Regression;
 
-use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\City;
 use App\Models\Department;
@@ -39,26 +38,26 @@ class BUG20260609002Test extends TestCase
         $service = app(UserCreationService::class);
 
         $usuario = $service->crearUsuario([
-            'email'            => 'test@regresion.com',
-            'tipo_documento'   => TipoDocumentoEnum::CedulaCiudadana->value,
+            'email' => 'test@regresion.com',
+            'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana->value,
             'numero_documento' => '12345678',
-            'password'         => 'secret123',
-            'primer_nombre'    => 'Ana',
-            'segundo_nombre'   => null,
-            'primer_apellido'  => 'Torres',
+            'password' => 'secret123',
+            'primer_nombre' => 'Ana',
+            'segundo_nombre' => null,
+            'primer_apellido' => 'Torres',
             'segundo_apellido' => null,
-            'rol'              => 'lider_semillero',
+            'rol' => 'lider_semillero',
         ], trainingCenterId: $centro->id);
 
         $this->assertDatabaseHas('users', [
-            'email'          => 'test@regresion.com',
+            'email' => 'test@regresion.com',
             'numero_documento' => '12345678',
         ]);
 
         $this->assertDatabaseHas('people', [
-            'primer_nombre'   => 'Ana',
+            'primer_nombre' => 'Ana',
             'primer_apellido' => 'Torres',
-            'user_id'         => $usuario->id,
+            'user_id' => $usuario->id,
         ]);
 
         $this->assertTrue($usuario->hasRole('lider_semillero'), 'El usuario debe tener el rol asignado');
@@ -73,13 +72,13 @@ class BUG20260609002Test extends TestCase
 
         try {
             $service->crearUsuario([
-                'email'            => 'fail@test.com',
-                'tipo_documento'   => TipoDocumentoEnum::CedulaCiudadana->value,
+                'email' => 'fail@test.com',
+                'tipo_documento' => TipoDocumentoEnum::CedulaCiudadana->value,
                 'numero_documento' => '99999999',
-                'password'         => 'secret123',
-                'primer_nombre'    => 'Fail',
-                'primer_apellido'  => 'User',
-                'rol'              => 'rol_que_no_existe',
+                'password' => 'secret123',
+                'primer_nombre' => 'Fail',
+                'primer_apellido' => 'User',
+                'rol' => 'rol_que_no_existe',
             ], trainingCenterId: null);
         } catch (\Throwable) {
             // Se espera excepción

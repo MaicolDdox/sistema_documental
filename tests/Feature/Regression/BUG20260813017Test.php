@@ -75,7 +75,7 @@ class BUG20260813017Test extends TestCase
         ]);
         $liderProyecto->assignRole('lider_proyecto');
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         return [$liderSemillero, $semillero, $liderProyecto, $researchLine];
     }

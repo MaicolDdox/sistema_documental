@@ -26,6 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ProyectosController extends Controller
 {
     use StreamsPublicStorageFiles;
+
     public function __construct(
         private readonly ProyectoLiderService $proyectoLider,
     ) {}
@@ -227,11 +228,11 @@ class ProyectosController extends Controller
                 Rule::in($liderProyectoIds),
                 Rule::unique('projects', 'lider_proyecto_user_id')->ignore($proyecto?->id),
             ],
-            'research_line_id' => ['required', 'exists:research_lines,id'],
-            'technological_line_id' => ['nullable', 'exists:technological_lines,id'],
-            'thematic_area_id' => ['nullable', 'exists:thematic_areas,id'],
-            'project_modality_id' => ['nullable', 'exists:project_modalities,id'],
-            'investigation_type_id' => ['nullable', 'exists:investigation_types,id'],
+            'research_line_id' => ['required', Rule::exists('research_lines', 'id')->where('training_center_id', Auth::user()->training_center_id)],
+            'technological_line_id' => ['nullable', Rule::exists('technological_lines', 'id')->where('training_center_id', Auth::user()->training_center_id)],
+            'thematic_area_id' => ['nullable', Rule::exists('thematic_areas', 'id')->where('training_center_id', Auth::user()->training_center_id)],
+            'project_modality_id' => ['nullable', Rule::exists('project_modalities', 'id')->where('training_center_id', Auth::user()->training_center_id)],
+            'investigation_type_id' => ['nullable', Rule::exists('investigation_types', 'id')->where('training_center_id', Auth::user()->training_center_id)],
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
             'tipo_financiacion' => ['nullable', Rule::in(['capacidad_instalada', 'financiado', 'con_alianza'])],
@@ -259,11 +260,11 @@ class ProyectosController extends Controller
                 })
                 ->orderBy('email')
                 ->get(),
-            'lineasInvestigacion' => ResearchLine::orderBy('nombre')->get(),
-            'lineasTecnologicas' => TechnologicalLine::orderBy('nombre')->get(),
-            'areasTematicas' => ThematicArea::orderBy('nombre')->get(),
-            'modalidades' => ProjectModality::orderBy('nombre')->get(),
-            'tiposInvestigacion' => InvestigationType::orderBy('nombre')->get(),
+            'lineasInvestigacion' => ResearchLine::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get(),
+            'lineasTecnologicas' => TechnologicalLine::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get(),
+            'areasTematicas' => ThematicArea::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get(),
+            'modalidades' => ProjectModality::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get(),
+            'tiposInvestigacion' => InvestigationType::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get(),
             'tiposOrigen' => TipoProyectoOrigenEnum::cases(),
         ];
     }

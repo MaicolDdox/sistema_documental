@@ -122,7 +122,7 @@ class BUG20260813010Test extends TestCase
         [$director, $centro, $semillero] = $this->crearDirectorConSemillero();
 
         $liderProyecto = User::factory()->create(['training_center_id' => $centro->id]);
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
         Project::create([
             'project_creator_id' => $director->id,
             'seedling_id' => $semillero->id,
@@ -144,7 +144,7 @@ class BUG20260813010Test extends TestCase
         [$director, $centro, $semillero] = $this->crearDirectorConSemillero();
 
         $liderProyecto = User::factory()->create(['training_center_id' => $centro->id]);
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
         $proyecto = Project::create([
             'project_creator_id' => $director->id,
             'seedling_id' => $semillero->id,

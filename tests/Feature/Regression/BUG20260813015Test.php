@@ -73,7 +73,7 @@ class BUG20260813015Test extends TestCase
         ]);
         $liderProyecto->assignRole('lider_proyecto');
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
         $proyecto = Project::create([
             'project_creator_id' => $lider->id,
             'seedling_id' => $semillero->id,
@@ -161,7 +161,7 @@ class BUG20260813015Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
         $otroLiderProyecto = User::factory()->create(['training_center_id' => $otroCentro->id]);
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Otra', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $otroCentro->id, 'nombre' => 'Línea Otra', 'estado' => EstadoEnum::Activo]);
         $otroProyecto = Project::create([
             'project_creator_id' => $otroLiderSem->id,
             'seedling_id' => $otroSemillero->id,

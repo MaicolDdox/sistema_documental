@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\DeleteUserController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'ensure.active'])->group(function () {
     Route::redirect('settings', 'settings/profile');

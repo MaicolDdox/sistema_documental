@@ -20,21 +20,24 @@ final class TrainingCenterAccess
      * Roles que representan cargos propios de cada centro (no globales).
      * Deben ir siempre con training_center_id y no mezclarse entre sedes.
      *
-     * co_investigador queda deliberadamente FUERA de esta lista: no está atado
-     * a ningún centro de formación (puede participar en proyectos de cualquier
-     * centro una vez creado por un administrador_sistema).
+     * Reforma GDI/SDI: co_investigador_gdi y co_investigador_sdi SÍ están
+     * atados a centro (nuevo requisito de cliente) — a diferencia del
+     * co_investigador original (eliminado), que quedaba deliberadamente
+     * fuera de esta lista. Con esta reforma no queda ningún rol "global"
+     * salvo super_administrador.
      *
      * administrador_sistema SÍ está dentro (BUG-20260813-031/038): gestiona
      * "el centro de formación" por diseño (ver RolesAndPermissionsSeeder), y
-     * dejarlo crear sin centro producía un estado degenerado — ese admin veía
-     * solo co_investigador en cualquier listado (scopeUserQueryForList) y, si
-     * creaba un director_semilleros, ese director quedaba también sin centro.
+     * dejarlo crear sin centro producía un estado degenerado.
      */
     public const CENTRO_BOUND_ROLE_NAMES = [
         'administrador_sistema',
         'director_semilleros',
+        'director_grupo_investigacion',
         'lider_semillero',
         'lider_proyecto',
+        'co_investigador_gdi',
+        'co_investigador_sdi',
     ];
 
     public static function isSuperAdmin(?User $user): bool
@@ -120,7 +123,8 @@ final class TrainingCenterAccess
      * hay un admin por centro (el único que existía en tu centro eras tú
      * mismo, ya excluido). Con multi-rol, un administrador_sistema de OTRO
      * centro puede "colarse" en tu listado si tiene además un rol global
-     * (ej. co_investigador) — se ve por ese rol global sin importar el
+     * (ninguno tras la reforma GDI/SDI, pero el mecanismo queda por si se
+     * agrega uno nuevo) — se vería por ese rol global sin importar el
      * centro, sin que el sistema sepa que también administra otro centro.
      * Solo aplica aquí (el listado visible), no en scopeUserQueryForMetrics()
      * — los conteos de dashboard/reportes deben seguir siendo exactos.
@@ -153,9 +157,10 @@ final class TrainingCenterAccess
         // Los super administradores nunca son visibles fuera de su propio dashboard.
         $query = $query->whereDoesntHave('roles', fn (Builder $q) => $q->where('name', 'super_administrador'));
 
-        // Roles globales (hoy: co_investigador) deben verse siempre, sin
-        // importar el centro del actor, además de los usuarios propios de
-        // su centro.
+        // Roles globales (ninguno tras la reforma GDI/SDI — todos los roles
+        // asignables quedaron en CENTRO_BOUND_ROLE_NAMES) deben verse
+        // siempre, sin importar el centro del actor, además de los usuarios
+        // propios de su centro.
         $globalRoleNames = self::globalRoleNames();
         if ($user->training_center_id) {
             return $query->where(function (Builder $q) use ($user, $globalRoleNames) {
@@ -171,7 +176,7 @@ final class TrainingCenterAccess
      * Roles "globales" (sin training_center_id, fuera de la jerarquía por
      * centro): cualquier rol que no esté en CENTRO_BOUND_ROLE_NAMES ni sea
      * super_administrador (ese se excluye aparte). Se deriva en vivo de la
-     * tabla roles en vez de nombrar 'co_investigador' a mano —
+     * tabla roles en vez de nombrar un rol específico a mano —
      * BUG-20260813-039: antes, un rol global nuevo quedaba invisible en
      * todos los listados por centro hasta que alguien viniera a agregarlo
      * aquí, sin ningún error que lo avisara.

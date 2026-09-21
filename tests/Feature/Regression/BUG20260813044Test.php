@@ -3,7 +3,10 @@
 namespace Tests\Feature\Regression;
 
 use App\Enums\NivelFormacionEnum;
+use App\Models\City;
+use App\Models\Department;
 use App\Models\EntityPosition;
+use App\Models\TrainingCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -18,11 +21,22 @@ class BUG20260813044Test extends TestCase
 {
     use RefreshDatabase;
 
+    private function crearCentro(string $sufijo): TrainingCenter
+    {
+        $depto = Department::create(['nombre' => "Depto BUG-044{$sufijo}"]);
+        $ciudad = City::create(['nombre' => "Ciudad BUG-044{$sufijo}", 'department_id' => $depto->id]);
+
+        return TrainingCenter::create([
+            'nombre' => "Centro BUG-044{$sufijo}", 'codigo' => "B044{$sufijo}", 'activo' => true,
+            'department_id' => $depto->id, 'city_id' => $ciudad->id,
+        ]);
+    }
+
     public function test_co_investigador_ve_nivel_de_formacion_y_fecha_de_vinculacion(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
         $user = User::factory()->create();
-        $user->assignRole('co_investigador');
+        $user->assignRole('co_investigador_gdi');
 
         $response = $this->actingAs($user)->get(route('profile.edit'));
 
@@ -48,7 +62,7 @@ class BUG20260813044Test extends TestCase
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
         $user = User::factory()->create();
-        $user->assignRole('co_investigador');
+        $user->assignRole('co_investigador_gdi');
 
         $response = $this->actingAs($user)->patch(route('profile.update'), [
             'primer_nombre' => 'Ana', 'segundo_nombre' => '',
@@ -90,6 +104,7 @@ class BUG20260813044Test extends TestCase
 
     public function test_catalogo_cargo_posicion_tiene_la_lista_institucional(): void
     {
+        $this->crearCentro('A');
         (new \Database\Seeders\CargosEntidadesSeeder)->run();
 
         $this->assertSame(13, EntityPosition::count());
@@ -100,7 +115,8 @@ class BUG20260813044Test extends TestCase
     public function test_admin_puede_crear_un_cargo_nuevo_desde_catalogos_simples(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $centro = $this->crearCentro('B');
+        $admin = User::factory()->create(['training_center_id' => $centro->id]);
         $admin->assignRole('administrador_sistema');
         $admin->givePermissionTo(['catalogos.leer', 'catalogos.crear']);
 
@@ -117,9 +133,10 @@ class BUG20260813044Test extends TestCase
     public function test_pagina_catalogos_simples_muestra_el_cargo_en_el_perfil(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $centro = $this->crearCentro('C');
         (new \Database\Seeders\CargosEntidadesSeeder)->run();
 
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['training_center_id' => $centro->id]);
         $admin->assignRole('administrador_sistema');
         $admin->givePermissionTo('catalogos.leer');
 
@@ -134,7 +151,8 @@ class BUG20260813044Test extends TestCase
         // Corrección dentro de BUG-20260813-044: mismo nombre en todo el
         // sistema — "Cargo / Posición", no "Cargos en Entidad".
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        $admin = User::factory()->create();
+        $centro = $this->crearCentro('D');
+        $admin = User::factory()->create(['training_center_id' => $centro->id]);
         $admin->assignRole('administrador_sistema');
         $admin->givePermissionTo('catalogos.leer');
 
@@ -149,9 +167,10 @@ class BUG20260813044Test extends TestCase
     public function test_cargo_posicion_aparece_en_perfil_de_cualquier_rol(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $centro = $this->crearCentro('E');
         (new \Database\Seeders\CargosEntidadesSeeder)->run();
 
-        $user = User::factory()->create();
+        $user = User::factory()->create(['training_center_id' => $centro->id]);
         $user->assignRole('lider_semillero');
 
         $response = $this->actingAs($user)->get(route('profile.edit'));

@@ -8,7 +8,6 @@ use App\Models\Department;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -29,7 +28,6 @@ class BUG20260813055Test extends TestCase
     public function test_dashboard_admin_ya_no_tiene_la_tarjeta_rota_de_accesos_a_otros_modulos(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-055']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-055', 'department_id' => $depto->id]);
@@ -53,7 +51,6 @@ class BUG20260813055Test extends TestCase
     public function test_ya_no_hay_ningun_enlace_directo_que_rompa_el_aislamiento_por_rol_activo(): void
     {
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-055b']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-055b', 'department_id' => $depto->id]);

@@ -5,15 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Catalogo;
 use App\Models\EntityPosition;
+use App\Models\InvestigationType;
 use App\Models\LinkageType;
 use App\Models\ProjectModality;
-use App\Models\InvestigationType;
 use App\Models\TechnologicalLine;
 use App\Models\ThematicArea;
-use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Validation\Rule;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class CatalogoController extends Controller
 {
@@ -25,12 +25,13 @@ class CatalogoController extends Controller
     {
         $this->authorize('catalogos.leer');
 
-        $entityPositions = EntityPosition::orderBy('nombre')->get();
-        $linkageTypes = LinkageType::orderBy('nombre')->get();
-        $projectModalities = ProjectModality::orderBy('nombre')->get();
-        $investigationTypes = InvestigationType::orderBy('nombre')->get();
-        $technologicalLines = TechnologicalLine::orderBy('nombre')->get();
-        $thematicAreas = ThematicArea::orderBy('nombre')->get();
+        $centerId = Auth::user()->training_center_id;
+        $entityPositions = EntityPosition::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $linkageTypes = LinkageType::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $projectModalities = ProjectModality::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $investigationTypes = InvestigationType::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $technologicalLines = TechnologicalLine::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $thematicAreas = ThematicArea::where('training_center_id', $centerId)->orderBy('nombre')->get();
 
         return view('admin.catalogos.simples', compact(
             'entityPositions',
@@ -57,7 +58,7 @@ class CatalogoController extends Controller
         }
 
         $catalogos = $query->paginate(15)->withQueryString();
-        
+
         // Obtener tipos únicos para el filtro
         $tipos = Catalogo::select('tipo')->distinct()->pluck('tipo');
 
@@ -71,6 +72,7 @@ class CatalogoController extends Controller
     public function create()
     {
         $this->authorize('catalogos.crear');
+
         return view('admin.catalogos.create');
     }
 
@@ -83,21 +85,21 @@ class CatalogoController extends Controller
         $this->authorize('catalogos.crear');
 
         $validated = $request->validate([
-            'tipo'        => 'required|string|max:50',
-            'nombre'      => 'required|string|max:255',
+            'tipo' => 'required|string|max:50',
+            'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'activo'      => 'boolean',
+            'activo' => 'boolean',
         ]);
 
         Catalogo::create([
-            'tipo'        => $validated['tipo'],
-            'nombre'      => $validated['nombre'],
+            'tipo' => $validated['tipo'],
+            'nombre' => $validated['nombre'],
             'descripcion' => $validated['descripcion'],
-            'activo'      => $request->has('activo'),
+            'activo' => $request->has('activo'),
         ]);
 
         return redirect()->route('admin.catalogos.index')
-                         ->with('success', 'Catálogo creado correctamente.');
+            ->with('success', 'Catálogo creado correctamente.');
     }
 
     /**
@@ -124,21 +126,21 @@ class CatalogoController extends Controller
         $catalogo = Catalogo::findOrFail($id);
 
         $validated = $request->validate([
-            'tipo'        => 'required|string|max:50',
-            'nombre'      => 'required|string|max:255',
+            'tipo' => 'required|string|max:50',
+            'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
-            'activo'      => 'boolean',
+            'activo' => 'boolean',
         ]);
 
         $catalogo->update([
-            'tipo'        => $validated['tipo'],
-            'nombre'      => $validated['nombre'],
+            'tipo' => $validated['tipo'],
+            'nombre' => $validated['nombre'],
             'descripcion' => $validated['descripcion'],
-            'activo'      => $request->has('activo'),
+            'activo' => $request->has('activo'),
         ]);
 
         return redirect()->route('admin.catalogos.index')
-                         ->with('success', 'Catálogo actualizado correctamente.');
+            ->with('success', 'Catálogo actualizado correctamente.');
     }
 
     /**
@@ -153,17 +155,18 @@ class CatalogoController extends Controller
 
         try {
             $catalogo->delete();
+
             return redirect()->route('admin.catalogos.index')
-                             ->with('success', 'Catálogo eliminado correctamente.');
+                ->with('success', 'Catálogo eliminado correctamente.');
         } catch (QueryException $e) {
             // Verificar si el error es por restricción de llave foránea (1451 en MySQL)
             if ($e->errorInfo[1] == 1451) {
                 return redirect()->route('admin.catalogos.index')
-                                 ->with('error', 'No se puede eliminar el catálogo porque está referenciado o en uso en otra parte del sistema.');
+                    ->with('error', 'No se puede eliminar el catálogo porque está referenciado o en uso en otra parte del sistema.');
             }
-            
+
             return redirect()->route('admin.catalogos.index')
-                             ->with('error', 'Ocurrió un error al intentar eliminar el catálogo.');
+                ->with('error', 'Ocurrió un error al intentar eliminar el catálogo.');
         }
     }
 }

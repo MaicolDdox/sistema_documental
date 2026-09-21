@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Regression;
 
+use App\Models\City;
+use App\Models\Department;
 use App\Models\InvestigationType;
 use App\Models\ProjectModality;
 use App\Models\ResearchLine;
 use App\Models\TechnologicalLine;
 use App\Models\ThematicArea;
+use App\Models\TrainingCenter;
 use Database\Seeders\AreasTematicasSeeder;
 use Database\Seeders\LineasInvestigacionesSeeder;
 use Database\Seeders\LineasTecnologicasSeeder;
@@ -27,8 +30,21 @@ class BUG20260813028Test extends TestCase
 {
     use RefreshDatabase;
 
+    private function crearCentro(string $sufijo): TrainingCenter
+    {
+        $depto = Department::create(['nombre' => "Depto BUG-028{$sufijo}"]);
+        $ciudad = City::create(['nombre' => "Ciudad BUG-028{$sufijo}", 'department_id' => $depto->id]);
+
+        return TrainingCenter::create([
+            'nombre' => "Centro BUG-028{$sufijo}", 'codigo' => "B028{$sufijo}", 'activo' => true,
+            'department_id' => $depto->id, 'city_id' => $ciudad->id,
+        ]);
+    }
+
     public function test_seeders_de_catalogos_cargan_las_listas_reales_esperadas(): void
     {
+        $this->crearCentro('A');
+
         (new LineasInvestigacionesSeeder)->run();
         (new LineasTecnologicasSeeder)->run();
         (new AreasTematicasSeeder)->run();
@@ -56,6 +72,8 @@ class BUG20260813028Test extends TestCase
 
     public function test_seeders_son_idempotentes(): void
     {
+        $this->crearCentro('B');
+
         (new TiposInvestigacionesSeeder)->run();
         (new TiposInvestigacionesSeeder)->run();
 

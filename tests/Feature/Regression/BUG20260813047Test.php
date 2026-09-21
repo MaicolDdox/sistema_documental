@@ -53,16 +53,17 @@ class BUG20260813047Test extends TestCase
         $proyecto = Project::create([
             'project_creator_id' => $lider->id, 'seedling_id' => $semillero->id,
             'lider_proyecto_user_id' => $lider->id,
-            'research_line_id' => ResearchLine::firstOrCreate(['nombre' => 'Linea BUG-047'])->id,
-            'technological_line_id' => TechnologicalLine::firstOrCreate(['nombre' => 'Linea Tec BUG-047'])->id,
-            'thematic_area_id' => ThematicArea::firstOrCreate(['nombre' => 'Area BUG-047'])->id,
-            'project_modality_id' => ProjectModality::firstOrCreate(['nombre' => 'Modalidad BUG-047'])->id,
-            'investigation_type_id' => InvestigationType::firstOrCreate(['nombre' => 'Tipo BUG-047'])->id,
+            'research_line_id' => ResearchLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea BUG-047'])->id,
+            'technological_line_id' => TechnologicalLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea Tec BUG-047'])->id,
+            'thematic_area_id' => ThematicArea::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Area BUG-047'])->id,
+            'project_modality_id' => ProjectModality::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Modalidad BUG-047'])->id,
+            'investigation_type_id' => InvestigationType::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Tipo BUG-047'])->id,
             'nombre' => 'Proyecto BUG-047', 'fecha_inicio' => now(), 'estado' => 'activo',
         ]);
 
-        $tipo = TrainingProgramType::firstOrCreate(['nombre' => 'Tecnólogo BUG-047']);
+        $tipo = TrainingProgramType::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Tecnólogo BUG-047']);
         $programa = TrainingProgram::create([
+            'training_center_id' => $centro->id,
             'training_program_type_id' => $tipo->id,
             'nombre' => 'Análisis y Desarrollo de Software',
             'modalidad' => 'presencial', 'estado' => 'activo',
@@ -124,8 +125,9 @@ class BUG20260813047Test extends TestCase
     {
         [$lider] = $this->crearLiderProyectoConProyecto();
 
-        $nuevoTipo = TrainingProgramType::firstOrCreate(['nombre' => 'Técnico BUG-047']);
+        $nuevoTipo = TrainingProgramType::firstOrCreate(['training_center_id' => $lider->training_center_id, 'nombre' => 'Técnico BUG-047']);
         TrainingProgram::create([
+            'training_center_id' => $lider->training_center_id,
             'training_program_type_id' => $nuevoTipo->id,
             'nombre' => 'Programa Nuevo Del Admin',
             'modalidad' => 'virtual', 'estado' => 'activo',

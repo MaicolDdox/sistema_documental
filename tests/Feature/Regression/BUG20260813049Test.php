@@ -32,7 +32,9 @@ class BUG20260813049Test extends TestCase
     use RefreshDatabase;
 
     private TrainingCenter $centro;
+
     private User $liderSemillero;
+
     private Seedling $semillero;
 
     protected function setUp(): void
@@ -75,11 +77,11 @@ class BUG20260813049Test extends TestCase
             'project_creator_id' => $this->liderSemillero->id,
             'seedling_id' => $this->semillero->id,
             'lider_proyecto_user_id' => $liderProyecto->id,
-            'research_line_id' => ResearchLine::firstOrCreate(['nombre' => 'Linea BUG-049'])->id,
-            'technological_line_id' => TechnologicalLine::firstOrCreate(['nombre' => 'Linea Tec BUG-049'])->id,
-            'thematic_area_id' => ThematicArea::firstOrCreate(['nombre' => 'Area BUG-049'])->id,
-            'project_modality_id' => ProjectModality::firstOrCreate(['nombre' => 'Modalidad BUG-049'])->id,
-            'investigation_type_id' => InvestigationType::firstOrCreate(['nombre' => 'Tipo BUG-049'])->id,
+            'research_line_id' => ResearchLine::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Linea BUG-049'])->id,
+            'technological_line_id' => TechnologicalLine::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Linea Tec BUG-049'])->id,
+            'thematic_area_id' => ThematicArea::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Area BUG-049'])->id,
+            'project_modality_id' => ProjectModality::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Modalidad BUG-049'])->id,
+            'investigation_type_id' => InvestigationType::firstOrCreate(['training_center_id' => $this->centro->id, 'nombre' => 'Tipo BUG-049'])->id,
             'nombre' => $nombre,
             'fecha_inicio' => now(),
             'estado' => 'activo',

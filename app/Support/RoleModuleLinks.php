@@ -25,9 +25,11 @@ final class RoleModuleLinks
         'super_administrador',
         'administrador_sistema',
         'director_semilleros',
+        'director_grupo_investigacion',
         'lider_semillero',
         'lider_proyecto',
-        'co_investigador',
+        'co_investigador_sdi',
+        'co_investigador_gdi',
     ];
 
     /**
@@ -53,9 +55,11 @@ final class RoleModuleLinks
             'super_administrador' => 'Super administrador',
             'administrador_sistema' => 'Administración',
             'director_semilleros' => 'Director de Semilleros',
+            'director_grupo_investigacion' => 'Director de Grupo de Investigación',
             'lider_semillero' => 'Líder de Semillero',
             'lider_proyecto' => 'Líder de Proyecto',
-            'co_investigador' => 'Co-investigador',
+            'co_investigador_gdi' => 'Co-investigador GDI',
+            'co_investigador_sdi' => 'Co-investigador SDI',
             default => ucfirst(str_replace('_', ' ', $name)),
         };
     }
@@ -79,15 +83,21 @@ final class RoleModuleLinks
             'director_semilleros' => Route::has('dir-sem.dashboard')
                 ? route('dir-sem.dashboard')
                 : url('/director-semilleros'),
+            'director_grupo_investigacion' => Route::has('director-grupo-investigacion.dashboard')
+                ? route('director-grupo-investigacion.dashboard')
+                : url('/director-grupo-investigacion'),
             'lider_semillero' => Route::has('lider-sem.dashboard')
                 ? route('lider-sem.dashboard')
                 : url('/lider-semillero'),
             'lider_proyecto' => Route::has('lider-proyecto.dashboard')
                 ? route('lider-proyecto.dashboard')
                 : url('/lider-proyecto'),
-            'co_investigador' => Route::has('co-investigador.dashboard')
-                ? route('co-investigador.dashboard')
-                : url('/co-investigador'),
+            'co_investigador_gdi' => Route::has('co-investigador-gdi.dashboard')
+                ? route('co-investigador-gdi.dashboard')
+                : url('/co-investigador-gdi'),
+            'co_investigador_sdi' => Route::has('co-investigador-sdi.dashboard')
+                ? route('co-investigador-sdi.dashboard')
+                : url('/co-investigador-sdi'),
             default => null,
         };
     }

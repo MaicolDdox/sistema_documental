@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DirectorSemilleros\CoInvestigadorController;
 use App\Http\Controllers\DirectorSemilleros\DashboardController;
 use App\Http\Controllers\DirectorSemilleros\DocumentoSemilleroController;
 use App\Http\Controllers\DirectorSemilleros\LiderSemilleroController;
@@ -38,6 +39,12 @@ Route::middleware(['auth', 'ensure.active', 'training.center', 'role:director_se
         Route::delete('lideres/{lider}', [LiderSemilleroController::class, 'destroy'])->name('lideres.destroy');
         Route::get('vinculaciones', [VinculacionSemilleroLiderController::class, 'index'])->name('vinculaciones.index');
         Route::put('vinculaciones/{semillero}', [VinculacionSemilleroLiderController::class, 'update'])->name('vinculaciones.update');
+
+        // Co-investigadores SDI (reforma GDI/SDI) — la vinculación real a un
+        // proyecto la sigue haciendo lider_proyecto vía project_authors.
+        Route::get('co-investigadores', [CoInvestigadorController::class, 'index'])->name('co-investigadores.index');
+        Route::get('co-investigadores/crear', [CoInvestigadorController::class, 'create'])->name('co-investigadores.create');
+        Route::post('co-investigadores', [CoInvestigadorController::class, 'store'])->name('co-investigadores.store');
 
         // Módulo Productos: revisión definitiva (2ª etapa, rediseño de roles)
         Route::get('productos', [RevisionProductoController::class, 'index'])->name('productos.index');

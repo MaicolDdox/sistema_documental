@@ -37,12 +37,21 @@ class BUG20260813030Test extends TestCase
     use RefreshDatabase;
 
     private TrainingCenter $centro;
-    private User $coInvestigador;
+
+    private User $coInvestigadorGdi;
+
+    private User $coInvestigadorSdi;
+
     private User $liderProyecto;
+
     private User $liderSemillero;
+
     private User $directorSemilleros;
+
     private User $adminSistema;
+
     private Seedling $semillero;
+
     private Project $proyecto;
 
     protected function setUp(): void
@@ -59,14 +68,17 @@ class BUG20260813030Test extends TestCase
             'department_id' => $depto->id, 'city_id' => $ciudad->id,
         ]);
 
-        $rl = ResearchLine::create(['nombre' => 'Linea test']);
-        $tl = TechnologicalLine::create(['nombre' => 'Linea tec test']);
-        $ta = ThematicArea::create(['nombre' => 'Area test']);
-        $pm = ProjectModality::create(['nombre' => 'Modalidad test']);
-        $it = InvestigationType::create(['nombre' => 'Tipo test']);
+        $rl = ResearchLine::create(['training_center_id' => $this->centro->id, 'nombre' => 'Linea test']);
+        $tl = TechnologicalLine::create(['training_center_id' => $this->centro->id, 'nombre' => 'Linea tec test']);
+        $ta = ThematicArea::create(['training_center_id' => $this->centro->id, 'nombre' => 'Area test']);
+        $pm = ProjectModality::create(['training_center_id' => $this->centro->id, 'nombre' => 'Modalidad test']);
+        $it = InvestigationType::create(['training_center_id' => $this->centro->id, 'nombre' => 'Tipo test']);
 
-        $this->coInvestigador = User::factory()->create(['training_center_id' => null]);
-        $this->coInvestigador->assignRole('co_investigador');
+        $this->coInvestigadorGdi = User::factory()->create(['training_center_id' => $this->centro->id]);
+        $this->coInvestigadorGdi->assignRole('co_investigador_gdi');
+
+        $this->coInvestigadorSdi = User::factory()->create(['training_center_id' => $this->centro->id]);
+        $this->coInvestigadorSdi->assignRole('co_investigador_sdi');
 
         $this->liderProyecto = User::factory()->create(['training_center_id' => $this->centro->id]);
         $this->liderProyecto->assignRole('lider_proyecto');
@@ -103,7 +115,7 @@ class BUG20260813030Test extends TestCase
             'fecha_inicio' => now(),
             'estado' => 'activo',
         ]);
-        $this->proyecto->authors()->attach($this->coInvestigador->id, ['activo' => true]);
+        $this->proyecto->authors()->attach($this->coInvestigadorSdi->id, ['activo' => true]);
     }
 
     private function pdf(string $path): string
@@ -142,8 +154,8 @@ class BUG20260813030Test extends TestCase
     public function test_rutas_ver_eliminadas_en_todo_el_sistema(): void
     {
         $this->assertRutasVerNoExisten([
-            'co-investigador.archivos.ver',
-            'co-investigador.evidencias.ver',
+            'co-investigador-gdi.archivos.ver',
+            'co-investigador-sdi.evidencias.ver',
             'admin.minciencias.archivos.ver',
             'lider-proyecto.evidencias.ver',
             'lider-sem.evidencias.ver',
@@ -158,9 +170,9 @@ class BUG20260813030Test extends TestCase
 
     public function test_descargar_sigue_funcionando_con_attachment_en_todos_los_roles(): void
     {
-        // co_investigador — Producto Minciencias
+        // co_investigador_gdi — Producto Minciencias
         $producto = MincienciasProduct::create([
-            'user_id' => $this->coInvestigador->id,
+            'user_id' => $this->coInvestigadorGdi->id,
             'training_center_id' => $this->centro->id,
             'research_line_id' => ResearchLine::first()->id,
             'nombre' => 'Producto Minciencias test',
@@ -170,25 +182,25 @@ class BUG20260813030Test extends TestCase
         $archivoMinc = MincienciasProductFile::create([
             'minciencias_product_id' => $producto->id,
             'archivo' => $this->pdf('minciencias-productos/co_inv.pdf'),
-            'uploaded_by' => $this->coInvestigador->id,
+            'uploaded_by' => $this->coInvestigadorGdi->id,
         ]);
-        $this->actingAs($this->coInvestigador);
-        $this->assertDescargaAttachmentConExtension('co-investigador.archivos.descargar', $archivoMinc);
+        $this->actingAs($this->coInvestigadorGdi);
+        $this->assertDescargaAttachmentConExtension('co-investigador-gdi.archivos.descargar', $archivoMinc);
 
-        // administrador_sistema — mismo archivo, vista de aprobación
+        // administrador_sistema — mismo archivo, vista de solo lectura
         $this->actingAs($this->adminSistema);
         $this->assertDescargaAttachmentConExtension('admin.minciencias.archivos.descargar', $archivoMinc);
 
-        // co_investigador — evidencia de proyecto vinculado
+        // co_investigador_sdi — evidencia de proyecto vinculado
         $evCo = ProjectEvidence::create([
             'project_id' => $this->proyecto->id,
             'tipo' => TipoEvidenciaEnum::Desarrollo,
             'nombre' => 'Evidencia co-investigador',
             'archivo' => $this->pdf('evidencias-proyecto/co_inv_ev.pdf'),
-            'uploaded_by' => $this->coInvestigador->id,
+            'uploaded_by' => $this->coInvestigadorSdi->id,
         ]);
-        $this->actingAs($this->coInvestigador);
-        $this->assertDescargaAttachmentConExtension('co-investigador.evidencias.descargar', $evCo);
+        $this->actingAs($this->coInvestigadorSdi);
+        $this->assertDescargaAttachmentConExtension('co-investigador-sdi.evidencias.descargar', $evCo);
 
         // lider_proyecto — su propia evidencia
         $evLp = ProjectEvidence::create([

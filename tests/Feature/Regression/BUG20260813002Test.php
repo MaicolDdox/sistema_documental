@@ -65,7 +65,7 @@ class BUG20260813002Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
         $liderProyecto = User::factory()->create(['training_center_id' => $centro->id]);
         $proyecto = Project::create([
             'project_creator_id' => $lider->id,

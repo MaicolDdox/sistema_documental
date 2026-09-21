@@ -7,6 +7,7 @@ use App\Models\Seedling;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class VinculacionSemilleroLiderController extends Controller
 {
@@ -44,6 +45,7 @@ class VinculacionSemilleroLiderController extends Controller
             ->get();
 
         $lideresYaVinculadosIds = Seedling::query()
+            ->where('training_center_id', $user->training_center_id)
             ->whereNotNull('leader_id')
             ->pluck('leader_id')
             ->unique()
@@ -56,10 +58,16 @@ class VinculacionSemilleroLiderController extends Controller
     public function update(Request $request, Seedling $semillero)
     {
         $this->authorize('semilleros.editar');
-        $this->checkCentroFormacion($semillero);
+        // BUG-20260914-004: reemplaza checkCentroFormacion() (que usaba campos
+        // indirectos leader/creator y era la causa raíz de los bugs 001-003)
+        // por la Policy centralizada, que usa training_center_id directamente.
+        $this->authorize('update', $semillero);
 
         $validated = $request->validate([
-            'lider_id' => 'nullable|exists:users,id',
+            'lider_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where('training_center_id', Auth::user()->training_center_id),
+            ],
         ]);
 
         if (! empty($validated['lider_id'])) {
@@ -90,19 +98,5 @@ class VinculacionSemilleroLiderController extends Controller
         return redirect()
             ->route('dir-sem.vinculaciones.index')
             ->with('success', 'Vinculación actualizada correctamente.');
-    }
-
-    private function checkCentroFormacion(Seedling $semillero): void
-    {
-        $user = Auth::user();
-        $leaderCenterId = $semillero->leader?->training_center_id;
-        $creatorCenterId = $semillero->creator?->training_center_id;
-
-        if (
-            ($leaderCenterId !== null && $leaderCenterId !== $user->training_center_id)
-            || ($leaderCenterId === null && $creatorCenterId !== null && $creatorCenterId !== $user->training_center_id)
-        ) {
-            abort(403, 'No tienes permiso para gestionar semilleros de otros centros de formación.');
-        }
     }
 }

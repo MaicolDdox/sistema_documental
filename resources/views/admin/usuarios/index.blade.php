@@ -18,7 +18,7 @@
         <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <h2 class="text-xl font-semibold text-slate-900">Gestión de Usuarios</h2>
-                <p class="text-sm text-slate-500 mt-1">Listado de usuarios del centro, filtrable por rol. La creación se hace desde los ítems "Director de Semilleros" y "Co-investigadores".</p>
+                <p class="text-sm text-slate-500 mt-1">Listado de usuarios del centro, filtrable por rol. La creación se hace desde los ítems "Director de Semilleros" y "Director de Grupo de Investigación".</p>
                 <p class="text-xs text-slate-500 mt-2">
                     @if(\App\Support\TrainingCenterAccess::isSuperAdmin(auth()->user()))
                         <span class="text-emerald-700 font-medium">{{ $usuarios->total() }}</span> usuario(s) en total en la instancia.
@@ -33,8 +33,8 @@
                 <a href="{{ route('admin.director-semilleros.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-all">
                     + Director de Semilleros
                 </a>
-                <a href="{{ route('admin.co-investigadores.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-all">
-                    + Co-investigador
+                <a href="{{ route('admin.director-grupo-investigacion.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 transition-all">
+                    + Director de Grupo de Investigación
                 </a>
             </div>
         </div>
@@ -363,9 +363,11 @@
                 rolesAdicionalesOpciones: [
                     { value: 'administrador_sistema', label: 'Administrador sistema' },
                     { value: 'director_semilleros', label: 'Director semilleros' },
+                    { value: 'director_grupo_investigacion', label: 'Director grupo investigacion' },
                     { value: 'lider_semillero', label: 'Lider semillero' },
                     { value: 'lider_proyecto', label: 'Lider proyecto' },
-                    { value: 'co_investigador', label: 'Co investigador' },
+                    { value: 'co_investigador_gdi', label: 'Co investigador GDI' },
+                    { value: 'co_investigador_sdi', label: 'Co investigador SDI' },
                 ],
                 eliminarFormAction: '',
                 eliminarNombre: '',

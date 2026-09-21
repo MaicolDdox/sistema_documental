@@ -45,7 +45,7 @@ class BUG20260813021Test extends TestCase
 
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $liderSemillero = User::factory()->create(['training_center_id' => $centro->id]);
         $liderSemillero->assignRole('lider_semillero');
@@ -56,8 +56,8 @@ class BUG20260813021Test extends TestCase
         ]);
         $liderProyecto->assignRole('lider_proyecto');
 
-        $coinvestigador = User::factory()->create(['estado' => EstadoEnum::Activo]);
-        $coinvestigador->assignRole('co_investigador');
+        $coinvestigador = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
+        $coinvestigador->assignRole('co_investigador_sdi');
 
         $semillero = Seedling::create([
             'creator_id' => $liderSemillero->id,
@@ -69,7 +69,7 @@ class BUG20260813021Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $proyecto = Project::create([
             'project_creator_id' => $liderSemillero->id,
@@ -98,7 +98,7 @@ class BUG20260813021Test extends TestCase
             'estado_revision_lider' => EstadoRevisionEnum::Pendiente,
         ]);
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.proyectos.show', $proyecto));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.proyectos.show', $proyecto));
 
         $response->assertOk();
         $response->assertSee('Producto Final');
@@ -119,7 +119,7 @@ class BUG20260813021Test extends TestCase
             'estado_revision_director' => EstadoRevisionEnum::Aprobado,
         ]);
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.proyectos.show', $proyecto));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.proyectos.show', $proyecto));
 
         $response->assertOk();
         $response->assertSee('Informe Final v2');
@@ -130,7 +130,7 @@ class BUG20260813021Test extends TestCase
     {
         [$coinvestigador, , $proyecto] = $this->crearEscenario();
 
-        $response = $this->actingAs($coinvestigador)->get(route('co-investigador.proyectos.show', $proyecto));
+        $response = $this->actingAs($coinvestigador)->get(route('co-investigador-sdi.proyectos.show', $proyecto));
 
         $response->assertOk();
         $response->assertSee('El líder de proyecto aún no ha subido el producto final.');
@@ -138,7 +138,7 @@ class BUG20260813021Test extends TestCase
 
     public function test_formulario_de_evidencia_del_coinvestigador_no_ofrece_tipo_producto_final(): void
     {
-        $contenido = file_get_contents(resource_path('views/co_investigador/proyectos/show.blade.php'));
+        $contenido = file_get_contents(resource_path('views/co_investigador_sdi/proyectos/show.blade.php'));
 
         $this->assertStringNotContainsString('producto_final"', $contenido);
         $this->assertStringNotContainsString('name="tipo"', $contenido);

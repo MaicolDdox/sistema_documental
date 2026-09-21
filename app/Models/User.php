@@ -30,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'training_center_id',
+        'grupo_investigacion_id',
         'created_by_user_id',
         'primary_role_name',
         'email',
@@ -72,6 +73,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(TrainingCenter::class, 'training_center_id');
     }
 
+    /** Grupo de investigación al que pertenece (solo aplica a co_investigador_gdi). */
+    public function grupoInvestigacion(): BelongsTo
+    {
+        return $this->belongsTo(GrupoInvestigacion::class, 'grupo_investigacion_id');
+    }
+
     /** Usuario que creó esta cuenta (regla de edición uno-a-uno). */
     public function createdBy(): BelongsTo
     {
@@ -98,6 +105,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ledSeedlings(): HasMany
     {
         return $this->hasMany(Seedling::class, 'leader_id');
+    }
+
+    /** Grupo de investigación que dirige (solo aplica a director_grupo_investigacion). */
+    public function grupoInvestigacionDirigido(): HasOne
+    {
+        return $this->hasOne(GrupoInvestigacion::class, 'director_id');
     }
 
     public function createdProjects(): HasMany

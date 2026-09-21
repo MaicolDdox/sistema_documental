@@ -34,10 +34,15 @@ class BUG20260813048Test extends TestCase
     use RefreshDatabase;
 
     private TrainingCenter $centro;
+
     private User $liderProyecto;
+
     private User $liderSemillero;
+
     private User $directorSemilleros;
+
     private Seedling $semillero;
+
     private Project $proyecto;
 
     protected function setUp(): void
@@ -54,11 +59,11 @@ class BUG20260813048Test extends TestCase
             'department_id' => $depto->id, 'city_id' => $ciudad->id,
         ]);
 
-        $rl = ResearchLine::create(['nombre' => 'Linea BUG-048']);
-        $tl = TechnologicalLine::create(['nombre' => 'Linea tec BUG-048']);
-        $ta = ThematicArea::create(['nombre' => 'Area BUG-048']);
-        $pm = ProjectModality::create(['nombre' => 'Modalidad BUG-048']);
-        $it = InvestigationType::create(['nombre' => 'Tipo BUG-048']);
+        $rl = ResearchLine::create(['training_center_id' => $this->centro->id, 'nombre' => 'Linea BUG-048']);
+        $tl = TechnologicalLine::create(['training_center_id' => $this->centro->id, 'nombre' => 'Linea tec BUG-048']);
+        $ta = ThematicArea::create(['training_center_id' => $this->centro->id, 'nombre' => 'Area BUG-048']);
+        $pm = ProjectModality::create(['training_center_id' => $this->centro->id, 'nombre' => 'Modalidad BUG-048']);
+        $it = InvestigationType::create(['training_center_id' => $this->centro->id, 'nombre' => 'Tipo BUG-048']);
 
         $this->liderProyecto = User::factory()->create(['training_center_id' => $this->centro->id]);
         $this->liderProyecto->assignRole('lider_proyecto');

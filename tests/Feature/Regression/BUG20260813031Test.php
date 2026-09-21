@@ -5,7 +5,6 @@ namespace Tests\Feature\Regression;
 use App\Models\City;
 use App\Models\Department;
 use App\Models\TrainingCenter;
-use App\Models\User;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -100,23 +99,28 @@ class BUG20260813031Test extends TestCase
         $this->assertSame($centro->id, $user->training_center_id);
     }
 
-    public function test_crear_co_investigador_sin_centro_sigue_funcionando(): void
+    /**
+     * Reforma GDI/SDI: co_investigador (el rol que quedaba deliberadamente
+     * fuera de CENTRO_BOUND_ROLE_NAMES) fue eliminado — co_investigador_gdi
+     * y co_investigador_sdi SÍ exigen centro ahora (nuevo requisito de
+     * cliente). Este test reemplaza la aserción original ("sigue
+     * funcionando sin centro") por la invariante inversa que la sustituye.
+     */
+    public function test_crear_co_investigador_gdi_sin_centro_ahora_lanza_validation_exception(): void
     {
-        // co_investigador queda fuera de CENTRO_BOUND_ROLE_NAMES a propósito:
-        // este fix no debe exigirle centro.
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
         $service = app(\App\Services\Admin\UserCreationService::class);
 
-        $user = $service->crearUsuario([
+        $this->expectException(ValidationException::class);
+
+        $service->crearUsuario([
             'email' => 'coinv@test.com',
             'numero_documento' => '666666666',
             'tipo_documento' => 'cedula ciudadana',
             'password' => 'password123',
             'primer_nombre' => 'Co',
             'primer_apellido' => 'Investigador',
-            'rol' => 'co_investigador',
+            'rol' => 'co_investigador_gdi',
         ], null);
-
-        $this->assertNull($user->training_center_id);
     }
 }

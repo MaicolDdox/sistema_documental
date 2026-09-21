@@ -8,6 +8,7 @@ use App\Models\TrainingProgram;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AprendizController extends Controller
@@ -18,7 +19,7 @@ class AprendizController extends Controller
     {
         $proyecto = $this->miProyecto();
         $aprendices = $proyecto->learners()->with('trainingProgram')->latest()->get();
-        $trainingPrograms = TrainingProgram::orderBy('nombre')->get();
+        $trainingPrograms = TrainingProgram::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get();
 
         return view('lider_proyecto.aprendices.index', compact('proyecto', 'aprendices', 'trainingPrograms'));
     }
@@ -62,7 +63,7 @@ class AprendizController extends Controller
             'ficha' => 'required|string|max:50',
             'telefono' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
-            'training_program_id' => 'required|exists:training_programs,id',
+            'training_program_id' => ['required', Rule::exists('training_programs', 'id')->where('training_center_id', Auth::user()->training_center_id)],
         ]);
     }
 

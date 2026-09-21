@@ -57,25 +57,25 @@ class BUG20260813037Test extends TestCase
             'project_creator_id' => $liderProyecto->id,
             'seedling_id' => $semillero->id,
             'lider_proyecto_user_id' => $liderProyecto->id,
-            'research_line_id' => ResearchLine::firstOrCreate(['nombre' => 'Linea BUG-037'])->id,
-            'technological_line_id' => TechnologicalLine::firstOrCreate(['nombre' => 'Linea Tec BUG-037'])->id,
-            'thematic_area_id' => ThematicArea::firstOrCreate(['nombre' => 'Area BUG-037'])->id,
-            'project_modality_id' => ProjectModality::firstOrCreate(['nombre' => 'Modalidad BUG-037'])->id,
-            'investigation_type_id' => InvestigationType::firstOrCreate(['nombre' => 'Tipo BUG-037'])->id,
+            'research_line_id' => ResearchLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea BUG-037'])->id,
+            'technological_line_id' => TechnologicalLine::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Linea Tec BUG-037'])->id,
+            'thematic_area_id' => ThematicArea::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Area BUG-037'])->id,
+            'project_modality_id' => ProjectModality::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Modalidad BUG-037'])->id,
+            'investigation_type_id' => InvestigationType::firstOrCreate(['training_center_id' => $centro->id, 'nombre' => 'Tipo BUG-037'])->id,
             'nombre' => 'Proyecto BUG-037',
             'fecha_inicio' => now(),
             'estado' => 'activo',
         ]);
 
-        return [$liderProyecto, $proyecto];
+        return [$liderProyecto, $proyecto, $centro];
     }
 
     public function test_desvincular_co_investigador_nunca_vinculado_reporta_error_no_exito(): void
     {
-        [$liderProyecto, $proyecto] = $this->crearProyectoConLider();
+        [$liderProyecto, $proyecto, $centro] = $this->crearProyectoConLider();
 
-        $coInvestigadorAjeno = User::factory()->create(['training_center_id' => null]);
-        $coInvestigadorAjeno->assignRole('co_investigador');
+        $coInvestigadorAjeno = User::factory()->create(['training_center_id' => $centro->id]);
+        $coInvestigadorAjeno->assignRole('co_investigador_sdi');
 
         $response = $this->actingAs($liderProyecto)
             ->delete(route('lider-proyecto.coinvestigadores.destroy', $coInvestigadorAjeno));
@@ -87,10 +87,10 @@ class BUG20260813037Test extends TestCase
 
     public function test_desvincular_co_investigador_realmente_vinculado_sigue_funcionando(): void
     {
-        [$liderProyecto, $proyecto] = $this->crearProyectoConLider();
+        [$liderProyecto, $proyecto, $centro] = $this->crearProyectoConLider();
 
-        $coInvestigador = User::factory()->create(['training_center_id' => null]);
-        $coInvestigador->assignRole('co_investigador');
+        $coInvestigador = User::factory()->create(['training_center_id' => $centro->id]);
+        $coInvestigador->assignRole('co_investigador_sdi');
         $proyecto->authors()->attach($coInvestigador->id, ['activo' => true]);
 
         $response = $this->actingAs($liderProyecto)

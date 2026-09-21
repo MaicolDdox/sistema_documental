@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,14 +14,14 @@ return new class extends Migration
         });
 
         // Agregar columna `nombre` si no existe
-        if (!Schema::hasColumn('project_evidences', 'nombre')) {
+        if (! Schema::hasColumn('project_evidences', 'nombre')) {
             Schema::table('project_evidences', function (Blueprint $table) {
                 $table->string('nombre')->nullable()->after('archivo');
             });
         }
 
         // Agregar columna `uploaded_by` si no existe
-        if (!Schema::hasColumn('project_evidences', 'uploaded_by')) {
+        if (! Schema::hasColumn('project_evidences', 'uploaded_by')) {
             Schema::table('project_evidences', function (Blueprint $table) {
                 $table->unsignedBigInteger('uploaded_by')->nullable()->after('nombre');
             });

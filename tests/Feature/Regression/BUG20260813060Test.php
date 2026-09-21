@@ -30,7 +30,7 @@ class BUG20260813060Test extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-060']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-060', 'department_id' => $depto->id]);
@@ -65,11 +65,11 @@ class BUG20260813060Test extends TestCase
             'email' => $director->email,
             'rol' => 'director_semilleros',
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['co_investigador'],
+            'additional_roles' => ['co_investigador_sdi'],
         ]);
 
         $response->assertSessionDoesntHaveErrors();
-        $this->assertTrue($director->fresh()->hasRole('co_investigador'));
+        $this->assertTrue($director->fresh()->hasRole('co_investigador_sdi'));
     }
 
     public function test_administrador_sistema_no_puede_editarse_roles_adicionales_a_si_mismo(): void
@@ -88,11 +88,11 @@ class BUG20260813060Test extends TestCase
             'email' => $admin->email,
             'rol' => 'administrador_sistema',
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['co_investigador'],
+            'additional_roles' => ['co_investigador_sdi'],
         ]);
 
         $response->assertSessionDoesntHaveErrors();
-        $this->assertFalse($admin->fresh()->hasRole('co_investigador'));
+        $this->assertFalse($admin->fresh()->hasRole('co_investigador_sdi'));
     }
 
     public function test_super_administrador_edita_administrador_sistema_y_le_agrega_roles_adicionales(): void
@@ -111,13 +111,13 @@ class BUG20260813060Test extends TestCase
             'email' => $admin->email,
             'training_center_id' => $this->centro->id,
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['lider_semillero', 'co_investigador'],
+            'additional_roles' => ['lider_semillero', 'co_investigador_sdi'],
         ]);
 
         $response->assertRedirect(route('super-admin.administradores.index'));
         $admin->refresh();
         $this->assertTrue($admin->hasRole('lider_semillero'));
-        $this->assertTrue($admin->hasRole('co_investigador'));
+        $this->assertTrue($admin->hasRole('co_investigador_sdi'));
         $this->assertTrue($admin->hasRole('administrador_sistema'));
     }
 
@@ -160,12 +160,12 @@ class BUG20260813060Test extends TestCase
             'rol' => 'director_semilleros',
             'training_center_id' => $this->centro->id,
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['co_investigador', 'lider_semillero'],
+            'additional_roles' => ['co_investigador_sdi', 'lider_semillero'],
         ]);
 
         $response->assertRedirect(route('super-admin.usuarios-sistema.index'));
         $director->refresh();
-        $this->assertTrue($director->hasRole('co_investigador'));
+        $this->assertTrue($director->hasRole('co_investigador_sdi'));
         $this->assertTrue($director->hasRole('lider_semillero'));
     }
 
@@ -176,7 +176,7 @@ class BUG20260813060Test extends TestCase
 
         $admin = User::factory()->create(['training_center_id' => $this->centro->id]);
         $admin->assignRole('administrador_sistema');
-        $admin->assignRole('co_investigador');
+        $admin->assignRole('co_investigador_sdi');
         $this->crearPersona($admin, 'Admin');
 
         $this->actingAs($superAdmin)->put(route('super-admin.administradores.update', $admin->id), [
@@ -188,6 +188,6 @@ class BUG20260813060Test extends TestCase
             'tiene_mas_roles' => '0',
         ]);
 
-        $this->assertFalse($admin->fresh()->hasRole('co_investigador'));
+        $this->assertFalse($admin->fresh()->hasRole('co_investigador_sdi'));
     }
 }

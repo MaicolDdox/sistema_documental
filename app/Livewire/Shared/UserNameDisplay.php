@@ -3,14 +3,17 @@
 namespace App\Livewire\Shared;
 
 use Illuminate\Support\Facades\Auth;
-use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Component;
 
 class UserNameDisplay extends Component
 {
     public string $mode = 'sidebar'; // 'sidebar' | 'topbar'
+
     public string $displayName = '';
+
     public string $displayEmail = '';
+
     public string $initials = '';
 
     public function mount(string $mode = 'sidebar'): void
@@ -25,9 +28,9 @@ class UserNameDisplay extends Component
         $user = Auth::user();
         $user->load('person');
 
-        $this->displayName  = $user->name;
+        $this->displayName = $user->name;
         $this->displayEmail = $user->email ?? '';
-        $this->initials     = strtoupper(substr($this->displayName, 0, 2));
+        $this->initials = strtoupper(substr($this->displayName, 0, 2));
     }
 
     public function render()

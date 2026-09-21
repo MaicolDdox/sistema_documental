@@ -25,9 +25,19 @@ class RolesAndPermissionsSeeder extends Seeder
                 'usuarios.activar_desactivar',
                 'usuarios.asignar_credenciales',
                 'usuarios.crear_director_semilleros',
-                'usuarios.crear_co_investigador',
+                'usuarios.crear_director_grupo_investigacion',
                 'usuarios.crear_lider_semillero',
                 'usuarios.crear_lider_proyecto',
+                'usuarios.crear_co_investigador_gdi',
+                'usuarios.crear_co_investigador_sdi',
+            ],
+            // MÓDULO: GRUPOS DE INVESTIGACIÓN — reforma GDI/SDI
+            'grupos_investigacion' => [
+                'grupos_investigacion.crear',
+                'grupos_investigacion.listar',
+                'grupos_investigacion.ver_detalle',
+                'grupos_investigacion.editar',
+                'grupos_investigacion.asignar_director',
             ],
             // MÓDULO: CATÁLOGOS
             'catalogos' => [
@@ -152,19 +162,23 @@ class RolesAndPermissionsSeeder extends Seeder
         // Definición de Roles y sus permisos
 
         // ROL 1: administrador_sistema
-        // Gestión del centro de formación. Solo puede crear cuentas de Director de Semilleros
-        // y Co-investigador (matriz de creación exclusiva). Ya no crea semilleros directamente
-        // (queda exclusivo de director_semilleros) ni gestiona grupos de investigación (el
-        // concepto desaparece del sistema).
+        // Gestión del centro de formación. Crea cuentas de Director de Semilleros y Director
+        // de Grupo de Investigación (matriz de creación exclusiva); ya no crea co-investigadores
+        // directamente (reforma GDI/SDI: eso pasa a director_semilleros/director_grupo_investigacion).
+        // Crea grupos de investigación con datos básicos (el director los completa). Conserva
+        // solo lectura de productos Minciencias de su centro; ya no aprueba/rechaza (eso pasa a
+        // director_grupo_investigacion, acotado a su propio grupo).
         $adminSistemaPermissions = [
             'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar', 'usuarios.asignar_credenciales',
-            'usuarios.crear_director_semilleros', 'usuarios.crear_co_investigador',
+            'usuarios.crear_director_semilleros', 'usuarios.crear_director_grupo_investigacion',
             'catalogos.crear', 'catalogos.leer', 'catalogos.editar', 'catalogos.eliminar',
+            'grupos_investigacion.crear', 'grupos_investigacion.listar', 'grupos_investigacion.ver_detalle',
+            'grupos_investigacion.editar', 'grupos_investigacion.asignar_director',
             'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.ver_integrantes', 'semilleros.ver_asesores',
             'semilleros.ver_proyectos', 'semilleros.ver_productos', 'semilleros.ver_evidencias',
             'proyectos.listar', 'proyectos.ver_detalle', 'proyectos.ver_ajeno',
             'productos.listar', 'productos.ver_detalle', 'productos.ver_estado_revision', 'productos.ver_observaciones',
-            'minciencias.listar', 'minciencias.ver_detalle', 'minciencias.aprobar', 'minciencias.rechazar',
+            'minciencias.listar', 'minciencias.ver_detalle',
             'evidencias.listar', 'evidencias.ver_del_semillero',
             'reportes.globales_centro', 'reportes.usuarios_por_rol', 'reportes.semilleros_con_metricas',
             'reportes.proyectos_por_estado', 'reportes.productos_por_estado', 'reportes.exportar_pdf_excel',
@@ -179,7 +193,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // productos. Ve todo: semilleros, líderes de proyecto, proyectos y su estado.
         $dirSemPermissions = [
             'usuarios.listar', 'usuarios.editar', 'usuarios.activar_desactivar', 'usuarios.asignar_credenciales',
-            'usuarios.crear_lider_semillero',
+            'usuarios.crear_lider_semillero', 'usuarios.crear_co_investigador_sdi',
             'semilleros.crear', 'semilleros.listar', 'semilleros.ver_detalle', 'semilleros.editar',
             'semilleros.activar_desactivar', 'semilleros.reasignar_lider', 'semilleros.gestionar_miembros',
             'semilleros.ver_integrantes', 'semilleros.ver_asesores', 'semilleros.ver_proyectos',
@@ -221,12 +235,44 @@ class RolesAndPermissionsSeeder extends Seeder
         $rolLiderProyecto = Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
         $rolLiderProyecto->syncPermissions([]);
 
-        // ROL 5: co_investigador
-        // Rol nuevo del rediseño, fuera de la jerarquía de semilleros. Sin training_center_id
-        // (ver TrainingCenterAccess). Sus permisos funcionales se definen junto con
-        // lider_proyecto en una fase posterior — por ahora solo existe como rol asignable.
-        $rolCoInvestigador = Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
-        $rolCoInvestigador->syncPermissions([]);
+        // ROL 5: director_grupo_investigacion — reforma GDI/SDI.
+        // Rol nuevo, creado por administrador_sistema y asignado 1-a-1 a un grupo_investigacion
+        // (FK grupos_investigacion.director_id). Completa la info del grupo (descripción, logo,
+        // línea de investigación) y aprueba/rechaza productos Minciencias, pero SOLO los de los
+        // co_investigador_gdi de su propio grupo (acotado en el controller, no aquí).
+        $dirGrupoInvestigacionPermissions = [
+            'grupos_investigacion.ver_detalle', 'grupos_investigacion.editar',
+            'usuarios.crear_co_investigador_gdi',
+            'minciencias.listar', 'minciencias.ver_detalle', 'minciencias.aprobar', 'minciencias.rechazar',
+        ];
+
+        $rolDirGrupoInvestigacion = Role::firstOrCreate(['name' => 'director_grupo_investigacion', 'guard_name' => 'web']);
+        $rolDirGrupoInvestigacion->syncPermissions($dirGrupoInvestigacionPermissions);
+
+        // ROL 6: co_investigador_gdi — reforma GDI/SDI (mitad "Grupo De Investigación" del
+        // antiguo co_investigador). Crea productos Minciencias bajo el grupo de su director.
+        // SÍ lleva training_center_id (nuevo requisito de cliente). Solo lo crea
+        // director_grupo_investigacion. Sin permisos Spatie propios, protegido solo por
+        // middleware role: (mismo patrón que lider_proyecto).
+        $rolCoInvestigadorGdi = Role::firstOrCreate(['name' => 'co_investigador_gdi', 'guard_name' => 'web']);
+        $rolCoInvestigadorGdi->syncPermissions([]);
+
+        // ROL 7: co_investigador_sdi — reforma GDI/SDI (mitad "Semillero De Investigación" del
+        // antiguo co_investigador). Participa en la ejecución del proyecto vinculado al
+        // semillero (project_authors), sin cambios funcionales respecto al co_investigador
+        // original. SÍ lleva training_center_id (nuevo requisito de cliente). Solo lo crea
+        // director_semilleros. Sin permisos Spatie propios.
+        $rolCoInvestigadorSdi = Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
+        $rolCoInvestigadorSdi->syncPermissions([]);
+
+        // ─── Reforma GDI/SDI — limpieza del rol co_investigador original ─────
+        // Decisión explícita del cliente: no hay datos que preservar, se elimina en corte
+        // limpio (sin comando de migración de datos ni periodo de coexistencia).
+        if (Role::where('name', 'co_investigador')->exists()) {
+            \App\Models\User::role('co_investigador')->get()->each->delete();
+            Role::where('name', 'co_investigador')->delete();
+            Permission::where('name', 'usuarios.crear_co_investigador')->delete();
+        }
 
         // ─── Totales globales ───────────────────────────────────────
         $totalPermisos = \Spatie\Permission\Models\Permission::count();
@@ -269,7 +315,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $rolesEsperados = [
             'super_administrador', 'administrador_sistema', 'director_semilleros',
-            'lider_semillero', 'lider_proyecto', 'co_investigador',
+            'lider_semillero', 'lider_proyecto', 'director_grupo_investigacion',
+            'co_investigador_gdi', 'co_investigador_sdi',
         ];
 
         foreach ($rolesEsperados as $nombreRol) {

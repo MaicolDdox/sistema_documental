@@ -2,9 +2,9 @@
 
 namespace App\Concerns;
 
-use App\Models\User;
 use App\Enums\GeneroEnum;
 use App\Enums\NivelFormacionEnum;
+use App\Models\User;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
@@ -17,16 +17,27 @@ trait ProfileValidationRules
      */
     protected function profileRules(?int $userId = null, ?int $personId = null): array
     {
+        // super_administrador no tiene training_center_id propio: no hay
+        // "centro incorrecto" posible en su propio perfil, así que no se
+        // scopea (mismo criterio que Settings\ProfileController::edit()).
+        $centerId = auth()->user()?->training_center_id;
+        $entityPositionRule = $centerId !== null
+            ? Rule::exists('entity_positions', 'id')->where('training_center_id', $centerId)
+            : 'exists:entity_positions,id';
+        $linkageTypeRule = $centerId !== null
+            ? Rule::exists('linkage_types', 'id')->where('training_center_id', $centerId)
+            : 'exists:linkage_types,id';
+
         return [
-            'primer_nombre'       => ['required', 'string', 'max:100'],
-            'segundo_nombre'      => ['nullable', 'string', 'max:100'],
-            'primer_apellido'     => ['required', 'string', 'max:100'],
-            'segundo_apellido'    => ['nullable', 'string', 'max:100'],
-            'email'               => $this->emailRules($userId),
-            'telefono'            => ['nullable', 'string', 'max:20'],
-            'celular'             => ['nullable', 'digits_between:7,15'],
-            'genero'              => ['nullable', new Enum(GeneroEnum::class)],
-            'eps'                 => ['nullable', 'string', 'max:100'],
+            'primer_nombre' => ['required', 'string', 'max:100'],
+            'segundo_nombre' => ['nullable', 'string', 'max:100'],
+            'primer_apellido' => ['required', 'string', 'max:100'],
+            'segundo_apellido' => ['nullable', 'string', 'max:100'],
+            'email' => $this->emailRules($userId),
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'celular' => ['nullable', 'digits_between:7,15'],
+            'genero' => ['nullable', new Enum(GeneroEnum::class)],
+            'eps' => ['nullable', 'string', 'max:100'],
             'email_institucional' => [
                 'nullable',
                 'email',
@@ -35,11 +46,11 @@ trait ProfileValidationRules
                     ? Rule::unique('people', 'email_institucional')
                     : Rule::unique('people', 'email_institucional')->ignore($personId),
             ],
-            'entity_position_id'  => ['nullable', 'exists:entity_positions,id'],
-            'linkage_type_id'     => ['nullable', 'exists:linkage_types,id'],
-            'cvlac_link'          => ['nullable', 'string', 'max:500'],
-            'nivel_formacion'     => ['nullable', new Enum(NivelFormacionEnum::class)],
-            'fecha_vinculacion'   => ['nullable', 'date'],
+            'entity_position_id' => ['nullable', $entityPositionRule],
+            'linkage_type_id' => ['nullable', $linkageTypeRule],
+            'cvlac_link' => ['nullable', 'string', 'max:500'],
+            'nivel_formacion' => ['nullable', new Enum(NivelFormacionEnum::class)],
+            'fecha_vinculacion' => ['nullable', 'date'],
         ];
     }
 

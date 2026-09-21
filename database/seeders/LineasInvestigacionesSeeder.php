@@ -17,11 +17,13 @@ class LineasInvestigacionesSeeder extends Seeder
             'Innovación y Transformación Educativa',
         ];
 
-        foreach ($lineas as $nombre) {
-            \App\Models\ResearchLine::firstOrCreate(
-                ['nombre' => $nombre],
-                ['descripcion' => null]
-            );
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($lineas as $nombre) {
+                \App\Models\ResearchLine::firstOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => null]
+                );
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ class BUG20260813025Test extends TestCase
         $rolAdmin->givePermissionTo(['semilleros.listar', 'semilleros.ver_detalle']);
         Role::firstOrCreate(['name' => 'lider_semillero', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'lider_proyecto', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
 
         $admin = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
         $admin->assignRole('administrador_sistema');
@@ -66,8 +66,8 @@ class BUG20260813025Test extends TestCase
         $liderProyecto = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
         $liderProyecto->assignRole('lider_proyecto');
 
-        $coinvestigador = User::factory()->create(['estado' => EstadoEnum::Activo]);
-        $coinvestigador->assignRole('co_investigador');
+        $coinvestigador = User::factory()->create(['training_center_id' => $centro->id, 'estado' => EstadoEnum::Activo]);
+        $coinvestigador->assignRole('co_investigador_sdi');
 
         $semillero = Seedling::create([
             'creator_id' => $liderSemillero->id,
@@ -89,7 +89,7 @@ class BUG20260813025Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $researchLine = ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $proyecto = Project::create([
             'project_creator_id' => $liderSemillero->id,

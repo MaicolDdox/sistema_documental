@@ -18,11 +18,13 @@ class AreasTematicasSeeder extends Seeder
             'Pedagogía',
         ];
 
-        foreach ($areas as $nombre) {
-            \App\Models\ThematicArea::firstOrCreate(
-                ['nombre' => $nombre],
-                ['descripcion' => null]
-            );
+        foreach (\App\Models\TrainingCenter::all() as $centro) {
+            foreach ($areas as $nombre) {
+                \App\Models\ThematicArea::firstOrCreate(
+                    ['training_center_id' => $centro->id, 'nombre' => $nombre],
+                    ['descripcion' => null]
+                );
+            }
         }
     }
 }

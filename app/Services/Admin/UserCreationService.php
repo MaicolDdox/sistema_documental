@@ -14,6 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class UserCreationService
 {
+    public function __construct(
+        private readonly RoleAssignmentService $roleAssignment,
+    ) {}
+
     /**
      * Crea un usuario con su perfil Person y opcionalmente le asigna un rol.
      * Todo en una transacción atómica.
@@ -82,7 +86,10 @@ class UserCreationService
             ]);
 
             if (! empty($data['rol'])) {
-                $user->assignRole($data['rol']);
+                // BUG-20260914-006: rutar por RoleAssignmentService garantiza
+                // validateCentroBoundRoleAssignment en la creación, igual que
+                // en edición. Antes solo se chequeaba trainingCenterId === null.
+                $this->roleAssignment->assign($user, $data['rol']);
                 $user->forceFill(['primary_role_name' => $data['rol']])->saveQuietly();
             }
 
@@ -91,9 +98,11 @@ class UserCreationService
             // filtró esta lista contra el universo permitido (nunca
             // super_administrador, nunca el rol principal) — ver
             // RoleAssignmentMatrix::additionalRoleOptionNamesFor().
+            // BUG-20260914-006: también pasan por RoleAssignmentService para
+            // validar restricción de centro en roles CENTRO_BOUND adicionales.
             foreach ($additionalRoles as $roleName) {
                 if ($roleName !== ($data['rol'] ?? null)) {
-                    $user->assignRole($roleName);
+                    $this->roleAssignment->assign($user, $roleName);
                 }
             }
 

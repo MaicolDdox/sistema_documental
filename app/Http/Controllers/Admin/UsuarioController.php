@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Person;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
+use App\Services\Admin\RoleAssignmentService;
 use App\Services\Admin\UserCreationService;
 use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
@@ -21,6 +22,7 @@ class UsuarioController extends Controller
     public function __construct(
         private readonly UserCreationService $userCreation,
         private readonly NotificacionService $notificacion,
+        private readonly RoleAssignmentService $roleAssignment,
     ) {}
 
     /**
@@ -104,25 +106,25 @@ class UsuarioController extends Controller
     }
 
     /**
-     * Formulario de creación exclusivo para co_investigador (rol fijo, sin selector).
+     * Formulario de creación exclusivo para director_grupo_investigacion (rol fijo, sin selector).
      */
-    public function createCoinvestigador()
+    public function createDirectorGrupoInvestigacion()
     {
-        if (! auth()->user()->can('usuarios.crear_co_investigador')) {
+        if (! auth()->user()->can('usuarios.crear_director_grupo_investigacion')) {
             abort(403);
         }
 
         $rolesAdicionales = Role::whereIn(
             'name',
-            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('co_investigador')
+            \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_grupo_investigacion')
         )->orderBy('name')->get();
 
-        return view('admin.coinvestigadores.create', compact('rolesAdicionales'));
+        return view('admin.director_grupo_investigacion.create', compact('rolesAdicionales'));
     }
 
-    public function storeCoinvestigador(Request $request)
+    public function storeDirectorGrupoInvestigacion(Request $request)
     {
-        return $this->storeConRolFijo($request, 'co_investigador', 'usuarios.crear_co_investigador');
+        return $this->storeConRolFijo($request, 'director_grupo_investigacion', 'usuarios.crear_director_grupo_investigacion');
     }
 
     /**
@@ -163,12 +165,11 @@ class UsuarioController extends Controller
             ))
             : [];
 
-        // co_investigador no tiene centro de formación propio (ver
-        // TrainingCenterAccess) — pero si algún rol adicional sí lo exige
-        // (ej. lider_semillero), el centro del admin que crea sigue aplicando.
-        $algunRolExigeCentro = $rol !== 'co_investigador'
-            || collect($additionalRoles)->contains(fn (string $r) => TrainingCenterAccess::roleRequiresTrainingCenter($r));
-        $trainingCenterId = $algunRolExigeCentro ? $actor->training_center_id : null;
+        // Reforma GDI/SDI: ya no existe ningún rol creado desde aquí sin
+        // centro de formación propio — todos los roles asignables por
+        // administrador_sistema (director_semilleros, director_grupo_investigacion)
+        // exigen training_center_id, así que siempre se hereda el del actor.
+        $trainingCenterId = $actor->training_center_id;
 
         $plainPassword = $validated['password'];
 
@@ -250,6 +251,11 @@ class UsuarioController extends Controller
         $this->authorize('usuarios.editar');
 
         $usuario = $this->findUserScoped((int) $id);
+        // BUG-20260914-004: comprobación de propiedad centralizada en UserPolicy.
+        // findUserScoped() ya aplica los mismos filtros, pero la Policy los
+        // expresa como contrato explícito y auditable. Gate::before garantiza
+        // que administrador_sistema siempre pasa sin evaluar la Policy.
+        $this->authorize('update', $usuario);
 
         $validated = $request->validate([
             'nombre' => 'required|string|max:100',
@@ -313,21 +319,17 @@ class UsuarioController extends Controller
                 'primer_apellido' => $primerApellido,
                 'segundo_apellido' => $segundoApellido,
                 'email_institucional' => $validated['email'],
-                'entity_position_id' => \App\Models\EntityPosition::first()?->id,
-                'linkage_type_id' => \App\Models\LinkageType::first()?->id,
-                'training_program_id' => \App\Models\TrainingProgram::first()?->id,
+                'entity_position_id' => \App\Models\EntityPosition::where('training_center_id', $usuario->training_center_id)->first()?->id,
+                'linkage_type_id' => \App\Models\LinkageType::where('training_center_id', $usuario->training_center_id)->first()?->id,
+                'training_program_id' => \App\Models\TrainingProgram::where('training_center_id', $usuario->training_center_id)->first()?->id,
                 'genero' => 'prefiero no decirlo',
                 'celular' => 0,
                 'eps' => '',
             ]);
         }
 
-        TrainingCenterAccess::validateCentroBoundRoleAssignment($usuario, $validated['rol'], auth()->user());
-
-        // Asegurar el rol elegido sin quitar otros roles (evitar syncRoles).
-        if (! $usuario->hasRole($validated['rol'])) {
-            $usuario->assignRole($validated['rol']);
-        }
+        // BUG-20260914-006: asignación central con validación de centro incluida.
+        $this->roleAssignment->assignIfMissing($usuario, $validated['rol'], auth()->user());
         $usuario->primary_role_name = $validated['rol'];
         $usuario->save();
 

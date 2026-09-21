@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Producto Minciencias personal de un co-investigador. No se vincula a
- * ningún semillero, proyecto ni líder de proyecto — es propiedad exclusiva
- * del usuario que lo crea (ver user_id). El co-investigador elige el centro
- * de formación al que queda vinculado (training_center_id); el
- * administrador_sistema de ese centro es quien lo aprueba/rechaza
- * (estado_revision), ver BUG-20260813-029.
+ * Producto Minciencias creado por un co_investigador_gdi, vinculado al
+ * grupo_investigacion de su director (ver grupo_investigacion_id). El
+ * training_center_id se hereda del usuario que lo crea (ya no se elige en
+ * el formulario); director_grupo_investigacion de ese grupo es quien lo
+ * aprueba/rechaza (estado_revision) — ver reforma GDI/SDI y BUG-20260813-029
+ * para el origen de estado_revision/training_center_id.
  */
 class MincienciasProduct extends Model
 {
@@ -26,6 +26,7 @@ class MincienciasProduct extends Model
     protected $fillable = [
         'user_id',
         'training_center_id',
+        'grupo_investigacion_id',
         'research_line_id',
         'technological_line_id',
         'thematic_area_id',
@@ -65,6 +66,11 @@ class MincienciasProduct extends Model
     public function trainingCenter(): BelongsTo
     {
         return $this->belongsTo(TrainingCenter::class, 'training_center_id');
+    }
+
+    public function grupoInvestigacion(): BelongsTo
+    {
+        return $this->belongsTo(GrupoInvestigacion::class, 'grupo_investigacion_id');
     }
 
     public function revisadoPor(): BelongsTo

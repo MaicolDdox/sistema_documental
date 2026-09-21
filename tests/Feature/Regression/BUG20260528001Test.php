@@ -35,21 +35,28 @@ class BUG20260528001Test extends TestCase
     {
         $user = \App\Models\User::factory()->create();
 
+        $depto = \App\Models\Department::create(['nombre' => 'Depto BUG-528']);
+        $ciudad = \App\Models\City::create(['nombre' => 'Ciudad BUG-528', 'department_id' => $depto->id]);
+        $centro = \App\Models\TrainingCenter::create([
+            'nombre' => 'Centro BUG-528', 'codigo' => 'B528', 'activo' => true,
+            'department_id' => $depto->id, 'city_id' => $ciudad->id,
+        ]);
+
         $researchLine = \App\Models\ResearchLine::first()
-            ?? \App\Models\ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+            ?? \App\Models\ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $project = Project::create([
-            'project_creator_id'       => $user->id,
-            'research_line_id'         => $researchLine->id,
-            'nombre'                   => 'Proyecto de regresión BUG-20260528-001',
-            'descripcion'              => 'Descripción de prueba para verificar el fix del typo',
-            'fecha_inicio'             => now(),
-            'estado'                   => EstadoEnum::Activo,
+            'project_creator_id' => $user->id,
+            'research_line_id' => $researchLine->id,
+            'nombre' => 'Proyecto de regresión BUG-20260528-001',
+            'descripcion' => 'Descripción de prueba para verificar el fix del typo',
+            'fecha_inicio' => now(),
+            'estado' => EstadoEnum::Activo,
             'vinculacion_macro_proyecto' => false,
         ]);
 
         $this->assertDatabaseHas('projects', [
-            'id'          => $project->id,
+            'id' => $project->id,
             'descripcion' => 'Descripción de prueba para verificar el fix del typo',
         ]);
     }

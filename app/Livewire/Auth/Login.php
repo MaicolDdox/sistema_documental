@@ -15,8 +15,11 @@ use Livewire\Component;
 class Login extends Component
 {
     public string $tipo_documento = '';
+
     public string $numero_documento = '';
+
     public string $password = '';
+
     public bool $remember = false;
 
     public function mount()
@@ -45,8 +48,8 @@ class Login extends Component
         ]);
 
         $user = User::where('tipo_documento', $this->tipo_documento)
-                    ->where('numero_documento', $this->numero_documento)
-                    ->first();
+            ->where('numero_documento', $this->numero_documento)
+            ->first();
 
         if (! $user) {
             throw ValidationException::withMessages([

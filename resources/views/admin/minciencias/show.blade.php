@@ -110,23 +110,11 @@
             <p class="text-sm text-slate-700 mb-4"><span class="font-medium">Observaciones registradas:</span> {{ $producto->observacion_admin }}</p>
             @endif
 
-            @can('minciencias.aprobar')
-            <div class="flex items-center gap-3">
-                <form action="{{ route('admin.minciencias.aprobar', $producto) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="sgd-btn-primary px-4 py-2.5 rounded-xl text-sm font-medium">Aprobar</button>
-                </form>
-                <button type="button" onclick="document.getElementById('rechazo-form').classList.toggle('hidden')"
-                        class="px-4 py-2.5 rounded-xl text-sm font-medium border border-red-200 text-red-600 hover:bg-red-50">Rechazar</button>
-            </div>
-            <form id="rechazo-form" action="{{ route('admin.minciencias.rechazar', $producto) }}" method="POST" class="hidden mt-4">
-                @csrf
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Motivo del rechazo <span class="text-red-500">*</span></label>
-                <textarea name="observaciones" rows="3" required placeholder="Explica por qué se rechaza este producto"
-                          class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm mb-3"></textarea>
-                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm">Confirmar rechazo</button>
-            </form>
-            @endcan
+            <p class="text-xs text-slate-500">
+                Este producto pertenece al grupo de investigación
+                {{ $producto->grupoInvestigacion?->nombre ?? '—' }}. Solo el director de ese grupo
+                puede aprobarlo o rechazarlo.
+            </p>
         </div>
 
     </div>

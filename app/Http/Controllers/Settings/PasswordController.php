@@ -20,7 +20,7 @@ class PasswordController extends Controller
         try {
             $validated = $request->validate([
                 'current_password' => $this->currentPasswordRules(),
-                'password'         => $this->passwordRules(),
+                'password' => $this->passwordRules(),
             ]);
         } catch (ValidationException $e) {
             return redirect()->route('settings.password')

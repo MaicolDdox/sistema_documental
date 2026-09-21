@@ -3,8 +3,11 @@
 namespace Tests\Feature\Regression;
 
 use App\Enums\EstadoEnum;
+use App\Models\City;
+use App\Models\Department;
 use App\Models\Project;
 use App\Models\Seedling;
+use App\Models\TrainingCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,7 +38,14 @@ class BUG20260609004Test extends TestCase
             'estado' => EstadoEnum::Activo,
         ]);
 
-        $researchLine = \App\Models\ResearchLine::create(['nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
+        $depto = Department::firstOrCreate(['nombre' => 'Depto BUG-609']);
+        $ciudad = City::firstOrCreate(['nombre' => 'Ciudad BUG-609', 'department_id' => $depto->id]);
+        $centro = TrainingCenter::firstOrCreate(
+            ['codigo' => 'B609'],
+            ['nombre' => 'Centro BUG-609', 'activo' => true, 'department_id' => $depto->id, 'city_id' => $ciudad->id]
+        );
+
+        $researchLine = \App\Models\ResearchLine::create(['training_center_id' => $centro->id, 'nombre' => 'Línea Test', 'estado' => EstadoEnum::Activo]);
 
         $proyecto = Project::create([
             'project_creator_id' => $creador->id,

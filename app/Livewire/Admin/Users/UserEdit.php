@@ -5,17 +5,21 @@ namespace App\Livewire\Admin\Users;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\User;
+use App\Services\Admin\RoleAssignmentService;
 use App\Support\RoleAssignmentMatrix;
 use App\Support\RoleModuleLinks;
 use App\Support\SystemAdminCenterLink;
 use App\Support\TrainingCenterAccess;
 use App\Support\UserOwnershipAccess;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class UserEdit extends Component
 {
+    use AuthorizesRequests;
+
     public User $user;
 
     // User fields
@@ -106,6 +110,12 @@ class UserEdit extends Component
 
     public function update(): void
     {
+        // BUG-20260914-004: comprobación de propiedad centralizada en UserPolicy.
+        // Gate::before garantiza que administrador_sistema siempre pasa.
+        // Para otros roles que lleguen a este componente, la Policy valida
+        // que el actor comparta centro con el usuario editado y tenga propiedad.
+        $this->authorize('update', $this->user);
+
         $auth = auth()->user();
 
         $trainingCenterRules = ['nullable', Rule::exists('training_centers', 'id')->where('activo', true)];
@@ -175,7 +185,6 @@ class UserEdit extends Component
         }
 
         $this->user->training_center_id = $this->training_center_id;
-        TrainingCenterAccess::validateCentroBoundRoleAssignment($this->user, $this->role, $auth, 'training_center_id');
 
         // Update user
         $this->user->update([
@@ -206,9 +215,8 @@ class UserEdit extends Component
         }
 
         // Rol principal: solo asegurar que el rol elegido esté asignado (no syncRoles: conserva el resto).
-        if (! $this->user->hasRole($this->role)) {
-            $this->user->assignRole($this->role);
-        }
+        // BUG-20260914-006: validación de centro incluida dentro del service.
+        app(RoleAssignmentService::class)->assignIfMissing($this->user, $this->role, auth()->user(), 'training_center_id');
         $this->user->load('roles');
 
         session()->flash('status', 'Usuario actualizado exitosamente.');

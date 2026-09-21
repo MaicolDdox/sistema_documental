@@ -8,12 +8,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ArchivosSemilleroController extends Controller
 {
     private const MAX_SIZE_MB = 20;
+
     private const ALLOWED_MIMES = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png'];
 
     /**
@@ -42,13 +43,14 @@ class ArchivosSemilleroController extends Controller
                             ? 'Director de Semilleros'
                             : ($uploader?->person?->nombre_completo ?? $uploader?->email ?? 'Otro');
                     }
+
                     return $file;
                 });
         }
 
         return view('lider_semillero.archivos.index', [
             'semillero' => $semillero,
-            'archivos'  => $archivos,
+            'archivos' => $archivos,
         ]);
     }
 
@@ -63,7 +65,7 @@ class ArchivosSemilleroController extends Controller
             abort(403, 'No puedes descargar este archivo.');
         }
 
-        if (!Storage::disk('public')->exists($archivo->url_archivo)) {
+        if (! Storage::disk('public')->exists($archivo->url_archivo)) {
             abort(404, 'El archivo no existe.');
         }
 
@@ -79,21 +81,21 @@ class ArchivosSemilleroController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero) {
+        if (! $semillero) {
             return redirect()->route('lider-sem.archivos')->with('error', 'No tienes un semillero asignado.');
         }
 
         $maxKb = self::MAX_SIZE_MB * 1024;
         $request->validate([
-            'archivo' => 'required|file|mimes:' . implode(',', self::ALLOWED_MIMES) . '|max:' . $maxKb,
+            'archivo' => 'required|file|mimes:'.implode(',', self::ALLOWED_MIMES).'|max:'.$maxKb,
         ], [
             'archivo.required' => 'Debes seleccionar un archivo.',
-            'archivo.mimes'    => 'Formatos permitidos: PDF, DOCX, XLSX, PPTX, JPG, PNG.',
-            'archivo.max'      => 'Tamaño máximo: ' . self::MAX_SIZE_MB . ' MB.',
+            'archivo.mimes' => 'Formatos permitidos: PDF, DOCX, XLSX, PPTX, JPG, PNG.',
+            'archivo.max' => 'Tamaño máximo: '.self::MAX_SIZE_MB.' MB.',
         ]);
 
         $uploaded = $request->file('archivo');
-        $path = $uploaded->store('archivos_semillero/' . $semillero->id, 'public');
+        $path = $uploaded->store('archivos_semillero/'.$semillero->id, 'public');
         if ($path === false) {
             return redirect()->back()->with('error', 'No se pudo guardar el archivo. Verifica los permisos de almacenamiento.');
         }
@@ -101,8 +103,8 @@ class ArchivosSemilleroController extends Controller
 
         SeedlingFile::create([
             'seedling_id' => $semillero->id,
-            'user_id'     => Auth::id(),
-            'archivo'     => $nombreOriginal,
+            'user_id' => Auth::id(),
+            'archivo' => $nombreOriginal,
             'url_archivo' => $path,
         ]);
 
@@ -115,7 +117,7 @@ class ArchivosSemilleroController extends Controller
     public function destroy(SeedlingFile $archivo): RedirectResponse
     {
         $semillero = Auth::user()->ledSeedlings()->first();
-        if (!$semillero || $archivo->seedling_id !== $semillero->id) {
+        if (! $semillero || $archivo->seedling_id !== $semillero->id) {
             abort(403, 'No puedes eliminar este archivo.');
         }
         if ($archivo->user_id !== Auth::id()) {

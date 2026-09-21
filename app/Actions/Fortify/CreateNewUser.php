@@ -7,6 +7,7 @@ use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Models\Person;
 use App\Models\User;
+use App\Services\Admin\RoleAssignmentService;
 use App\Support\RoleAssignmentMatrix;
 use App\Support\TrainingCenterAccess;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +37,14 @@ class CreateNewUser implements CreatesNewUsers
             $trainingCenterRules = ['required', Rule::exists('training_centers', 'id')->where('activo', true)];
         }
 
+        // Centro "real" que tendrá el usuario nuevo: el propio del actor si
+        // no es super_administrador (se le ignora cualquier centro que haya
+        // enviado, ver más abajo), o el que el super_administrador eligió en
+        // el request. Los catálogos (entity_position_id, etc.) deben
+        // validarse contra ESE centro, no contra uno arbitrario.
+        $allowedCenterIds = TrainingCenterAccess::allowedCenterIdsForSave($auth);
+        $catalogCenterId = $allowedCenterIds !== null ? $allowedCenterIds[0] : ($input['training_center_id'] ?? null);
+
         Validator::make($input, [
             // Datos de users
             'training_center_id' => $trainingCenterRules,
@@ -58,16 +67,16 @@ class CreateNewUser implements CreatesNewUsers
             // Rol (Spatie) — restringido a la matriz de creación exclusiva del actor
             'role' => ['required', 'string', 'exists:roles,name', Rule::in($assignableRoles)],
 
-            // Relaciones opcionales
-            'entity_position_id' => ['nullable', 'exists:entity_positions,id'],
-            'linkage_type_id' => ['nullable', 'exists:linkage_types,id'],
-            'training_program_id' => ['nullable', 'exists:training_programs,id'],
+            // Relaciones opcionales — catálogos vinculados por centro
+            'entity_position_id' => ['nullable', Rule::exists('entity_positions', 'id')->where('training_center_id', $catalogCenterId)],
+            'linkage_type_id' => ['nullable', Rule::exists('linkage_types', 'id')->where('training_center_id', $catalogCenterId)],
+            'training_program_id' => ['nullable', Rule::exists('training_programs', 'id')->where('training_center_id', $catalogCenterId)],
         ])->validate();
 
-        if ($input['role'] === 'co_investigador') {
-            // co_investigador no tiene centro de formación propio (ver TrainingCenterAccess).
-            $input['training_center_id'] = null;
-        } elseif ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
+        // Reforma GDI/SDI: ya no existe ningún rol asignable desde aquí sin
+        // centro de formación propio (co_investigador_gdi y co_investigador_sdi
+        // también lo exigen ahora) — se hereda siempre el del actor.
+        if ($auth && ! TrainingCenterAccess::isSuperAdmin($auth)) {
             $allowed = TrainingCenterAccess::allowedCenterIdsForSave($auth);
             if ($allowed !== null) {
                 $input['training_center_id'] = $allowed[0];
@@ -103,9 +112,8 @@ class CreateNewUser implements CreatesNewUsers
                 'email_institucional' => $input['email_institucional'] ?? null,
             ]);
 
-            // Asignar rol con Spatie
-            TrainingCenterAccess::validateCentroBoundRoleAssignment($user, $input['role'], $auth, 'training_center_id');
-            $user->assignRole($input['role']);
+            // Asignar rol con Spatie — BUG-20260914-006: centralizado en RoleAssignmentService.
+            app(RoleAssignmentService::class)->assign($user, $input['role'], $auth, 'training_center_id');
             $user->forceFill(['primary_role_name' => $input['role']])->saveQuietly();
 
             return $user;

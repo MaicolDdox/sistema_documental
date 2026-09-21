@@ -29,7 +29,7 @@ class BUG20260813059Test extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'co_investigador_sdi', 'guard_name' => 'web']);
     }
 
     private function crearCentro(string $codigo): TrainingCenter
@@ -56,7 +56,7 @@ class BUG20260813059Test extends TestCase
         // global sin importar que administra otro centro.
         $adminB = User::factory()->create(['training_center_id' => $centroB->id, 'estado' => EstadoEnum::Activo]);
         $adminB->assignRole('administrador_sistema');
-        $adminB->assignRole('co_investigador');
+        $adminB->assignRole('co_investigador_sdi');
 
         $response = $this->actingAs($adminA)->get(route('admin.usuarios.index'));
 
@@ -74,7 +74,7 @@ class BUG20260813059Test extends TestCase
 
         $adminB = User::factory()->create(['training_center_id' => $centroB->id]);
         $adminB->assignRole('administrador_sistema');
-        $adminB->assignRole('co_investigador');
+        $adminB->assignRole('co_investigador_sdi');
 
         $ids = TrainingCenterAccess::scopeUserQueryForList(User::query(), $adminA)->pluck('id')->all();
 
@@ -94,7 +94,16 @@ class BUG20260813059Test extends TestCase
         $this->assertSame(1, $count);
     }
 
-    public function test_co_investigador_sin_ser_admin_sigue_visible_por_rol_global(): void
+    /**
+     * Reforma GDI/SDI: co_investigador (rol global que motivó este bug) fue
+     * eliminado — ambos roles nuevos (co_investigador_gdi/sdi) SÍ llevan
+     * training_center_id, así que ya no queda ningún rol "global" en el
+     * sistema salvo super_administrador. Este test reemplaza la aserción
+     * original ("sigue visible por rol global") por la invariante que la
+     * sustituye: un co-investigador de OTRO centro ya no es visible en el
+     * listado del admin, exactamente igual que cualquier otro rol.
+     */
+    public function test_co_investigador_de_otro_centro_ya_no_es_visible_al_no_existir_roles_globales(): void
     {
         $centroA = $this->crearCentro('B059F');
         $centroB = $this->crearCentro('B059G');
@@ -102,11 +111,11 @@ class BUG20260813059Test extends TestCase
         $adminA = User::factory()->create(['training_center_id' => $centroA->id]);
         $adminA->assignRole('administrador_sistema');
 
-        $ciOtroCentro = User::factory()->create(['training_center_id' => null]);
-        $ciOtroCentro->assignRole('co_investigador');
+        $ciOtroCentro = User::factory()->create(['training_center_id' => $centroB->id]);
+        $ciOtroCentro->assignRole('co_investigador_sdi');
 
         $ids = TrainingCenterAccess::scopeUserQueryForList(User::query(), $adminA)->pluck('id')->all();
 
-        $this->assertContains($ciOtroCentro->id, $ids);
+        $this->assertNotContains($ciOtroCentro->id, $ids);
     }
 }

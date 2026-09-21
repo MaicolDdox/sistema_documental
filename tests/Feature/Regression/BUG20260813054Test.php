@@ -8,7 +8,6 @@ use App\Models\Department;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -30,7 +29,6 @@ class BUG20260813054Test extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        Role::firstOrCreate(['name' => 'co_investigador', 'guard_name' => 'web']);
 
         $depto = Department::create(['nombre' => 'Depto BUG-054']);
         $ciudad = City::create(['nombre' => 'Ciudad BUG-054', 'department_id' => $depto->id]);
@@ -53,14 +51,14 @@ class BUG20260813054Test extends TestCase
             'password' => 'Password123!', 'password_confirmation' => 'Password123!',
             'training_center_id' => $this->centro->id,
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['lider_semillero', 'co_investigador'],
+            'additional_roles' => ['lider_semillero', 'co_investigador_sdi'],
         ]);
 
         $response->assertRedirect(route('super-admin.administradores.index'));
         $creado = User::where('email', 'admin.multirol@test.com')->firstOrFail();
         $this->assertTrue($creado->hasRole('administrador_sistema'));
         $this->assertTrue($creado->hasRole('lider_semillero'));
-        $this->assertTrue($creado->hasRole('co_investigador'));
+        $this->assertTrue($creado->hasRole('co_investigador_sdi'));
         $this->assertSame($this->centro->id, $creado->training_center_id);
     }
 
@@ -77,11 +75,11 @@ class BUG20260813054Test extends TestCase
             'password' => 'Password123!', 'password_confirmation' => 'Password123!',
             'training_center_id' => $this->centro->id,
             // tiene_mas_roles NO enviado (checkbox sin marcar)
-            'additional_roles' => ['co_investigador'],
+            'additional_roles' => ['co_investigador_sdi'],
         ]);
 
         $creado = User::where('email', 'admin.sinextra@test.com')->firstOrFail();
-        $this->assertFalse($creado->hasRole('co_investigador'));
+        $this->assertFalse($creado->hasRole('co_investigador_sdi'));
     }
 
     public function test_no_se_puede_inyectar_super_administrador_como_rol_adicional_al_crear(): void
@@ -116,54 +114,64 @@ class BUG20260813054Test extends TestCase
             'email' => 'director.multirol@test.com',
             'password' => 'Password123!',
             'tiene_mas_roles' => '1',
-            'additional_roles' => ['co_investigador'],
+            'additional_roles' => ['co_investigador_sdi'],
         ]);
 
         $response->assertRedirect(route('admin.usuarios.index'));
         $creado = User::where('email', 'director.multirol@test.com')->firstOrFail();
         $this->assertTrue($creado->hasRole('director_semilleros'));
-        $this->assertTrue($creado->hasRole('co_investigador'));
+        $this->assertTrue($creado->hasRole('co_investigador_sdi'));
         $this->assertSame($this->centro->id, $creado->training_center_id);
     }
 
-    public function test_administrador_sistema_crea_co_investigador_con_lider_semillero_adicional_hereda_el_centro(): void
+    /**
+     * Reforma GDI/SDI: reemplaza test_administrador_sistema_crea_co_investigador_con_lider_semillero_adicional_hereda_el_centro
+     * (admin.co-investigadores.store ya no existe). director_grupo_investigacion
+     * es ahora el otro rol primario que administrador_sistema puede crear.
+     */
+    public function test_administrador_sistema_crea_director_grupo_investigacion_con_rol_adicional_hereda_el_centro(): void
     {
         $admin = User::factory()->create(['training_center_id' => $this->centro->id, 'estado' => EstadoEnum::Activo]);
         $admin->assignRole('administrador_sistema');
 
-        $response = $this->actingAs($admin)->post(route('admin.co-investigadores.store'), [
-            'nombre' => 'Coinvestigador', 'apellido' => 'ConLider',
+        $response = $this->actingAs($admin)->post(route('admin.director-grupo-investigacion.store'), [
+            'nombre' => 'DirectorGrupo', 'apellido' => 'ConLider',
             'tipo_documento' => 'cedula ciudadana',
             'numero_documento' => '900000005',
-            'email' => 'ci.conlider@test.com',
+            'email' => 'dg.conlider@test.com',
             'password' => 'Password123!',
             'tiene_mas_roles' => '1',
             'additional_roles' => ['lider_semillero'],
         ]);
 
         $response->assertRedirect(route('admin.usuarios.index'));
-        $creado = User::where('email', 'ci.conlider@test.com')->firstOrFail();
-        $this->assertTrue($creado->hasRole('co_investigador'));
+        $creado = User::where('email', 'dg.conlider@test.com')->firstOrFail();
+        $this->assertTrue($creado->hasRole('director_grupo_investigacion'));
         $this->assertTrue($creado->hasRole('lider_semillero'));
-        // Al tener un rol adicional que exige centro, hereda el del admin creador.
         $this->assertSame($this->centro->id, $creado->training_center_id);
     }
 
-    public function test_co_investigador_puro_sin_roles_adicionales_sigue_sin_centro(): void
+    /**
+     * Reforma GDI/SDI: reemplaza test_co_investigador_puro_sin_roles_adicionales_sigue_sin_centro.
+     * Ya no existe ningún rol primario que administrador_sistema pueda crear
+     * sin centro — director_grupo_investigacion, igual que director_semilleros,
+     * SIEMPRE recibe el centro del admin, con o sin roles adicionales.
+     */
+    public function test_director_grupo_investigacion_puro_sin_roles_adicionales_si_recibe_centro(): void
     {
         $admin = User::factory()->create(['training_center_id' => $this->centro->id, 'estado' => EstadoEnum::Activo]);
         $admin->assignRole('administrador_sistema');
 
-        $this->actingAs($admin)->post(route('admin.co-investigadores.store'), [
-            'nombre' => 'Coinvestigador', 'apellido' => 'Puro',
+        $this->actingAs($admin)->post(route('admin.director-grupo-investigacion.store'), [
+            'nombre' => 'DirectorGrupo', 'apellido' => 'Puro',
             'tipo_documento' => 'cedula ciudadana',
             'numero_documento' => '900000006',
-            'email' => 'ci.puro@test.com',
+            'email' => 'dg.puro@test.com',
             'password' => 'Password123!',
         ]);
 
-        $creado = User::where('email', 'ci.puro@test.com')->firstOrFail();
-        $this->assertTrue($creado->hasRole('co_investigador'));
-        $this->assertNull($creado->training_center_id);
+        $creado = User::where('email', 'dg.puro@test.com')->firstOrFail();
+        $this->assertTrue($creado->hasRole('director_grupo_investigacion'));
+        $this->assertSame($this->centro->id, $creado->training_center_id);
     }
 }

@@ -17,7 +17,7 @@ class EnsureUserIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return $next($request);
         }
 
@@ -27,6 +27,7 @@ class EnsureUserIsActive
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
+
             return redirect()->route('login')->withErrors([
                 'email' => __('Tu cuenta ha sido desactivada. Contacta al administrador.'),
             ]);
@@ -40,10 +41,11 @@ class EnsureUserIsActive
         // Si el usuario tiene centro asignado y ese centro está desactivado, no puede acceder
         if ($user->training_center_id) {
             $center = $user->trainingCenter;
-            if ($center && !$center->activo) {
+            if ($center && ! $center->activo) {
                 Auth::guard('web')->logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
+
                 return redirect()->route('login')->withErrors([
                     'email' => __('Tu centro de formación está desactivado. No puedes acceder al sistema. Contacta al administrador.'),
                 ]);

@@ -28,6 +28,7 @@ class BUG20260909046Test extends TestCase
     use RefreshDatabase;
 
     private User $userSinProyecto;
+
     private TrainingCenter $centro;
 
     protected function setUp(): void
@@ -46,7 +47,7 @@ class BUG20260909046Test extends TestCase
         // Usuario con rol lider_proyecto pero SIN proyecto asignado
         $this->userSinProyecto = User::factory()->create([
             'training_center_id' => $this->centro->id,
-            'estado' => EstadoEnum::Activo
+            'estado' => EstadoEnum::Activo,
         ]);
         $this->userSinProyecto->assignRole('lider_proyecto');
     }

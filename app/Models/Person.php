@@ -4,8 +4,8 @@ namespace App\Models;
 
 use App\Enums\GeneroEnum;
 use App\Enums\NivelFormacionEnum;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Person extends Model

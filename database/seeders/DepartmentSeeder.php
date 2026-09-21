@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Department;
+use Illuminate\Database\Seeder;
 
 class DepartmentSeeder extends Seeder
 {
@@ -49,6 +49,6 @@ class DepartmentSeeder extends Seeder
             Department::firstOrCreate(['nombre' => $dept['nombre']]);
         }
 
-        $this->command->info('✅ ' . count($departments) . ' departamentos insertados.');
+        $this->command->info('✅ '.count($departments).' departamentos insertados.');
     }
 }

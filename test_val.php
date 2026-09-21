@@ -1,7 +1,8 @@
 <?php
-use Illuminate\Validation\Rules\Enum;
-use Illuminate\Support\Facades\Validator;
+
 use App\Enums\GeneroEnum;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Enum;
 
 $validator = Validator::make(
     ['genero' => ''],

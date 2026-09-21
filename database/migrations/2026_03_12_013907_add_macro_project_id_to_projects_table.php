@@ -14,10 +14,10 @@ return new class extends Migration
         // 2. Añadir la FK real hacia el catálogo a la tabla projects
         Schema::table('projects', function (Blueprint $table) {
             $table->foreignId('macro_project_id')
-                  ->nullable()
-                  ->after('vinculacion_macro_proyecto')
-                  ->constrained('macro_projects')
-                  ->nullOnDelete();
+                ->nullable()
+                ->after('vinculacion_macro_proyecto')
+                ->constrained('macro_projects')
+                ->nullOnDelete();
         });
     }
 
