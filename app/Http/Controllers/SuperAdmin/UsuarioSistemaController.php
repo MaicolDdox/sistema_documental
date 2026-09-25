@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
+use App\Models\GrupoInvestigacion;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
@@ -151,9 +152,12 @@ class UsuarioSistemaController extends Controller
         $rolesAdicionales = $rolPrincipalActual !== ''
             ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual, auth()->user()))->orderBy('name')->get()
             : collect();
+        $gruposInvestigacion = $usuario->training_center_id
+            ? GrupoInvestigacion::active()->where('training_center_id', $usuario->training_center_id)->orderBy('nombre')->get()
+            : collect();
 
         return view('super-admin.usuarios-sistema.edit', compact(
-            'usuario', 'roles', 'centros', 'rolesAdicionales', 'currentAdditionalRoles', 'rolPrincipalActual',
+            'usuario', 'roles', 'centros', 'rolesAdicionales', 'currentAdditionalRoles', 'rolPrincipalActual', 'gruposInvestigacion',
         ));
     }
 
@@ -211,12 +215,24 @@ class UsuarioSistemaController extends Controller
             $usuario->primary_role_name = $rol;
             $usuario->save();
 
+            $additionalRolesSolicitados = $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [];
+
+            // BUG-20260922-066: co_investigador_gdi como rol adicional exige
+            // saber a qué grupo de investigación queda vinculado el usuario.
+            $grupoInvestigacionId = null;
+            if (in_array('co_investigador_gdi', $additionalRolesSolicitados, true)) {
+                $grupoInvestigacionId = $request->validate([
+                    'grupo_investigacion_id' => ['required', Rule::exists('grupos_investigacion', 'id')->where('training_center_id', $tcId)],
+                ])['grupo_investigacion_id'];
+            }
+
             \App\Support\RoleAssignmentMatrix::syncAdditionalRoles(
                 $usuario,
                 $rol,
-                $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
+                $additionalRolesSolicitados,
                 true, // super_administrador siempre puede gestionar roles adicionales
                 auth()->user(),
+                $grupoInvestigacionId,
             );
         }
 

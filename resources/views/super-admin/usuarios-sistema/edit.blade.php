@@ -31,7 +31,7 @@
         </div>
 
         <div class="p-5">
-            <form method="POST" action="{{ route('super-admin.usuarios-sistema.update', $usuario->id) }}" class="space-y-5" x-data="{ tieneMasRoles: {{ old('tiene_mas_roles', count($currentAdditionalRoles) > 0) ? 'true' : 'false' }} }">
+            <form method="POST" action="{{ route('super-admin.usuarios-sistema.update', $usuario->id) }}" class="space-y-5" x-data="{ tieneMasRoles: {{ old('tiene_mas_roles', count($currentAdditionalRoles) > 0) ? 'true' : 'false' }}, mostrarGrupoInvestigacion: {{ in_array('co_investigador_gdi', old('additional_roles', $currentAdditionalRoles), true) ? 'true' : 'false' }} }">
                 @csrf
                 @method('PUT')
 
@@ -154,10 +154,21 @@
                             <label class="flex items-center gap-2 text-sm text-slate-700 border border-slate-200 rounded-lg px-3 py-2 bg-white hover:bg-slate-50 cursor-pointer">
                                 <input type="checkbox" name="additional_roles[]" value="{{ $r->name }}"
                                        {{ in_array($r->name, old('additional_roles', $currentAdditionalRoles), true) ? 'checked' : '' }}
+                                       @if($r->name === 'co_investigador_gdi') @change="mostrarGrupoInvestigacion = $event.target.checked" @endif
                                        class="rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
                                 {{ ucfirst(str_replace('_', ' ', $r->name)) }}
                             </label>
                         @endforeach
+                    </div>
+                    <div x-show="tieneMasRoles && mostrarGrupoInvestigacion" x-cloak class="mt-3.5 pt-3.5 border-t border-slate-200">
+                        <label for="grupo_investigacion_id" class="block text-sm font-medium text-slate-700 mb-1.5">Grupo de investigación del co-investigador GDI <span class="text-red-500">*</span></label>
+                        <select name="grupo_investigacion_id" id="grupo_investigacion_id" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
+                            <option value="">Selecciona un grupo</option>
+                            @foreach($gruposInvestigacion as $g)
+                                <option value="{{ $g->id }}" {{ (string) old('grupo_investigacion_id', $usuario->grupo_investigacion_id) === (string) $g->id ? 'selected' : '' }}>{{ $g->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('grupo_investigacion_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
 

@@ -78,8 +78,15 @@ final class RoleAssignmentMatrix
      * (el rol principal y super_administrador nunca se tocan aquí).
      *
      * @param  array<int, string>  $requestedAdditionalRoles  Lo que llegó del formulario, SIN sanear.
+     * @param  int|null  $grupoInvestigacionId  BUG-20260922-066: grupo de investigación al que
+     *                                          se vincula el usuario cuando co_investigador_gdi
+     *                                          entra dentro de $requestedAdditionalRoles. Sin esto,
+     *                                          el usuario quedaba con el rol pero sin
+     *                                          grupo_investigacion_id, huérfano para siempre
+     *                                          (sus productos Minciencias no aparecían para
+     *                                          ningún director_grupo_investigacion).
      */
-    public static function syncAdditionalRoles(User $user, string $primaryRole, array $requestedAdditionalRoles, bool $canManage, ?User $auth = null): void
+    public static function syncAdditionalRoles(User $user, string $primaryRole, array $requestedAdditionalRoles, bool $canManage, ?User $auth = null, ?int $grupoInvestigacionId = null): void
     {
         if (! $canManage) {
             return;
@@ -97,6 +104,14 @@ final class RoleAssignmentMatrix
                 app(RoleAssignmentService::class)->assign($user, $roleName);
             } elseif (! $shouldHave && $has) {
                 $user->removeRole($roleName);
+            }
+        }
+
+        if (in_array('co_investigador_gdi', $allowed, true)) {
+            $tieneRolGdi = in_array('co_investigador_gdi', $sanitized, true);
+            $nuevoGrupoId = $tieneRolGdi ? $grupoInvestigacionId : null;
+            if ((int) $user->grupo_investigacion_id !== (int) $nuevoGrupoId) {
+                $user->update(['grupo_investigacion_id' => $nuevoGrupoId]);
             }
         }
     }
