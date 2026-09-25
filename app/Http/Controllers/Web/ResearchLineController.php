@@ -60,6 +60,10 @@ class ResearchLineController extends Controller
         $validated['training_center_id'] = Auth::user()->training_center_id;
         ResearchLine::create($validated);
 
+        if ($request->input('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')->with('success', 'Línea de investigación creada correctamente.');
+        }
+
         return redirect()->route('admin.research-lines.index')
             ->with('success', 'Registro creado exitosamente.');
     }
@@ -90,6 +94,11 @@ class ResearchLineController extends Controller
         }
 
         $researchline->update($validated);
+
+        if ($request->has('_from_simples')) {
+            return redirect()->route('admin.catalogos.simples')
+                ->with('success', 'Registro actualizado exitosamente.');
+        }
 
         return redirect()->route('admin.research-lines.index')
             ->with('success', 'Registro actualizado exitosamente.');
