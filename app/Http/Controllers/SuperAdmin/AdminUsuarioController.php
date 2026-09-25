@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
+use App\Models\GrupoInvestigacion;
 use App\Models\TrainingCenter;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
@@ -52,8 +53,12 @@ class AdminUsuarioController extends Controller
             'name',
             \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL, auth()->user())
         )->orderBy('name')->get();
+        // El centro del nuevo administrador se elige en este mismo
+        // formulario, así que se listan todos los grupos activos con su
+        // centro (la validación en store() confirma que coincidan).
+        $gruposInvestigacion = GrupoInvestigacion::active()->with('trainingCenter')->orderBy('nombre')->get();
 
-        return view('super-admin.usuarios.create', compact('centros', 'rolesAdicionales'));
+        return view('super-admin.usuarios.create', compact('centros', 'rolesAdicionales', 'gruposInvestigacion'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -88,6 +93,16 @@ class AdminUsuarioController extends Controller
             ))
             : [];
 
+        // BUG-20260922-066: co_investigador_gdi como rol adicional exige
+        // saber a qué grupo de investigación queda vinculado el usuario, y
+        // ese grupo debe pertenecer al mismo centro que se le asigna aquí.
+        $grupoInvestigacionId = null;
+        if (in_array('co_investigador_gdi', $additionalRoles, true)) {
+            $grupoInvestigacionId = $request->validate([
+                'grupo_investigacion_id' => ['required', Rule::exists('grupos_investigacion', 'id')->where('training_center_id', $tcId)],
+            ])['grupo_investigacion_id'];
+        }
+
         $user = $this->userCreation->crearUsuario([
             'email' => $validated['email'],
             'numero_documento' => $validated['numero_documento'],
@@ -99,6 +114,7 @@ class AdminUsuarioController extends Controller
             'segundo_apellido' => $segundoApellido,
             'rol' => self::ROL,
             'additional_roles' => $additionalRoles,
+            'grupo_investigacion_id' => $grupoInvestigacionId,
             'created_by_user_id' => auth()->id(),
         ], $tcId);
 
@@ -124,8 +140,11 @@ class AdminUsuarioController extends Controller
             'name',
             \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor(self::ROL, auth()->user())
         )->orderBy('name')->get();
+        $gruposInvestigacion = $usuario->training_center_id
+            ? GrupoInvestigacion::active()->where('training_center_id', $usuario->training_center_id)->orderBy('nombre')->get()
+            : collect();
 
-        return view('super-admin.usuarios.edit', compact('usuario', 'centros', 'rolesAdicionales', 'currentAdditionalRoles'));
+        return view('super-admin.usuarios.edit', compact('usuario', 'centros', 'rolesAdicionales', 'currentAdditionalRoles', 'gruposInvestigacion'));
     }
 
     public function update(Request $request, int $id): RedirectResponse
@@ -171,12 +190,24 @@ class AdminUsuarioController extends Controller
             ]);
         }
 
+        $additionalRolesSolicitados = $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [];
+
+        // BUG-20260922-066: co_investigador_gdi como rol adicional exige
+        // saber a qué grupo de investigación queda vinculado el usuario.
+        $grupoInvestigacionId = null;
+        if (in_array('co_investigador_gdi', $additionalRolesSolicitados, true)) {
+            $grupoInvestigacionId = $request->validate([
+                'grupo_investigacion_id' => ['required', Rule::exists('grupos_investigacion', 'id')->where('training_center_id', $newTcId)],
+            ])['grupo_investigacion_id'];
+        }
+
         \App\Support\RoleAssignmentMatrix::syncAdditionalRoles(
             $usuario,
             self::ROL,
-            $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
+            $additionalRolesSolicitados,
             true, // super_administrador siempre puede gestionar roles adicionales
             auth()->user(),
+            $grupoInvestigacionId,
         );
 
         return redirect()->route('super-admin.administradores.index')->with('success', 'Administrador actualizado correctamente.');

@@ -6,6 +6,7 @@ use App\Enums\EstadoEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GrupoInvestigacion extends Model
@@ -22,7 +23,6 @@ class GrupoInvestigacion extends Model
         'codigo',
         'logo',
         'descripcion',
-        'linea_investigacion_principal_id',
         'estado',
     ];
 
@@ -49,9 +49,9 @@ class GrupoInvestigacion extends Model
         return $this->belongsTo(User::class, 'director_id');
     }
 
-    public function lineaInvestigacionPrincipal(): BelongsTo
+    public function lineasInvestigacion(): BelongsToMany
     {
-        return $this->belongsTo(ResearchLine::class, 'linea_investigacion_principal_id');
+        return $this->belongsToMany(ResearchLine::class, 'grupo_investigacion_lineas', 'grupo_investigacion_id', 'research_line_id');
     }
 
     public function mincienciasProducts(): HasMany

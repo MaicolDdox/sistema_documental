@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\EstadoEnum;
 use App\Enums\TipoDocumentoEnum;
 use App\Http\Controllers\Controller;
+use App\Models\GrupoInvestigacion;
 use App\Models\Person;
 use App\Models\User;
 use App\Services\Admin\NotificacionService;
@@ -96,8 +97,11 @@ class UsuarioController extends Controller
             'name',
             \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_semilleros', auth()->user())
         )->orderBy('name')->get();
+        $gruposInvestigacion = GrupoInvestigacion::active()
+            ->where('training_center_id', auth()->user()->training_center_id)
+            ->orderBy('nombre')->get();
 
-        return view('admin.director_semilleros.create', compact('rolesAdicionales'));
+        return view('admin.director_semilleros.create', compact('rolesAdicionales', 'gruposInvestigacion'));
     }
 
     public function storeDirectorSemilleros(Request $request)
@@ -118,8 +122,11 @@ class UsuarioController extends Controller
             'name',
             \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor('director_grupo_investigacion', auth()->user())
         )->orderBy('name')->get();
+        $gruposInvestigacion = GrupoInvestigacion::active()
+            ->where('training_center_id', auth()->user()->training_center_id)
+            ->orderBy('nombre')->get();
 
-        return view('admin.director_grupo_investigacion.create', compact('rolesAdicionales'));
+        return view('admin.director_grupo_investigacion.create', compact('rolesAdicionales', 'gruposInvestigacion'));
     }
 
     public function storeDirectorGrupoInvestigacion(Request $request)
@@ -165,6 +172,15 @@ class UsuarioController extends Controller
             ))
             : [];
 
+        // BUG-20260922-066: co_investigador_gdi como rol adicional exige
+        // saber a qué grupo de investigación queda vinculado el usuario.
+        $grupoInvestigacionId = null;
+        if (in_array('co_investigador_gdi', $additionalRoles, true)) {
+            $grupoInvestigacionId = $request->validate([
+                'grupo_investigacion_id' => ['required', Rule::exists('grupos_investigacion', 'id')->where('training_center_id', $actor->training_center_id)],
+            ])['grupo_investigacion_id'];
+        }
+
         // Reforma GDI/SDI: ya no existe ningún rol creado desde aquí sin
         // centro de formación propio — todos los roles asignables por
         // administrador_sistema (director_semilleros, director_grupo_investigacion)
@@ -184,6 +200,7 @@ class UsuarioController extends Controller
             'segundo_apellido' => $segundoApellido,
             'rol' => $rol,
             'additional_roles' => $additionalRoles,
+            'grupo_investigacion_id' => $grupoInvestigacionId,
             'created_by_user_id' => $actor->id,
         ], $trainingCenterId);
 
@@ -220,10 +237,13 @@ class UsuarioController extends Controller
             ? Role::whereIn('name', \App\Support\RoleAssignmentMatrix::additionalRoleOptionNamesFor($rolPrincipalActual, auth()->user()))->orderBy('name')->get()
             : collect();
         $currentAdditionalRoles = array_values(array_diff($namesRol, [$rolPrincipalActual]));
+        $gruposInvestigacion = GrupoInvestigacion::active()
+            ->where('training_center_id', $usuario->training_center_id)
+            ->orderBy('nombre')->get();
 
         return view('admin.usuarios.edit', compact(
             'usuario', 'roles', 'trainingCenters',
-            'canManageAdditionalRoles', 'additionalRoleOptions', 'currentAdditionalRoles',
+            'canManageAdditionalRoles', 'additionalRoleOptions', 'currentAdditionalRoles', 'gruposInvestigacion',
         ));
     }
 
@@ -333,12 +353,24 @@ class UsuarioController extends Controller
         $usuario->primary_role_name = $validated['rol'];
         $usuario->save();
 
+        $additionalRolesSolicitados = $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [];
+
+        // BUG-20260922-066: co_investigador_gdi como rol adicional exige
+        // saber a qué grupo de investigación queda vinculado el usuario.
+        $grupoInvestigacionId = null;
+        if (in_array('co_investigador_gdi', $additionalRolesSolicitados, true)) {
+            $grupoInvestigacionId = $request->validate([
+                'grupo_investigacion_id' => ['required', Rule::exists('grupos_investigacion', 'id')->where('training_center_id', $usuario->training_center_id)],
+            ])['grupo_investigacion_id'];
+        }
+
         \App\Support\RoleAssignmentMatrix::syncAdditionalRoles(
             $usuario,
             $validated['rol'],
-            $request->boolean('tiene_mas_roles') ? ($validated['additional_roles'] ?? []) : [],
+            $additionalRolesSolicitados,
             $this->canManageAdditionalRoles($usuario),
             auth()->user(),
+            $grupoInvestigacionId,
         );
 
         return redirect()->route('admin.usuarios.index')

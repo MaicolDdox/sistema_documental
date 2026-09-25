@@ -100,7 +100,7 @@ class MincienciasProductoController extends Controller
         $this->authorize('minciencias.ver_detalle');
         $this->ensureDelGrupo($archivo->product);
 
-        return $this->descargarArchivoPublico($archivo->archivo, $archivo->descripcion);
+        return $this->descargarArchivoPublico($archivo->archivo, $archivo->descripcion ?? $archivo->nombre_original);
     }
 
     private function ensureDelGrupo(MincienciasProduct $producto): void

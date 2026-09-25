@@ -70,6 +70,7 @@ class MincienciasProductoController extends Controller
             MincienciasProductFile::create([
                 'minciencias_product_id' => $producto->id,
                 'archivo' => $path,
+                'nombre_original' => $archivo->getClientOriginalName(),
                 'uploaded_by' => Auth::id(),
             ]);
         }
@@ -149,6 +150,7 @@ class MincienciasProductoController extends Controller
             'minciencias_product_id' => $producto->id,
             'descripcion' => $validated['descripcion'] ?? null,
             'archivo' => $path,
+            'nombre_original' => $request->file('archivo')->getClientOriginalName(),
             'uploaded_by' => Auth::id(),
         ]);
 
@@ -175,7 +177,7 @@ class MincienciasProductoController extends Controller
     {
         $this->ensurePropietarioArchivo($archivo);
 
-        return $this->descargarArchivoPublico($archivo->archivo, $archivo->descripcion);
+        return $this->descargarArchivoPublico($archivo->archivo, $archivo->descripcion ?? $archivo->nombre_original);
     }
 
     private function ensurePropietarioArchivo(MincienciasProductFile $archivo): void

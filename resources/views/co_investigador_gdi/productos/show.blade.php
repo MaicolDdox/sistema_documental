@@ -117,7 +117,7 @@
             @forelse($producto->files as $archivo)
             <li class="px-5 py-3 flex items-center justify-between text-sm gap-3">
                 <div class="min-w-0">
-                    <p class="font-medium text-slate-800 truncate">{{ $archivo->descripcion ?? basename($archivo->archivo ?? 'Archivo') }}</p>
+                    <p class="font-medium text-slate-800 truncate">{{ $archivo->descripcion ?? $archivo->nombre_original ?? basename($archivo->archivo ?? 'Archivo') }}</p>
                     <p class="text-xs text-slate-500">
                         Subido por {{ $archivo->uploadedBy?->person?->nombre_completo ?? $archivo->uploadedBy?->email ?? '—' }}
                         · {{ $archivo->created_at->format('d/m/Y H:i') }}

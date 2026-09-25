@@ -33,6 +33,7 @@ class UserCreationService
      *     segundo_apellido?: ?string,
      *     rol?: ?string,
      *     additional_roles?: list<string>,
+     *     grupo_investigacion_id?: ?int,
      *     estado?: EstadoEnum,
      *     genero?: string,
      *     celular?: int|string,
@@ -104,6 +105,15 @@ class UserCreationService
                 if ($roleName !== ($data['rol'] ?? null)) {
                     $this->roleAssignment->assign($user, $roleName);
                 }
+            }
+
+            // BUG-20260922-066: co_investigador_gdi como rol adicional
+            // quedaba sin grupo_investigacion_id — huérfano, sin poder subir
+            // productos Minciencias que un director_grupo_investigacion
+            // pudiera ver. El caller valida que grupo_investigacion_id venga
+            // informado cuando co_investigador_gdi está entre los adicionales.
+            if (in_array('co_investigador_gdi', $additionalRoles, true)) {
+                $user->update(['grupo_investigacion_id' => $data['grupo_investigacion_id'] ?? null]);
             }
 
             return $user;

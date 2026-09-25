@@ -8,6 +8,7 @@ use App\Models\EntityPosition;
 use App\Models\InvestigationType;
 use App\Models\LinkageType;
 use App\Models\ProjectModality;
+use App\Models\ResearchLine;
 use App\Models\TechnologicalLine;
 use App\Models\ThematicArea;
 use Illuminate\Database\QueryException;
@@ -32,6 +33,7 @@ class CatalogoController extends Controller
         $investigationTypes = InvestigationType::where('training_center_id', $centerId)->orderBy('nombre')->get();
         $technologicalLines = TechnologicalLine::where('training_center_id', $centerId)->orderBy('nombre')->get();
         $thematicAreas = ThematicArea::where('training_center_id', $centerId)->orderBy('nombre')->get();
+        $researchLines = ResearchLine::where('training_center_id', $centerId)->orderBy('nombre')->get();
 
         return view('admin.catalogos.simples', compact(
             'entityPositions',
@@ -39,7 +41,8 @@ class CatalogoController extends Controller
             'projectModalities',
             'investigationTypes',
             'technologicalLines',
-            'thematicAreas'
+            'thematicAreas',
+            'researchLines'
         ));
     }
 

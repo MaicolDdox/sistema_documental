@@ -15,6 +15,7 @@ class MincienciasProductFile extends Model
     protected $fillable = [
         'minciencias_product_id',
         'archivo',
+        'nombre_original',
         'url_archivo',
         'descripcion',
         'uploaded_by',
