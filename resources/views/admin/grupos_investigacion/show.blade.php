@@ -31,8 +31,8 @@
                 <p class="text-sm text-slate-700">{{ $grupo->director?->person?->nombre_completo ?? $grupo->director?->email ?? 'Sin director asignado' }}</p>
             </div>
             <div>
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Línea de investigación</p>
-                <p class="text-sm text-slate-700">{{ $grupo->lineaInvestigacionPrincipal?->nombre ?? '—' }}</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Líneas de investigación</p>
+                <p class="text-sm text-slate-700">{{ $grupo->lineasInvestigacion->pluck('nombre')->join(', ') ?: '—' }}</p>
             </div>
             <div class="md:col-span-2">
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Descripción</p>

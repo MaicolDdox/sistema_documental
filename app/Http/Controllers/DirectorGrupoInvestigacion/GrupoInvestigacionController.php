@@ -19,7 +19,7 @@ class GrupoInvestigacionController extends Controller
     {
         $this->authorize('grupos_investigacion.editar');
 
-        $grupo = GrupoInvestigacion::where('director_id', Auth::id())->firstOrFail();
+        $grupo = GrupoInvestigacion::with('lineasInvestigacion')->where('director_id', Auth::id())->firstOrFail();
         $lineasInvestigacion = ResearchLine::where('training_center_id', Auth::user()->training_center_id)->orderBy('nombre')->get();
 
         return view('director_grupo_investigacion.grupo.edit', compact('grupo', 'lineasInvestigacion'));
@@ -33,11 +33,12 @@ class GrupoInvestigacionController extends Controller
 
         $validated = $request->validate([
             'descripcion' => 'nullable|string',
-            'logo' => 'nullable|string|max:255',
-            'linea_investigacion_principal_id' => ['nullable', Rule::exists('research_lines', 'id')->where('training_center_id', Auth::user()->training_center_id)],
+            'lineas_investigacion' => 'nullable|array',
+            'lineas_investigacion.*' => [Rule::exists('research_lines', 'id')->where('training_center_id', Auth::user()->training_center_id)],
         ]);
 
-        $grupo->update($validated);
+        $grupo->update(['descripcion' => $validated['descripcion'] ?? null]);
+        $grupo->lineasInvestigacion()->sync($validated['lineas_investigacion'] ?? []);
 
         return redirect()->route('director-grupo-investigacion.grupo.edit')
             ->with('success', 'Información del grupo actualizada correctamente.');

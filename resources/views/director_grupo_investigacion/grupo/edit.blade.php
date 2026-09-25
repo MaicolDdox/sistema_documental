@@ -25,21 +25,24 @@
                 @error('descripcion') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label for="logo" class="block text-sm font-medium text-slate-700 mb-1.5">Logo (URL)</label>
-                <input type="text" name="logo" id="logo" value="{{ old('logo', $grupo->logo) }}"
-                       class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                @error('logo') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label for="linea_investigacion_principal_id" class="block text-sm font-medium text-slate-700 mb-1.5">Línea de investigación principal</label>
-                <select name="linea_investigacion_principal_id" id="linea_investigacion_principal_id"
-                        class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm text-slate-800 bg-white focus:border-[#39A900] focus:ring-2 focus:ring-[#39A900]/10">
-                    <option value="">Sin especificar</option>
-                    @foreach($lineasInvestigacion as $linea)
-                        <option value="{{ $linea->id }}" {{ (string) old('linea_investigacion_principal_id', $grupo->linea_investigacion_principal_id) === (string) $linea->id ? 'selected' : '' }}>{{ $linea->nombre }}</option>
-                    @endforeach
-                </select>
-                @error('linea_investigacion_principal_id') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                <label class="block text-sm font-medium text-slate-700 mb-1.5">Líneas de investigación</label>
+                @php
+                    $seleccionadas = collect(old('lineas_investigacion', $grupo->lineasInvestigacion->pluck('id')->all()))->map(fn ($id) => (string) $id);
+                @endphp
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @forelse($lineasInvestigacion as $linea)
+                    <label class="flex items-center gap-2 text-sm text-slate-700 border border-slate-200 rounded-lg px-3 py-2 bg-white hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" name="lineas_investigacion[]" value="{{ $linea->id }}"
+                               {{ $seleccionadas->contains((string) $linea->id) ? 'checked' : '' }}
+                               class="rounded border-slate-300 text-[#39A900] focus:ring-[#39A900]">
+                        {{ $linea->nombre }}
+                    </label>
+                    @empty
+                    <p class="text-sm text-slate-500">Tu centro de formación no tiene líneas de investigación registradas.</p>
+                    @endforelse
+                </div>
+                @error('lineas_investigacion') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
+                @error('lineas_investigacion.*') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
             </div>
             <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button type="submit" class="bg-[#39A900] hover:bg-[#2d8500] text-white font-semibold py-2.5 px-4 rounded-lg text-sm transition-all">Guardar Cambios</button>

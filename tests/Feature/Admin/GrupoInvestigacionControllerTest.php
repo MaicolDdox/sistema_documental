@@ -66,7 +66,7 @@ class GrupoInvestigacionControllerTest extends TestCase
         $grupo = GrupoInvestigacion::where('codigo', 'GSC001')->firstOrFail();
         $this->assertNull($grupo->descripcion);
         $this->assertNull($grupo->logo);
-        $this->assertNull($grupo->linea_investigacion_principal_id);
+        $this->assertCount(0, $grupo->lineasInvestigacion);
         $this->assertNull($grupo->director_id);
     }
 

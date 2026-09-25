@@ -74,7 +74,7 @@ class GrupoInvestigacionController extends Controller
         $this->authorize('grupos_investigacion.ver_detalle');
         $this->checkCentroFormacion($grupos_investigacion);
 
-        $grupos_investigacion->load(['director.person', 'lineaInvestigacionPrincipal', 'mincienciasProducts']);
+        $grupos_investigacion->load(['director.person', 'lineasInvestigacion', 'mincienciasProducts']);
 
         return view('admin.grupos_investigacion.show', ['grupo' => $grupos_investigacion]);
     }
