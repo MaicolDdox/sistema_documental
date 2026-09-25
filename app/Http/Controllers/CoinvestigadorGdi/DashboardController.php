@@ -23,6 +23,11 @@ class DashboardController extends Controller
             'rechazado' => (int) ($porEstado[EstadoRevisionEnum::Rechazado->value] ?? 0),
         ];
 
-        return view('co_investigador_gdi.dashboard', compact('conteos'));
+        // BUG-20260922-067: resumen del grupo de investigación al que
+        // pertenece el co-investigador GDI, para que sepa a qué grupo está
+        // vinculado y bajo qué director.
+        $grupo = Auth::user()->grupoInvestigacion()->with(['director.person', 'lineasInvestigacion'])->first();
+
+        return view('co_investigador_gdi.dashboard', compact('conteos', 'grupo'));
     }
 }
